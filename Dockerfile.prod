@@ -1,0 +1,22 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+RUN corepack enable
+
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV YARN_CACHE_FOLDER=/yarn-cache
+
+RUN yarn install --immutable
+
+COPY . .
+
+RUN yarn build
+
+EXPOSE 3000
+
+CMD ["sh", "-lc", "yarn start -p 3000 -H 0.0.0.0"]

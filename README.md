@@ -139,6 +139,7 @@ curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
 - **[docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md)** - JSON format and import process
 - **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** - Environment variables and advanced configuration
 - **[docs/COMMANDS.md](./docs/COMMANDS.md)** - All available commands
+- **[docs/DEPLOY_PRODUCTION_DO.md](./docs/DEPLOY_PRODUCTION_DO.md)** - Minimal production deployment on DigitalOcean Droplet
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## ⚡ Common Commands
@@ -147,6 +148,12 @@ curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
 # Start/stop
 docker compose --profile local up     # Start with logs
 docker compose down                   # Stop
+
+# Production (DigitalOcean Droplet)
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml --profile init run --rm weaviate-init  # Optional import
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f
 
 # Logs & debugging
 docker compose logs -f nlp-processor  # Follow logs

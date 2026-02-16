@@ -28,6 +28,7 @@ yarn-error.log*
 .env
 .env.local
 .env.cloud
+.env.production
 
 # organization-specific configuration
 # Each organization should maintain their own config.json
