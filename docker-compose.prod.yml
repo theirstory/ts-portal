@@ -1,0 +1,82 @@
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.35.0
+    container_name: weaviate-prod
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      ENABLE_MODULES: ""
+      DEFAULT_VECTORIZER_MODULE: "none"
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/v1/.well-known/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  nlp-processor:
+    profiles: ["init"]
+    build:
+      context: ./nlp-processor
+      dockerfile: Dockerfile
+    container_name: nlp-processor-prod
+    environment:
+      PYTHONUNBUFFERED: "1"
+    env_file:
+      - ./nlp-processor/.env
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    volumes:
+      - ./config.json:/config.json:ro
+      - huggingface_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:7070/health >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    restart: unless-stopped
+
+  weaviate-init:
+    profiles: ["init"]
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: weaviate-init-prod
+    env_file:
+      - ./.env.production
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      nlp-processor:
+        condition: service_healthy
+    volumes:
+      - ./json:/app/json:ro
+      - ./config.json:/app/config.json:ro
+    command: sh -c "yarn weaviate:generate-schemas && yarn weaviate:import && exit 0"
+    restart: "no"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: next-frontend-prod
+    env_file:
+      - ./.env.production
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    volumes:
+      - ./config.json:/app/config.json:ro
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  weaviate_data:
+  huggingface_cache:
