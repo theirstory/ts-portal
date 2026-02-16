@@ -1,0 +1,5 @@
+{
+  "id": "example-collection",
+  "name": "Example Collection",
+  "description": "Sample collection metadata for import testing. Files in this folder are imported under this collection."
+}

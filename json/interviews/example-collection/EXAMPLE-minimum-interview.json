@@ -1,0 +1,84 @@
+{
+  "_docs": {
+    "_about": "Minimal functional JSON to import an interview into the portal. Fields marked 🔴 are required, 🟡 recommended, 🟢 optional.",
+    "transcript": {
+      "_id":        "🟢 Internal transcript ID. Not critical for the pipeline.",
+      "created_at": "🟢 Transcript creation date. Informational only.",
+      "updated_at": "🟢 Last update date. Informational only.",
+      "storyId":    "🟡 Associated story ID. Used as a fallback if story._id does not exist.",
+      "status":     "🟢 Transcript status (e.g. 'completed'). Informational.",
+      "transcript": "🟢 Full plain text transcript. Not used by the NLP processor (it is reconstructed from words).",
+      "words":      "🔴 REQUIRED. Array of words with timestamps. Each word has: start (seconds, float), end (seconds, float), text (the word). Without this there is no chunking, NER, or semantic search.",
+      "paragraphs": "🔴 REQUIRED. Array of paragraphs. Each paragraph has: start (seconds), end (seconds), speaker (speaker ID, e.g. 'SPEAKER_S1'). Defines the time ranges for each speaker.",
+      "__v":        "🟢 Mongoose version. Ignored by the system."
+    },
+    "story": {
+      "_id":                        "🔴 REQUIRED. Unique interview ID. If missing, the NLP processor returns HTTP 400. Converted to UUID for Weaviate.",
+      "title":                      "🟡 Interview title. Displayed in the gallery (grid/list). If missing, it will be empty.",
+      "description":                "🟡 Interview description. Shown in the UI. If missing, it will be empty.",
+      "duration":                   "🟡 Duration in SECONDS (integer). Displayed as a badge on the thumbnail. If missing, it shows 0.",
+      "record_date":                "🟡 Recording date in ISO 8601 format (e.g. '2026-01-01T00:00:00.000Z'). Displayed in metadata. If missing, it shows 'No date available'.",
+      "transcoded":                 "🟡 HLS streaming URL for video/audio (e.g. 'https://stream.mux.com/XXXXX.m3u8'). This is the URL used by the video player. Without it, the player will not work.",
+      "custom_archive_media_type":  "🟡 Original file MIME type (e.g. 'audio/mp3', 'audio/m4a', 'video/mp4'). If it starts with 'audio/', the UI shows a waveform icon instead of a video thumbnail. If missing, it assumes video.",
+      "thumbnail_url":              "🟢 Custom thumbnail image URL. If missing, it is automatically generated from Mux.",
+      "asset_id":                   "🟢 External system asset ID. Stored in Weaviate but not critical.",
+      "organization_id":            "🟢 Organization ID. Stored in Weaviate chunks.",
+      "project_id":                 "🟢 Project ID. Stored in Weaviate chunks.",
+      "author.full_name":           "🟢 Author/publisher name. Stored as 'publisher' in Weaviate.",
+      "indexes":                    "🟢 Array of indexes/chapters. If present, multiple sections with titles and synopses are created. If missing, a SINGLE section is created containing the full transcript."
+    },
+    "videoURL":     "🟡 Direct URL to the video/audio file (e.g. 'https://stream.mux.com/XXXXX/audio.m4a'). Used by the player and to extract the Mux playback ID (used to generate thumbnails). Without this, there is no functional player.",
+    "participants": "🟢 Participants array. Informational only, does not affect processing.",
+    "tags":         "🟢 Tags/labels array. Informational only, does not affect processing."
+  },
+
+  "transcript": {
+    "_id": "aaa111bbb222ccc333ddd444",
+    "created_at": "2026-01-01T00:00:00.000Z",
+    "updated_at": "2026-01-01T00:00:00.000Z",
+    "storyId": "aaa111bbb222ccc333ddd444",
+    "status": "completed",
+    "transcript": "Hello, this is a test interview. We are testing the minimum required fields for the portal to work correctly.",
+    "words": [
+      { "start": 0.0, "end": 0.4, "text": "Hello," },
+      { "start": 0.4, "end": 0.7, "text": "this" },
+      { "start": 0.7, "end": 0.9, "text": "is" },
+      { "start": 0.9, "end": 1.0, "text": "a" },
+      { "start": 1.0, "end": 1.4, "text": "test" },
+      { "start": 1.4, "end": 2.0, "text": "interview." },
+      { "start": 2.2, "end": 2.4, "text": "We" },
+      { "start": 2.4, "end": 2.6, "text": "are" },
+      { "start": 2.6, "end": 3.0, "text": "testing" },
+      { "start": 3.0, "end": 3.2, "text": "the" },
+      { "start": 3.2, "end": 3.6, "text": "minimum" },
+      { "start": 3.6, "end": 4.0, "text": "required" },
+      { "start": 4.0, "end": 4.4, "text": "fields" },
+      { "start": 4.4, "end": 4.6, "text": "for" },
+      { "start": 4.6, "end": 4.8, "text": "the" },
+      { "start": 4.8, "end": 5.2, "text": "portal" },
+      { "start": 5.2, "end": 5.4, "text": "to" },
+      { "start": 5.4, "end": 5.7, "text": "work" },
+      { "start": 5.7, "end": 6.4, "text": "correctly." }
+    ],
+    "paragraphs": [
+      {
+        "start": 0,
+        "end": 6.4,
+        "speaker": "SPEAKER_S1"
+      }
+    ],
+    "__v": 0
+  },
+  "story": {
+    "_id": "aaa111bbb222ccc333ddd444",
+    "title": "Minimum Example Interview",
+    "description": "This is a minimal interview example.",
+    "duration": 7,
+    "record_date": "2026-01-01T00:00:00.000Z",
+    "transcoded": "",
+    "custom_archive_media_type": "audio/mp3"
+  },
+  "videoURL": "",
+  "participants": [],
+  "tags": []
+}

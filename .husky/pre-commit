@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "🔍 Type checking..."
+yarn type-check
+
+echo "🧹 Linting and formatting staged files..."
+yarn lint-staged

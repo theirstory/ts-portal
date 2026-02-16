@@ -1,0 +1,154 @@
+/* globals.css */
+body {
+  font-family: 'Public Sans', sans-serif;
+
+  margin: 0;
+  padding: 0;
+  /* min-height: 100dvh;
+    min-width: 100dvw; */
+  overflow: hidden;
+  color: white;
+  background:
+    linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(111deg, #6481a2 0.34%, #7a8796 100%);
+  /* Mobile optimizations */
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+  }
+
+  /* Ensure touch targets are at least 44px for accessibility */
+  button,
+  [role='button'],
+  input[type='button'],
+  input[type='submit'],
+  a {
+    min-height: 32px;
+    min-width: 32px;
+  }
+
+  /* Improve mobile form elements */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Mobile-friendly scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #fff;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+mux-player::part(poster) {
+  background-color: black;
+}
+
+#audio-file-wave-container:hover ~ mux-player::part(control-bar bottom),
+#audio-file-wave-container:hover ~ mux-player::part(bottom time range) {
+  opacity: 1 !important;
+}
+
+mux-player::part(control-bar) {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* Mobile scrollbar - slightly wider for touch */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+}
+
+/* Mobile-specific video player adjustments */
+@media (max-width: 768px) {
+  mux-player {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 769px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Mobile-friendly focus states */
+@media (max-width: 768px) {
+  *:focus {
+    outline: 2px solid #1976d2;
+    outline-offset: 2px;
+  }
+
+  /* Remove focus on touch for better UX */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* Ensure proper viewport behavior */
+@viewport {
+  width: device-width;
+  zoom: 1;
+}
+
+/* Prevent horizontal scrolling on mobile */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Mobile-safe max widths */
+@media (max-width: 768px) {
+  * {
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+}

@@ -1,0 +1,18 @@
+# API
+fastapi
+uvicorn
+
+# HTTP client
+httpx
+
+# Validation / models
+pydantic
+
+# NLP
+gliner-spacy
+
+# Local Embeddings
+sentence-transformers>=2.2.0
+torch>=2.0.0
+
+python-dotenv==1.0.1

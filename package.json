@@ -1,0 +1,69 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "theirstory-portal",
+  "description": "TheirStory portal application",
+  "version": "1.2.0",
+  "repository": "",
+  "author": "Juan Ignacio Porta",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "next build --webpack",
+    "dev": "next dev -p 3004 --webpack",
+    "dev:cloud": "dotenv -e .env.cloud -- next dev -p 3004 --webpack",
+    "dev:local": "dotenv -e .env.local -- next dev -p 3004 --webpack",
+    "start": "next start",
+    "weaviate:generate-schemas": "tsx scripts/init-schema.ts",
+    "weaviate:import": "tsx scripts/import-interviews-weaviate.ts",
+    "gen:weaviate-types": "tsx scripts/generateWeaviateTypes",
+    "validate:config": "tsx scripts/validateConfig",
+    "type-check": "tsc --noEmit",
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.1.0",
+    "@mui/material": "^7.1.0",
+    "@mux/mux-player-react": "^3.4.0",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
+    "next": "latest",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-markdown": "^10.1.0",
+    "weaviate-client": "^3.0.3",
+    "zustand": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
+    "@types/lodash": "^4.17.17",
+    "@types/node": "20.14.2",
+    "@types/react": "18.3.3",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^9.30.0",
+    "eslint-config-next": "^15.3.4",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.6.2",
+    "tsx": "^4.19.4",
+    "typescript": "5.4.5"
+  },
+  "packageManager": "yarn@3.1.1+sha512.05e7cd089fdbb9a82ea64d75895b2712026aa50110e046be9a8f4672bafbd05fbd368256831c9e02cd96d8e637917eaeace985482375fb828062bc915883e2c5"
+}

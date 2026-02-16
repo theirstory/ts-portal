@@ -1,0 +1,546 @@
+{
+  "class": "Chunks",
+  "invertedIndexConfig": {
+    "bm25": {
+      "b": 0.75,
+      "k1": 1.2
+    },
+    "cleanupIntervalSeconds": 60,
+    "stopwords": {
+      "additions": null,
+      "preset": "en",
+      "removals": null
+    },
+    "usingBlockMaxWAND": true
+  },
+  "moduleConfig": {},
+  "multiTenancyConfig": {
+    "autoTenantActivation": false,
+    "autoTenantCreation": false,
+    "enabled": false
+  },
+  "properties": [
+    {
+      "dataType": [
+        "number"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "interview_duration"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "interview_title",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_name",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_description",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "description",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "transcoded",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "asset_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "theirstory_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "organization_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "project_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "int"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "section_id"
+    },
+    {
+      "dataType": [
+        "int"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "para_id"
+    },
+    {
+      "dataType": [
+        "int"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "chunk_id"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "recording_date",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "transcription",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "speaker",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "interviewers",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "boolean"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "is_interviewer"
+    },
+    {
+      "dataType": [
+        "object[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "word_timestamps",
+      "nestedProperties": [
+        {
+          "dataType": [
+            "number"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": false,
+          "name": "start"
+        },
+        {
+          "dataType": [
+            "number"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": false,
+          "name": "end"
+        },
+        {
+          "dataType": [
+            "text"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": true,
+          "name": "text",
+          "tokenization": "word"
+        }
+      ]
+    },
+    {
+      "dataType": [
+        "object[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "ner_data",
+      "nestedProperties": [
+        {
+          "dataType": [
+            "text"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": true,
+          "name": "text",
+          "tokenization": "word"
+        },
+        {
+          "dataType": [
+            "text"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": true,
+          "name": "label",
+          "tokenization": "word"
+        },
+        {
+          "dataType": [
+            "number"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": false,
+          "name": "start_time"
+        },
+        {
+          "dataType": [
+            "number"
+          ],
+          "indexFilterable": true,
+          "indexRangeFilters": false,
+          "indexSearchable": false,
+          "name": "end_time"
+        }
+      ]
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "ner_labels",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "ner_text",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "number"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "start_time"
+    },
+    {
+      "dataType": [
+        "number"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "end_time"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "section_title",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "Testimonies"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "belongsToTestimony"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "description": "This property was generated by Weaviate's auto-schema feature on Tue Aug 26 19:36:29 2025",
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "thumbnail_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "video_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "boolean"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "isAudioFile"
+    },
+    {
+      "dataType": [
+        "date"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": true,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "date"
+    }
+  ],
+  "replicationConfig": {
+    "asyncEnabled": false,
+    "deletionStrategy": "NoAutomatedResolution",
+    "factor": 1
+  },
+  "shardingConfig": {
+    "actualCount": 1,
+    "actualVirtualCount": 128,
+    "desiredCount": 1,
+    "desiredVirtualCount": 128,
+    "function": "murmur3",
+    "key": "_id",
+    "strategy": "hash",
+    "virtualPerPhysical": 128
+  },
+  "vectorConfig": {
+    "transcription_vector": {
+      "vectorIndexConfig": {
+        "bq": {
+          "enabled": false
+        },
+        "cleanupIntervalSeconds": 300,
+        "distance": "cosine",
+        "dynamicEfFactor": 8,
+        "dynamicEfMax": 500,
+        "dynamicEfMin": 100,
+        "ef": -1,
+        "efConstruction": 128,
+        "filterStrategy": "sweeping",
+        "flatSearchCutoff": 40000,
+        "maxConnections": 32,
+        "multivector": {
+          "aggregation": "maxSim",
+          "enabled": false
+        },
+        "pq": {
+          "bitCompression": false,
+          "centroids": 256,
+          "enabled": false,
+          "encoder": {
+            "distribution": "log-normal",
+            "type": "kmeans"
+          },
+          "segments": 0,
+          "trainingLimit": 100000
+        },
+        "skip": false,
+        "sq": {
+          "enabled": false,
+          "rescoreLimit": 20,
+          "trainingLimit": 100000
+        },
+        "vectorCacheMaxObjects": 1000000000000
+      },
+      "vectorIndexType": "hnsw",
+      "vectorizer": {
+        "none": {}
+      }
+    }
+  }
+}

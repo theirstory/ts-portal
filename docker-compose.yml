@@ -1,0 +1,124 @@
+services:
+  weaviate:
+    profiles: ["local"]
+    image: semitechnologies/weaviate:1.35.0
+    container_name: weaviate
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      ENABLE_MODULES: ""
+      DEFAULT_VECTORIZER_MODULE: "none"
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/v1/.well-known/ready || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 40
+
+  weaviate-init:
+    profiles: ["local"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weaviate-init
+    env_file:
+      - .env.local
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      nlp-processor:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: sh -c "yarn weaviate:generate-schemas && yarn weaviate:import && exit 0"
+    restart: "no"
+  
+  nlp-processor:
+    profiles: ["local"]
+    build:
+      context: ./nlp-processor
+      dockerfile: Dockerfile
+    container_name: nlp-processor
+    ports:
+      - "7070:7070"
+    environment:
+      PYTHONUNBUFFERED: "1"
+    env_file:
+      - ./nlp-processor/.env
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    volumes:
+      - ./nlp-processor:/app
+      - ./config.json:/config.json:ro
+      - huggingface_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:7070/health >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 180s
+    restart: unless-stopped
+
+  frontend:
+    profiles: ["local"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: next-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    # env_file:
+    #   - .env.local
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      weaviate-init:
+        condition: service_completed_successfully
+      nlp-processor:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - yarn_cache:/yarn-cache
+      - ./config.json:/app/config.json:ro
+    command: sh -lc "yarn dev -p 3000 -H 0.0.0.0"
+
+  frontend_cloud:
+    profiles: ["cloud"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: next-frontend-cloud
+    ports:
+      - "3000:3000"
+    environment:
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    # env_file:
+    #   - .env.cloud
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - yarn_cache:/yarn-cache
+      - ./config.json:/app/config.json:ro
+    command: sh -lc "yarn dev -p 3000 -H 0.0.0.0"
+
+volumes:
+  weaviate_data:
+  node_modules:
+  yarn_cache:
+  huggingface_cache:

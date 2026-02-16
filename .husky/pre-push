@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "🔍 Running type check before push..."
+yarn type-check
+
+echo "🔨 Running build check..."
+yarn build 
