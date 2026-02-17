@@ -142,7 +142,7 @@ export const NerFilters = () => {
             zIndex: 1,
           }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            Filter by NER Labels
+            Filter search by NER Labels
           </Typography>
 
           <TextField

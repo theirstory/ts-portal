@@ -157,7 +157,7 @@ export const StoryTranscriptToolbarFilterMenu = () => {
               zIndex: 1,
             }}>
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-              Filter by NER Labels
+              Filter search by NER Labels
             </Typography>
             <TextField
               size="small"
@@ -227,11 +227,7 @@ export const StoryTranscriptToolbarFilterMenu = () => {
           <Button variant="outlined" size="small" onClick={handleClearFilter} sx={{ flex: 1, textTransform: 'none' }}>
             Clear
           </Button>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleApplyFilter}
-            sx={{ flex: 1, textTransform: 'none' }}>
+          <Button variant="contained" size="small" onClick={handleApplyFilter} sx={{ flex: 1, textTransform: 'none' }}>
             Apply ({selectedLabels.length})
           </Button>
         </Box>

@@ -1,5 +1,6 @@
 {
   "id": "example-collection",
   "name": "Example Collection",
-  "description": "Sample collection metadata for import testing. Files in this folder are imported under this collection."
+  "description": "Sample collection metadata for import testing. Files in this folder are imported under this collection.",
+  "image": "/images/carousel1.jpg"
 }

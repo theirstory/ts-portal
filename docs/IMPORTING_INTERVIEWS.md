@@ -46,14 +46,21 @@ Rules:
 {
   "id": "oral-history",
   "name": "Oral History",
-  "description": "Interviews from the oral history initiative."
+  "description": "Interviews from the oral history initiative.",
+  "image": "/images/collections/oral-history.jpg"
 }
 ```
+
+`image` is optional and supports:
+
+- Local path from `public/`, for example: `"/images/collections/oral-history.jpg"`
+- External URL, for example: `"https://example.com/oral-history.jpg"`
 
 Sample files included in the repo (ignored by default by importer):
 
 - `json/interviews/example-collection/collection.json`
 - `json/interviews/example-collection/interview-sample.json`
+- `json/interviews/example-collection/EXAMPLE-minimum-interview.json`
 
 ## Interview JSON Format
 

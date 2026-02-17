@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Box, Card, CardActionArea, CardContent, Typography } from '@mui/material';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { colors } from '@/lib/theme';
@@ -69,7 +68,7 @@ export const CollectionsSection = () => {
                     overflow: 'hidden',
                     transition: 'transform 300ms ease',
                     backgroundImage: collection.image
-                      ? `url(${collection.image})`
+                      ? `url("${collection.image.replace(/"/g, '\\"')}")`
                       : `
                         radial-gradient(circle at 18% 20%, rgba(255,255,255,0.3), rgba(255,255,255,0) 40%),
                         radial-gradient(circle at 82% 0%, rgba(255,255,255,0.2), rgba(255,255,255,0) 36%),
