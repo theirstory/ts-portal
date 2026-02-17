@@ -58,13 +58,10 @@ open http://localhost:3000
 ```
 
 **Important:** Edit `config.json` to customize your portal with organization name, branding colors, logos, and NER entity labels. See [CONFIGURATION.md](./CONFIGURATION.md) for all configuration options.
-You can enable/disable the title/description readability overlay with `ui.portalHeaderOverlay.enabled` in `config.json`.
 
 **First time:** ~2 minutes (downloads models ~400MB). Subsequent: ~30 seconds.
 
 ## NLP Environment Notes
-
-`docker-compose.yml` loads `nlp-processor/.env` for the NLP service. Missing vars use defaults from `nlp-processor/config.py`.
 
 Default embedding model is `sentence-transformers/LaBSE` (multilingual). If model loading fails or is too heavy, use `sentence-transformers/all-MiniLM-L6-v2` as a lighter fallback.
 
@@ -87,23 +84,21 @@ If you have interviews already uploaded to TheirStory, you can easily obtain the
 ### Importing the Data
 
 ```bash
-# 1. Add your JSON files into interviews folder
+# 1. Add your collection subfolders and interview JSON files under:
 json/interviews/
 
 # 2. Manual import
 docker compose run --rm weaviate-init
 ```
 
-You can import interviews in two ways:
+Recommended approach: create one subfolder per collection and place interview JSON files inside each folder.
 
-1. Default collection: place JSON files directly under `json/interviews/`
-2. Folder-based collections: create subfolders and place JSON files inside each folder
+If you place JSON files directly under `json/interviews/` (without subfolder), they are imported into the `default` collection.
 
 Example:
 
 ```text
 json/interviews/
-├── interview-a.json                   # imported as collection_id=default
 ├── oral-history/
 │   ├── collection.json
 │   └── interview-1.json
@@ -112,7 +107,6 @@ json/interviews/
     └── interview-2.json
 ```
 
-Collection metadata (`id`, `name`, `description`) is read from `collection.json` and stored in both `Testimonies` and `Chunks`.
 See `json/interviews/README.md` and `docs/IMPORTING_INTERVIEWS.md` for full details.
 
 **Process:**
