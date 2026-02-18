@@ -202,48 +202,48 @@ export const SearchTableRow: React.FC<Props> = ({ result, isMobile = false, inde
             audioFileSize={{ width: '40', height: '25' }}
             startTime={start_time}
           />
-
-          {/* Title and basic info */}
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography
-              variant="subtitle1"
-              fontWeight={600}
-              sx={{
-                fontSize: '1rem',
-                lineHeight: 1.3,
-                mb: 0.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-              {interview_title || 'Untitled Interview'}
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              {speaker && (
-                <Typography variant="caption" color="text.secondary">
-                  Speaker: {speaker}
-                </Typography>
-              )}
-              {start_time && end_time && (
-                <Typography variant="caption" color="text.secondary">
-                  Time: {getTimeRange(start_time, end_time)}
-                </Typography>
-              )}
-            </Box>
-          </Box>
         </Box>
 
-        {/* Section */}
-        {section_title && (
-          <Box sx={{ mb: 1.5 }}>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5 }}>
-              Section: {section_title}
-            </Typography>
+        {/* Title and basic info */}
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            sx={{
+              fontSize: '1rem',
+              lineHeight: 1.3,
+              mb: 0.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+            {interview_title || 'Untitled Interview'}
+          </Typography>
+
+          {/* Section */}
+          {section_title && (
+            <Box>
+              <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5 }}>
+                Section: {section_title}
+              </Typography>
+            </Box>
+          )}
+
+          <Box display="flex" justifyContent="space-between" marginBottom="8px">
+            {speaker && (
+              <Typography variant="caption" color="text.secondary">
+                Speaker: {speaker}
+              </Typography>
+            )}
+            {start_time && end_time && (
+              <Typography variant="caption" color="text.secondary">
+                Time: {getTimeRange(start_time, end_time)}
+              </Typography>
+            )}
           </Box>
-        )}
+        </Box>
 
         {/* Excerpt */}
         {transcription && (

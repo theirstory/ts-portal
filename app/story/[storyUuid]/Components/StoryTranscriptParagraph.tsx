@@ -5,7 +5,10 @@ import React, { memo, useEffect, useRef } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { useSearchStore } from '@/app/stores/useSearchStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
+import {
+  scrollElementIntoContainer,
+  scrollElementIntoContainerCenter,
+} from '@/app/utils/scrollElementIntoContainer';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { StoryTranscriptWord } from './StoryTranscriptWord';
 import { StoryTranscriptNERGroupWords } from './StoryTranscriptNERGroupWords';
@@ -36,7 +39,7 @@ export const getSemanticMatchForWord = (semanticMatches: WeaviateGenericObject<C
 };
 
 export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isProgrammaticScrollRef }: Props) => {
-  const DEBUG_TRANSCRIPT_MATCH = true;
+  const MATCH_EPSILON = 0.001;
 
   /**
    * store
@@ -92,7 +95,14 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     }, 120);
 
     setTargetScrollTime(null);
-  }, [targetScrollTime, paragraph.start, paragraph.end, setTargetScrollTime, transcriptTopOffset, isProgrammaticScrollRef]);
+  }, [
+    targetScrollTime,
+    paragraph.start,
+    paragraph.end,
+    setTargetScrollTime,
+    transcriptTopOffset,
+    isProgrammaticScrollRef,
+  ]);
 
   useEffect(() => {
     const scrollContainer = document.getElementById('transcript-panel-content');
@@ -101,13 +111,45 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     if (currentSemanticMatchIndex >= 0 && semanticSearchMatches[currentSemanticMatchIndex]) {
       const currentMatch = semanticSearchMatches[currentSemanticMatchIndex];
       const matchStartTime = currentMatch.properties?.start_time;
+      const matchEndTime = currentMatch.properties?.end_time;
+      const isMatchOverlappingParagraph =
+        matchStartTime !== undefined &&
+        matchEndTime !== undefined &&
+        matchEndTime >= paragraph.start - MATCH_EPSILON &&
+        matchStartTime < paragraph.end + MATCH_EPSILON;
+      const isMatchStartInParagraph =
+        matchStartTime !== undefined && matchStartTime >= paragraph.start && matchStartTime < paragraph.end;
 
-      if (matchStartTime >= paragraph.start && matchStartTime < paragraph.end) {
+      const targetWordInParagraph = wordsInParagraph.find(
+        (word) =>
+          matchStartTime !== undefined &&
+          matchEndTime !== undefined &&
+          word.end >= matchStartTime - MATCH_EPSILON &&
+          word.start <= matchEndTime + MATCH_EPSILON,
+      );
+
+      if (isMatchOverlappingParagraph) {
         const element = paragraphRef.current;
-        if (element) {
+        const targetWordIndex = targetWordInParagraph
+          ? `s-${targetWordInParagraph.section_idx}-p-${targetWordInParagraph.para_idx}-word-${targetWordInParagraph.word_idx}`
+          : null;
+        const targetWordElement = targetWordIndex
+          ? (document.querySelector(`[data-word-index="${targetWordIndex}"]`) as HTMLElement | null)
+          : null;
+        if (!targetWordElement && !isMatchStartInParagraph) {
+          return;
+        }
+        const elementToScroll = targetWordElement ?? element;
+        const isCenteredWordScroll = Boolean(targetWordElement);
+
+        if (elementToScroll) {
           setTimeout(() => {
             isProgrammaticScrollRef.current = true;
-            scrollElementIntoContainer(element, scrollContainer, transcriptTopOffset);
+            if (isCenteredWordScroll) {
+              scrollElementIntoContainerCenter(elementToScroll, scrollContainer);
+            } else {
+              scrollElementIntoContainer(elementToScroll, scrollContainer, transcriptTopOffset);
+            }
             setTimeout(() => {
               isProgrammaticScrollRef.current = false;
             }, 120);
@@ -140,6 +182,8 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     semanticSearchMatches,
     traditionalCurrentMatchIndex,
     traditionalSearchMatches,
+    isProgrammaticScrollRef,
+    wordsInParagraph,
   ]);
 
   // Auto-scroll
@@ -180,51 +224,6 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     isCurrentTimeOutOfView,
     isProgrammaticScrollRef,
     transcriptTopOffset,
-  ]);
-
-  useEffect(() => {
-    if (!DEBUG_TRANSCRIPT_MATCH) return;
-    if (currentSemanticMatchIndex < 0) return;
-
-    const currentMatch = semanticSearchMatches[currentSemanticMatchIndex];
-    const matchStart = currentMatch?.properties?.start_time;
-    const matchEnd = currentMatch?.properties?.end_time;
-    if (matchStart === undefined || matchEnd === undefined) return;
-    if (matchStart < paragraph.start || matchStart >= paragraph.end) return;
-
-    const scoreWordIndex = wordsInParagraph.findIndex((w) => w.start === matchStart);
-    const scoreWord = scoreWordIndex >= 0 ? wordsInParagraph[scoreWordIndex] : null;
-    const previousWord = scoreWordIndex > 0 ? wordsInParagraph[scoreWordIndex - 1] : null;
-
-    const wordState = (w: Word | null) =>
-      !w
-        ? null
-        : {
-            text: w.text,
-            start: w.start,
-            end: w.end,
-            isCurrent: currentTime >= w.start && currentTime <= w.end,
-            deltaToStart: Number((currentTime - w.start).toFixed(3)),
-            deltaToEnd: Number((w.end - currentTime).toFixed(3)),
-          };
-
-    console.log('[TranscriptDebug][ScoreVsCurrent]', {
-      paragraphRange: [paragraph.start, paragraph.end],
-      currentTime,
-      semanticMatchIndex: currentSemanticMatchIndex,
-      matchRange: [matchStart, matchEnd],
-      scoreWordIndex,
-      scoreWord: wordState(scoreWord),
-      previousWord: wordState(previousWord),
-    });
-  }, [
-    DEBUG_TRANSCRIPT_MATCH,
-    currentSemanticMatchIndex,
-    currentTime,
-    paragraph.end,
-    paragraph.start,
-    semanticSearchMatches,
-    wordsInParagraph,
   ]);
 
   /**

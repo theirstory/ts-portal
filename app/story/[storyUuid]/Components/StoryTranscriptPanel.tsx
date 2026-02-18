@@ -125,7 +125,6 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
-          pt: isMobile ? 2.25 : 3.25,
           pr: isMobile ? 0 : 1,
         }}>
         {sections.map((section) => {

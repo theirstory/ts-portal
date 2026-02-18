@@ -139,13 +139,15 @@ export const SearchBox = ({
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={handleKeyDown}
             sx={{
-              bgcolor: colors.background.default,
               mb: 1,
               '& .MuiOutlinedInput-root': {
                 fontSize: '16px',
               },
             }}
             InputProps={{
+              style: {
+                backgroundColor: colors.background.default,
+              },
               endAdornment: (
                 <InputAdornment position="end">
                   {searchTerm && (
@@ -240,9 +242,7 @@ export const SearchBox = ({
                 onKeyDown={handleKeyDown}
                 sx={{
                   bgcolor: colors.background.default,
-                  width: hasMultipleCollections
-                    ? { md: '380px', lg: '440px' }
-                    : { md: '460px', lg: '560px' },
+                  width: hasMultipleCollections ? { md: '380px', lg: '440px' } : { md: '460px', lg: '560px' },
                   borderRadius: '8px',
                 }}
                 InputProps={{

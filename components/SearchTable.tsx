@@ -18,7 +18,7 @@ export const SearchTable = () => {
   if (isMobile) {
     // Mobile Card Layout
     return (
-      <Box sx={{ mt: 2 }} id="search-table-mobile">
+      <Box id="search-table-mobile">
         <Box
           sx={{
             height: 'calc(100vh - 240px)',

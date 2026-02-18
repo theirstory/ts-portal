@@ -82,37 +82,37 @@ export const ListView = () => {
                 }}>
                 {/* Thumbnail */}
                 <VideoThumbnail story={story} fontSize={10} audioFileSize={{ width: '40', height: '25' }} />
+              </Box>
 
-                {/* Title and Duration */}
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography
-                    variant="subtitle1"
-                    fontWeight={600}
-                    sx={{
-                      fontSize: '1.1rem',
-                      lineHeight: 1.3,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      color: 'black',
-                      mb: 0.5,
-                    }}>
-                    {story.properties.interview_title}
-                  </Typography>
+              {/* Title and Duration */}
+              <Box sx={{ minWidth: 0, flex: 1 }} id="title-duration">
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  sx={{
+                    fontSize: '1.1rem',
+                    lineHeight: 1.3,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    color: 'black',
+                    mb: 0.5,
+                  }}>
+                  {story.properties.interview_title}
+                </Typography>
 
-                  <Typography
-                    variant="body2"
-                    fontWeight={500}
-                    sx={{
-                      display: isMobile ? 'none' : 'block',
-                      color: colors.text.secondary,
-                      fontSize: '0.875rem',
-                    }}>
-                    Duration: {durationFormatHandler(story.properties.interview_duration)}
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="body2"
+                  fontWeight={500}
+                  sx={{
+                    display: isMobile ? 'none' : 'block',
+                    color: colors.text.secondary,
+                    fontSize: '0.875rem',
+                  }}>
+                  Duration: {durationFormatHandler(story.properties.interview_duration)}
+                </Typography>
               </Box>
 
               {/* Description */}
