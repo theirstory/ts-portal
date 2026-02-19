@@ -53,7 +53,9 @@ export const AppTopBar = () => {
   return (
     <AppBar
       sx={{
-        position: 'relative',
+        position: 'sticky',
+        top: 0,
+        zIndex: (theme) => theme.zIndex.appBar,
         boxShadow: 'none',
         backgroundColor: 'transparent',
       }}

@@ -12,9 +12,10 @@ export const MainContainer = ({ children }: { children: React.ReactNode }) => {
     <Box
       id="main-container"
       sx={{
-        height: '100vh',
+        height: '100dvh',
         bgcolor: isStoryPage ? colors.background.storyPage : colors.background.mainPage,
         overflow: 'auto',
+        overscrollBehaviorY: 'contain',
         display: 'flex',
         flexDirection: 'column',
       }}>
