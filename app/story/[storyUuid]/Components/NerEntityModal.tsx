@@ -342,7 +342,7 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
 
   const handleCollectionClick = (occurrence: WeaviateGenericObject<Chunks>) => {
     if (occurrence.uuid) {
-      const url = `/story/${occurrence.properties.theirstory_id}?start=${occurrence.properties.start_time}&nerLabel=${entityLabel}`;
+      const url = `/story/${occurrence.properties.theirstory_id}?start=${occurrence.properties.start_time}&end=${occurrence.properties.end_time}&nerLabel=${entityLabel}`;
       window.open(url, '_blank');
       onClose();
     }

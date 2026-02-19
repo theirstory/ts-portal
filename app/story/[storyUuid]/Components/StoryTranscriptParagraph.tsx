@@ -5,10 +5,7 @@ import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { useSearchStore } from '@/app/stores/useSearchStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import {
-  scrollElementIntoContainer,
-  scrollElementIntoContainerCenter,
-} from '@/app/utils/scrollElementIntoContainer';
+import { scrollElementIntoContainer, scrollElementIntoContainerCenter } from '@/app/utils/scrollElementIntoContainer';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { StoryTranscriptWord } from './StoryTranscriptWord';
 import { StoryTranscriptNERGroupWords } from './StoryTranscriptNERGroupWords';
@@ -22,6 +19,7 @@ type Props = {
   paragraph: Paragraph;
   wordsInParagraph: Word[];
   isProgrammaticScrollRef: React.MutableRefObject<boolean>;
+  urlHighlightRange: { start: number; end: number } | null;
 };
 
 const formatTime = (seconds: number): string => {
@@ -40,7 +38,8 @@ export const getSemanticMatchForWord = (semanticMatches: WeaviateGenericObject<C
   });
 };
 
-export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isProgrammaticScrollRef }: Props) => {
+export const StoryTranscriptParagraph = memo(
+  ({ paragraph, wordsInParagraph, isProgrammaticScrollRef, urlHighlightRange }: Props) => {
   const MATCH_EPSILON = 0.001;
 
   /**
@@ -157,16 +156,11 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
           return;
         }
         const elementToScroll = targetWordElement ?? element;
-        const isCenteredWordScroll = Boolean(targetWordElement);
 
         if (elementToScroll) {
           setTimeout(() => {
             isProgrammaticScrollRef.current = true;
-            if (isCenteredWordScroll) {
-              scrollElementIntoContainerCenter(elementToScroll, scrollContainer);
-            } else {
-              scrollElementIntoContainer(elementToScroll, scrollContainer, transcriptTopOffset);
-            }
+            scrollElementIntoContainerCenter(elementToScroll, scrollContainer);
             setTimeout(() => {
               isProgrammaticScrollRef.current = false;
             }, 120);
@@ -220,16 +214,29 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
 
     if (!element || !scrollContainer) return;
 
-    if (!isElementInView(element, scrollContainer)) {
+    const currentWord = wordsInParagraph.find((word, index) => {
+      const nextWord = wordsInParagraph[index + 1];
+      return (
+        playbackTimeInParagraph >= word.start &&
+        (nextWord ? playbackTimeInParagraph < nextWord.start : playbackTimeInParagraph <= word.end)
+      );
+    });
+    const currentWordElement = currentWord
+      ? (document.querySelector(`[data-word-index="${getWordKey(currentWord)}"]`) as HTMLElement | null)
+      : null;
+    const elementToTrack = currentWordElement ?? element;
+
+    if (!isElementInView(elementToTrack, scrollContainer)) {
       isProgrammaticScrollRef.current = true;
 
-      scrollElementIntoContainer(element, scrollContainer, transcriptTopOffset);
+      scrollElementIntoContainer(elementToTrack, scrollContainer, transcriptTopOffset);
 
       setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 100);
     }
   }, [
+    wordsInParagraph,
     playbackTimeInParagraph,
     isPlaying,
     isCurrentTimeOutOfView,
@@ -349,6 +356,7 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
                 isTraditionalMatch={isTraditionalMatch}
                 isCurrentTraditionalMatch={isCurrentTraditionalMatch}
                 isInCurrentSemanticMatch={isInCurrentSemanticMatch}
+                urlHighlightRange={urlHighlightRange}
               />
             </React.Fragment>
           );
@@ -356,6 +364,7 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
       </Box>
     </Box>
   );
-});
+  },
+);
 
 StoryTranscriptParagraph.displayName = 'StoryTranscriptParagraph';

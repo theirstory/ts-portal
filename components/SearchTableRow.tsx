@@ -165,7 +165,7 @@ export const SearchTableRow: React.FC<Props> = ({ result, isMobile = false, inde
   const buildStoryUrl = () => {
     const params = new URLSearchParams();
     params.set('start', start_time.toString());
-
+    params.set('end', end_time.toString());
     if (nerFilters && nerFilters.length > 0) {
       params.set('nerFilters', nerFilters.join(','));
     }

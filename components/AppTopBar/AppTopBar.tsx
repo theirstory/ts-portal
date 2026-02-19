@@ -97,7 +97,7 @@ export const AppTopBar = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
                 <Link
-                  href="/#main-container"
+                  href="/"
                   style={{
                     color: config.theme.colors.primary.contrastText,
                     textDecoration: 'none',
@@ -110,7 +110,7 @@ export const AppTopBar = () => {
                 </Link>
                 {shouldShowCollectionsLink && (
                   <Link
-                    href="/#collections-section"
+                    href="/collections"
                     style={{
                       color: config.theme.colors.primary.contrastText,
                       textDecoration: 'none',

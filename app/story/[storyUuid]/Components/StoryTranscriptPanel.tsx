@@ -5,7 +5,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { StoryTranscriptToolbar } from './StoryTranscriptToolbar';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { StoryTranscriptParagraph } from './StoryTranscriptParagraph';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
 import { useSearchParams } from 'next/navigation';
@@ -41,10 +41,17 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
   const isProgrammaticScrollRef = useRef(false);
 
   /**
+   * state
+   */
+  const [urlHighlightRange, setUrlHighlightRange] = useState<{ start: number; end: number } | null>(null);
+
+  /**
    * variables
    */
   const sections = transcript?.sections ?? [];
   const areAccordionsInitialized = Object.keys(expandedSections).length === sections.length;
+  const startParam = searchParams.get('start');
+  const endParam = searchParams.get('end');
 
   /**
    * effects
@@ -94,12 +101,36 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
 
   useEffect(() => {
     if (!areAccordionsInitialized) return;
-    const startTime = searchParams.get('start');
-    if (startTime) {
-      setTargetScrollTime(Number(startTime));
-      seekTo(Number(startTime));
+    if (!startParam) {
+      setUrlHighlightRange(null);
+      return;
     }
-  }, [searchParams, areAccordionsInitialized, setTargetScrollTime, seekTo]);
+
+    const startTime = Number(startParam);
+    if (Number.isNaN(startTime)) return;
+
+    setTargetScrollTime(startTime);
+    seekTo(startTime);
+
+    if (!endParam) {
+      setUrlHighlightRange(null);
+      return;
+    }
+
+    const endTime = Number(endParam);
+    if (Number.isNaN(endTime) || endTime <= startTime) {
+      setUrlHighlightRange(null);
+      return;
+    }
+
+    setUrlHighlightRange({ start: startTime, end: endTime });
+
+    const timeoutId = setTimeout(() => {
+      setUrlHighlightRange(null);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [areAccordionsInitialized, startParam, endParam, setTargetScrollTime, seekTo]);
 
   if (!areAccordionsInitialized) return null;
 
@@ -160,6 +191,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
                       paragraph={paragraph}
                       wordsInParagraph={wordsInParagraph}
                       isProgrammaticScrollRef={isProgrammaticScrollRef}
+                      urlHighlightRange={urlHighlightRange}
                     />
                   );
                 })}
