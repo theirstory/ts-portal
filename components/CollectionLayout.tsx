@@ -141,7 +141,32 @@ export default function CollectionLayout() {
           {!semanticSearchLoading &&
             !hasSearched &&
             storiesTestimonies?.objects &&
-            storiesTestimonies.objects.length === 0 && <NoInterviewsMessage />}
+            storiesTestimonies.objects.length === 0 &&
+            (currentPage > 1 ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'space-around',
+                  height: '100%',
+                  px: { xs: 2, md: 0 },
+                  py: { xs: 4, md: 8 },
+                }}>
+                <Typography
+                  variant="h6"
+                  color="text.secondary"
+                  sx={{
+                    mb: 2,
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    textAlign: 'center',
+                  }}>
+                  There are no more stories available.
+                </Typography>
+              </Box>
+            ) : (
+              <NoInterviewsMessage />
+            ))}
         </Box>
       </Box>
     </Box>

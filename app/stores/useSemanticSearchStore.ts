@@ -37,6 +37,7 @@ type SemanticSearchStore = {
   currentMatchIndex: number;
   result: WeaviateReturn<Chunks | Testimonies> | null;
   currentPage: number;
+  hasNextStoriesPage: boolean;
   nerFilters: string[];
   collections: CollectionFilterOption[];
   selectedCollectionIds: string[];
@@ -135,6 +136,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
       currentMatchIndex: -1,
       selected_ner_labels: [],
       currentPage: 1,
+      hasNextStoriesPage: false,
       nerFilters: [],
       collections: [],
       selectedCollectionIds: [],
@@ -185,9 +187,21 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             offset,
             selectedCollectionIds,
           );
-          set({ stories: stories, loading: false }, false, 'getAllStories:success');
+          let hasNextStoriesPage = false;
+          if ((stories?.objects?.length ?? 0) === limit) {
+            const nextPageProbe = await getAllStoriesFromCollection(
+              collection,
+              returnProperties,
+              1,
+              offset + limit,
+              selectedCollectionIds,
+            );
+            hasNextStoriesPage = (nextPageProbe?.objects?.length ?? 0) > 0;
+          }
+
+          set({ stories: stories, hasNextStoriesPage, loading: false }, false, 'getAllStories:success');
         } catch {
-          set({ loading: false }, false, 'getAllStories:error');
+          set({ hasNextStoriesPage: false, loading: false }, false, 'getAllStories:error');
         }
       },
 
@@ -556,6 +570,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             currentMatchIndex: -1,
             result: null,
             currentPage: 1,
+            hasNextStoriesPage: false,
             nerFilters: [],
             collections: [],
             selectedCollectionIds: [],

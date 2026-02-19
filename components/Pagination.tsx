@@ -7,15 +7,12 @@ import { SchemaTypes } from '@/types/weaviate';
 import { PAGINATION_ITEMS_PER_PAGE } from '@/app/constants';
 
 export const Pagination = () => {
-  const { currentPage, stories, setCurrentPage, getAllStories, clearSearch } = useSemanticSearchStore();
+  const { currentPage, hasNextStoriesPage, setCurrentPage, getAllStories } = useSemanticSearchStore();
 
-  const totalItems = stories?.objects.length ?? 0;
-  const hasMoreResults = totalItems === PAGINATION_ITEMS_PER_PAGE;
-  const totalPages = hasMoreResults ? currentPage + 1 : currentPage;
+  const totalPages = hasNextStoriesPage ? currentPage + 1 : currentPage;
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
     if (page === currentPage) return;
-    clearSearch();
     setCurrentPage(page);
     getAllStories(
       SchemaTypes.Testimonies,
