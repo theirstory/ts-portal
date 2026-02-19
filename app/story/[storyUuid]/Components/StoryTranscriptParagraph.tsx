@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { useSearchStore } from '@/app/stores/useSearchStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
@@ -30,6 +30,8 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+const getWordKey = (word: Word) => `s-${word.section_idx}-p-${word.para_idx}-word-${word.word_idx}`;
+
 export const getSemanticMatchForWord = (semanticMatches: WeaviateGenericObject<Chunks>[], word: Word) => {
   return semanticMatches.find((match) => {
     const matchStart = match.properties?.start_time;
@@ -49,12 +51,17 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
   const storyHubPage = useSemanticSearchStore((state) => state.storyHubPage);
   const allWords = useSemanticSearchStore((state) => state.allWords);
   const selected_ner_labels = useSemanticSearchStore((state) => state.selected_ner_labels);
+
   const traditionalSearchMatches = useSearchStore((state) => state.matches);
   const traditionalCurrentMatchIndex = useSearchStore((state) => state.currentMatchIndex);
+  const traditionalSearchTerm = useSearchStore((state) => state.searchTerm);
 
   const seekTo = usePlayerStore((state) => state.seekTo);
-  const currentTime = usePlayerStore((state) => state.currentTime);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const playbackTimeInParagraph = usePlayerStore((state) => {
+    const t = state.currentTime;
+    return t >= paragraph.start && t < paragraph.end ? t : null;
+  });
 
   const isCurrentTimeOutOfView = useTranscriptPanelStore((state) => state.isCurrentTimeOutOfView);
   const targetScrollTime = useTranscriptPanelStore((state) => state.targetScrollTime);
@@ -72,6 +79,18 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
   const renderedWordIndexes = new Set<number>();
   const isMobileView = isMobile();
   const transcriptTopOffset = isMobileView ? -44 : -36;
+
+  const hasTraditionalHighlight = traditionalSearchTerm.trim().length > 0;
+  const traditionalMatchSet = useMemo(
+    () => new Set(traditionalSearchMatches.map((match) => getWordKey(match))),
+    [traditionalSearchMatches],
+  );
+  const currentTraditionalMatch = traditionalSearchMatches[traditionalCurrentMatchIndex];
+  const currentTraditionalMatchKey = currentTraditionalMatch ? getWordKey(currentTraditionalMatch) : null;
+
+  const currentSemanticMatch = currentSemanticMatchIndex >= 0 ? semanticSearchMatches[currentSemanticMatchIndex] : null;
+  const currentSemanticStart = currentSemanticMatch?.properties?.start_time;
+  const currentSemanticEnd = currentSemanticMatch?.properties?.end_time;
 
   /**
    * effects
@@ -130,9 +149,7 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
 
       if (isMatchOverlappingParagraph) {
         const element = paragraphRef.current;
-        const targetWordIndex = targetWordInParagraph
-          ? `s-${targetWordInParagraph.section_idx}-p-${targetWordInParagraph.para_idx}-word-${targetWordInParagraph.word_idx}`
-          : null;
+        const targetWordIndex = targetWordInParagraph ? getWordKey(targetWordInParagraph) : null;
         const targetWordElement = targetWordIndex
           ? (document.querySelector(`[data-word-index="${targetWordIndex}"]`) as HTMLElement | null)
           : null;
@@ -161,7 +178,7 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     // Handle traditional search matches
     if (traditionalCurrentMatchIndex >= 0 && traditionalSearchMatches[traditionalCurrentMatchIndex]) {
       const targetWord = traditionalSearchMatches[traditionalCurrentMatchIndex];
-      const targetWordIndex = `s-${targetWord.section_idx}-p-${targetWord.para_idx}-word-${targetWord.word_idx}`;
+      const targetWordIndex = getWordKey(targetWord);
       const targetWordElement = document.querySelector(`[data-word-index="${targetWordIndex}"]`) as HTMLElement | null;
       if (targetWordElement) {
         setTimeout(() => {
@@ -186,11 +203,11 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
     wordsInParagraph,
   ]);
 
-  // Auto-scroll
+  // Auto-scroll only for the active paragraph
   useEffect(() => {
     if (!isPlaying) return;
-
     if (isCurrentTimeOutOfView) return;
+    if (playbackTimeInParagraph === null) return;
 
     const isElementInView = (el: HTMLElement, container: HTMLElement) => {
       const rect = el.getBoundingClientRect();
@@ -203,10 +220,6 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
 
     if (!element || !scrollContainer) return;
 
-    const isCurrentTimeInParagraph = currentTime >= paragraph.start && currentTime < paragraph.end;
-
-    if (!isCurrentTimeInParagraph) return;
-
     if (!isElementInView(element, scrollContainer)) {
       isProgrammaticScrollRef.current = true;
 
@@ -217,9 +230,7 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
       }, 100);
     }
   }, [
-    currentTime,
-    paragraph.start,
-    paragraph.end,
+    playbackTimeInParagraph,
     isPlaying,
     isCurrentTimeOutOfView,
     isProgrammaticScrollRef,
@@ -248,10 +259,16 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
           if (renderedWordIndexes.has(wordIndex)) return null;
 
           const nextWord = wordsInParagraph[wordIndex + 1];
-          const isCurrent =
-            currentTime >= word.start && (nextWord ? currentTime < nextWord.start : currentTime <= word.end);
-
-          const isPast = !isCurrent && currentTime > word.end;
+          const wordKey = getWordKey(word);
+          const isTraditionalMatch = traditionalMatchSet.has(wordKey);
+          const isCurrentTraditionalMatch = isTraditionalMatch && currentTraditionalMatchKey === wordKey;
+          const isInCurrentSemanticMatch =
+            currentSemanticStart !== undefined &&
+            currentSemanticEnd !== undefined &&
+            currentSemanticEnd >= paragraph.start &&
+            currentSemanticStart <= paragraph.end &&
+            word.start >= currentSemanticStart - MATCH_EPSILON &&
+            word.end <= currentSemanticEnd + MATCH_EPSILON;
 
           const nerMatch = ner_data.find(
             (ner: any) =>
@@ -275,13 +292,15 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
               }
             }
 
-            // Check if any of the NER words is currently being spoken
-            const isNerCurrentlyActive = nerWords.some((w) => {
-              const nextWordInNer = nerWords[nerWords.indexOf(w) + 1];
-              return (
-                currentTime >= w.start && (nextWordInNer ? currentTime < nextWordInNer.start : currentTime <= w.end)
-              );
-            });
+            const isNerCurrentlyActive =
+              playbackTimeInParagraph !== null &&
+              nerWords.some((w, idx) => {
+                const nextWordInNer = nerWords[idx + 1];
+                return (
+                  playbackTimeInParagraph >= w.start &&
+                  (nextWordInNer ? playbackTimeInParagraph < nextWordInNer.start : playbackTimeInParagraph <= w.end)
+                );
+              });
 
             return (
               <StoryTranscriptNERGroupWords
@@ -295,8 +314,6 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
             );
           }
 
-          const currentSemanticMatch =
-            currentSemanticMatchIndex >= 0 ? semanticSearchMatches[currentSemanticMatchIndex] : null;
           const isCurrentMatchInParagraph =
             currentSemanticMatch &&
             currentSemanticMatch.properties?.start_time >= paragraph.start &&
@@ -325,7 +342,14 @@ export const StoryTranscriptParagraph = memo(({ paragraph, wordsInParagraph, isP
                   Score: {((currentSemanticMatch?.metadata?.score ?? 0) * 100).toFixed(1)}%
                 </span>
               )}
-              <StoryTranscriptWord word={word} isCurrent={isCurrent} isPast={isPast} paragraph={paragraph} />
+              <StoryTranscriptWord
+                word={word}
+                nextWordStart={nextWord?.start}
+                hasTraditionalHighlight={hasTraditionalHighlight}
+                isTraditionalMatch={isTraditionalMatch}
+                isCurrentTraditionalMatch={isCurrentTraditionalMatch}
+                isInCurrentSemanticMatch={isInCurrentSemanticMatch}
+              />
             </React.Fragment>
           );
         })}
