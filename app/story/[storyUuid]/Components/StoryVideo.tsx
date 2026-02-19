@@ -5,9 +5,9 @@ import React, { useEffect, useRef } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import MuxPlayer from '@mux/mux-player-react';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
 import { throttle } from 'lodash';
-import { colors } from '@/lib/theme';
+import { colors, theme } from '@/lib/theme';
 import { AudioFileWave } from '@/app/assets/svg/AudioFileWave';
 
 export const StoryVideo = () => {
@@ -15,15 +15,15 @@ export const StoryVideo = () => {
   const { setIsPlaying, setPlayerRef, isPlaying, setCurrentTime, setDuration } = usePlayerStore();
 
   const videoRef = useRef<MuxPlayerElement>(null);
-  const hasStartedPlaying = useRef(false);
   const videoSrc = storyHubPage?.properties.video_url;
   const isAudioFile = storyHubPage?.properties.isAudioFile || false;
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
 
   // Throttle the setCurrentTime to avoid performance issues
   const throttledSetCurrentTime = useRef(
     throttle((time: number) => {
       setCurrentTime(time);
-    }, 500), // 500 ms
+    }, 120),
   ).current;
 
   useEffect(() => {
@@ -31,6 +31,19 @@ export const StoryVideo = () => {
       setPlayerRef(videoRef.current);
     }
   }, [setPlayerRef]);
+
+  useEffect(() => {
+    return () => {
+      throttledSetCurrentTime.cancel();
+    };
+  }, [throttledSetCurrentTime]);
+
+  const syncCurrentTime = () => {
+    const time = videoRef.current?.currentTime;
+    if (time != null) {
+      setCurrentTime(time);
+    }
+  };
 
   return (
     <Box position="relative" height="100%" borderRadius={2} overflow="hidden">
@@ -66,20 +79,26 @@ export const StoryVideo = () => {
         zIndex={2}
         sx={{ background: 'transparent' }}>
         <MuxPlayer
+          autoPlay={isMobile} // this is important because will break the word highlighting if the user has to manually start the video on mobile
           ref={videoRef}
           src={videoSrc}
           audio={isAudioFile}
           onPlay={() => {
-            if (!hasStartedPlaying.current) {
-              hasStartedPlaying.current = true;
-              setIsPlaying(true);
-            }
+            setIsPlaying(true);
+            syncCurrentTime();
           }}
           onTimeUpdate={() => {
             const time = videoRef.current?.currentTime;
             if (time != null) {
               throttledSetCurrentTime(time);
             }
+          }}
+          onSeeking={() => {
+            throttledSetCurrentTime.cancel();
+          }}
+          onSeeked={() => {
+            throttledSetCurrentTime.cancel();
+            syncCurrentTime();
           }}
           onLoadedMetadata={() => {
             if (videoRef.current?.duration) {
@@ -91,7 +110,16 @@ export const StoryVideo = () => {
               setDuration(videoRef.current.duration);
             }
           }}
-          onPause={() => setIsPlaying(false)}
+          onPause={() => {
+            throttledSetCurrentTime.cancel();
+            setIsPlaying(false);
+            syncCurrentTime();
+          }}
+          onEnded={() => {
+            throttledSetCurrentTime.cancel();
+            setIsPlaying(false);
+            syncCurrentTime();
+          }}
           onError={(error) => {
             console.warn('Mux Player Error (handled):', error);
             // Attempt to recover from HLS errors
