@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Chip, Typography, IconButton } from '@mui/material';
+import { Box, Chip, Typography, IconButton, useMediaQuery } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
@@ -10,8 +10,12 @@ import { SchemaTypes } from '@/types/weaviate';
 import { PAGINATION_ITEMS_PER_PAGE } from '@/app/constants';
 import { returnedFields } from './SearchBox';
 import { useThreshold } from '@/app/stores/useThreshold';
+import useLayoutState from '@/app/stores/useLayout';
+import { useTheme } from '@mui/material/styles';
 
 export const ActiveFiltersDisplay: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [canScrollFiltersLeft, setCanScrollFiltersLeft] = useState(false);
   const [canScrollFiltersRight, setCanScrollFiltersRight] = useState(false);
   const filtersScrollRef = useRef<HTMLDivElement | null>(null);
@@ -30,6 +34,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
     getAllStories,
     setCurrentPage,
   } = useSemanticSearchStore();
+  const { setIsTopBarCollapsed } = useLayoutState();
   const { minValue, maxValue } = useThreshold();
 
   const selectedCollectionMap = new Map(collections.map((collection) => [collection.id, collection.name]));
@@ -124,6 +129,13 @@ export const ActiveFiltersDisplay: React.FC = () => {
       resizeObserver.disconnect();
     };
   }, [updateFilterScrollButtons, nerFilters.length, selectedCollectionIds.length]);
+
+  useEffect(() => {
+    const hasActiveFilters = nerFilters.length > 0 || selectedCollectionIds.length > 0;
+    if (isMobile && hasActiveFilters) {
+      setIsTopBarCollapsed(true);
+    }
+  }, [isMobile, nerFilters.length, selectedCollectionIds.length, setIsTopBarCollapsed]);
 
   if (nerFilters.length === 0 && selectedCollectionIds.length === 0) {
     return null;
