@@ -149,6 +149,9 @@ sudo bash scripts/deploy/setup-docker-ubuntu.sh
 # Deploy/update
 ./scripts/deploy/deploy-prod.sh
 
+# Site URL after deploy
+# http://YOUR_SERVER_IP:3000
+
 # Optional but recommended: domain + HTTPS + firewall
 # sudo bash scripts/deploy/setup-nginx-ssl.sh YOUR_DOMAIN YOUR_EMAIL 3000
 ```
