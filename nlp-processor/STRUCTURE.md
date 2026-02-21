@@ -36,9 +36,9 @@ Named Entity Recognition processing with GLiNER and spaCy.
 
 ### `chunker.py`
 
-Text chunking utilities for time-based segmentation.
+Sentence-based text chunking using spaCy sentence segmentation.
 
-- `chunk_words_by_time()`: Create time-based chunks with configurable overlap
+- `chunk_words_by_sentences()`: Group whole sentences into chunks within min/max word limits
 
 ### `transformers.py`
 
@@ -70,7 +70,7 @@ FastAPI application with endpoints.
 See `.env.example` for all available configuration options:
 
 - **Weaviate**: `WEAVIATE_HOST_URL`, `WEAVIATE_PORT`, `WEAVIATE_SECURE`
-- **Chunking**: `CHUNK_SECONDS`, `CHUNK_OVERLAP_SECONDS`
+- **Chunking**: `MIN_WORDS_PER_CHUNK`, `MAX_WORDS_PER_CHUNK`, `OVERLAP_SENTENCES`
 - **NER**: `NER_LABELS`, `GLINER_MODEL`, `GLINER_THRESHOLD`, `MIN_TEXT_LENGTH_FOR_NER`
 - **Config**: `CONFIG_PATH`
 
@@ -78,7 +78,7 @@ See `.env.example` for all available configuration options:
 
 1. **API Request** → Receives story payload
 2. **Transform** → Convert API format to sections structure
-3. **Chunk** → Split text into time-based chunks with overlap
+3. **Chunk** → Split text into sentence-based chunks with overlap
 4. **NER** → Extract named entities from each chunk
 5. **Consolidate** → Aggregate NER data into testimony object
 6. **Store** → Write to Weaviate (optional)

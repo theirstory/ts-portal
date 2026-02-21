@@ -8,7 +8,7 @@ from fastapi import FastAPI, Query, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from chunker import chunk_words_by_time
+from chunker import chunk_words_by_sentences
 from config import Config, NER_LABELS
 from embedding_service import LocalEmbedding
 from functools import lru_cache
@@ -64,8 +64,9 @@ async def process_story(
     req: ProcessRequest,
     request: Request,
     write_to_weaviate: bool = Query(True),
-    chunk_seconds: float = Query(Config.DEFAULT_CHUNK_SECONDS),
-    overlap_seconds: float = Query(Config.DEFAULT_CHUNK_OVERLAP_SECONDS),
+    min_words: int = Query(Config.MIN_WORDS_PER_CHUNK),
+    max_words: int = Query(Config.MAX_WORDS_PER_CHUNK),
+    overlap_sentences: int = Query(Config.OVERLAP_SENTENCES),
     run_ner: bool = Query(True),
 ):
     """Process a story with chunking and NER, optionally writing to Weaviate.
@@ -74,8 +75,9 @@ async def process_story(
         req: Request containing story payload
         request: FastAPI request object
         write_to_weaviate: Whether to write results to Weaviate
-        chunk_seconds: Duration of each chunk in seconds
-        overlap_seconds: Overlap between chunks in seconds
+        min_words: Minimum words per chunk (undersized chunks are merged)
+        max_words: Maximum words per chunk (never splits a sentence)
+        overlap_sentences: Sentences repeated from previous chunk for context
         run_ner: Whether to run NER processing
         
     Returns:
@@ -364,8 +366,8 @@ async def process_story(
         else:
             print(f"   ⏭️  NER skipped (run_ner={run_ner})")
         
-        # STEP 2: Process chunking by sections
-        print(f"\n🔪 STARTING CHUNKING (chunk_seconds={chunk_seconds}, overlap={overlap_seconds})...")
+        # STEP 2: Process chunking by sections (sentence-based)
+        print(f"\n🔪 STARTING CHUNKING (min_words={min_words}, max_words={max_words}, overlap_sentences={overlap_sentences})...")
         chunks_objects: List[Dict[str, Any]] = []
         
         # Collect ALL chunks first, then batch generate embeddings
@@ -383,15 +385,11 @@ async def process_story(
                 
                 print(f"     └─ Processing paragraph {para_idx + 1}...")
                 
-                # Chunk words within this paragraph by time (hybrid: time + sentence boundaries)
-                para_chunks = chunk_words_by_time(
-                    para_words, 
-                    chunk_seconds, 
-                    overlap_seconds,
-                    min_words=Config.MIN_WORDS_PER_CHUNK,
-                    max_words=Config.MAX_WORDS_PER_CHUNK,
-                    prefer_sentence_breaks=Config.PREFER_SENTENCE_BREAKS,
-                    lookahead_seconds=Config.LOOKAHEAD_SECONDS
+                para_chunks = chunk_words_by_sentences(
+                    para_words,
+                    min_words=min_words,
+                    max_words=max_words,
+                    overlap_sentences=overlap_sentences,
                 )
                 
                 for word_list in para_chunks:
