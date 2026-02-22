@@ -16,7 +16,7 @@ type SearchState = {
   currentMatchIndex: number;
   isSearching: boolean;
 
-  runSearch: (words: Word[]) => void;
+  runSearch: (words: Word[]) => SearchMatch[];
   setSearchTerm: (term: string) => void;
   setIsSearching: (value: boolean) => void;
   setMatches: (matches: SearchMatch[]) => void;
@@ -51,7 +51,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         currentMatchIndex: -1,
         isSearching: false,
       });
-      return;
+      return [];
     }
 
     const matches: SearchMatch[] = words.filter((word) => word.text.toLowerCase().includes(trimmedTerm));
@@ -61,6 +61,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       currentMatchIndex: matches.length > 0 ? 0 : -1,
       isSearching: false,
     });
+    return matches;
   },
 
   setMatches: (matches: SearchMatch[]) => {
