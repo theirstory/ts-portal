@@ -4,6 +4,7 @@ import { keyframes } from '@emotion/react';
 import usePlayerStore from '@/app/stores/usePlayerStore';
 import { Word } from '@/types/transcription';
 import { colors } from '@/lib/theme';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 type Props = {
   word: Word;
@@ -33,7 +34,7 @@ export const StoryTranscriptWord = memo(
     isInCurrentSemanticMatch,
     urlHighlightRange,
   }: Props) => {
-    const seekTo = usePlayerStore((state) => state.seekTo);
+    const { seekOnly } = useTranscriptNavigation();
     const wordIndex = `s-${word.section_idx}-p-${word.para_idx}-word-${word.word_idx}`;
 
     const wordPlaybackPhase = usePlayerStore(
@@ -57,7 +58,7 @@ export const StoryTranscriptWord = memo(
     return (
       <Box
         component="span"
-        onClick={() => seekTo(word.start)}
+        onClick={() => seekOnly(word.start)}
         data-word-start={word.start}
         data-word-end={word.end}
         data-word-index={wordIndex}

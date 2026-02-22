@@ -4,8 +4,6 @@ import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { Box, CircularProgress, Typography, Tabs, Tab, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import usePlayerStore from '@/app/stores/usePlayerStore';
-import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { StoryVideo } from './StoryVideo';
 import { StoryTranscriptPanel } from './StoryTranscriptPanel';
 import { StoryMetadata } from './StoryMetadata';
@@ -13,9 +11,9 @@ import { StoryMetadataEntity } from './StoryMetadataEntity';
 import { StoryProgressBar } from './StoryProgressBar';
 import { colors } from '@/lib/theme';
 import { SearchType } from '@/types/searchType';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
-  const DESKTOP_PROGRESS_BAR_HEIGHT = 60;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [mobileTabValue, setMobileTabValue] = useState(0);
@@ -30,8 +28,7 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
     setSelectedNerLabels,
     clearStore,
   } = useSemanticSearchStore();
-  const { seekTo } = usePlayerStore();
-  const { setTargetScrollTime } = useTranscriptPanelStore();
+  const { seekAndScroll } = useTranscriptNavigation();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -71,8 +68,7 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
     if (startTime) {
       const time = parseFloat(startTime);
       if (!isNaN(time)) {
-        seekTo(time);
-        setTargetScrollTime(time);
+        seekAndScroll(time);
       }
     }
 
@@ -93,7 +89,7 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
       const mergedLabels = Array.from(new Set([...selected_ner_labels, ...filterArray]));
       setSelectedNerLabels(mergedLabels as any);
     }
-  }, [transcriptData, searchParams, seekTo, setTargetScrollTime, setUpdateSelectedNerLabel, setSelectedNerLabels]);
+  }, [transcriptData, searchParams, seekAndScroll, setUpdateSelectedNerLabel, setSelectedNerLabels]);
 
   const handleMobileTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setMobileTabValue(newValue);

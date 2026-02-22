@@ -10,6 +10,7 @@ import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
 import { useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/theme';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 interface StoryTranscriptPanelProps {
   isMobile?: boolean;
@@ -31,9 +32,9 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
     initializeExpandedSections,
     setIsCurrentTimeOutOfView,
     isCurrentTimeOutOfView,
-    setTargetScrollTime,
   } = useTranscriptPanelStore();
-  const { isPlaying, currentTime, seekTo } = usePlayerStore();
+  const { isPlaying, currentTime } = usePlayerStore();
+  const { seekAndScroll, scrollToTime } = useTranscriptNavigation();
 
   /**
    * refs
@@ -109,8 +110,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
     const startTime = Number(startParam);
     if (Number.isNaN(startTime)) return;
 
-    setTargetScrollTime(startTime);
-    seekTo(startTime);
+    seekAndScroll(startTime);
 
     if (!endParam) {
       setUrlHighlightRange(null);
@@ -130,7 +130,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
     }, 5000);
 
     return () => clearTimeout(timeoutId);
-  }, [areAccordionsInitialized, startParam, endParam, setTargetScrollTime, seekTo]);
+  }, [areAccordionsInitialized, startParam, endParam, seekAndScroll]);
 
   if (!areAccordionsInitialized) return null;
 
@@ -215,7 +215,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
             sx={{ textTransform: 'none' }}
             variant="contained"
             onClick={() => {
-              setTargetScrollTime(currentTime);
+              scrollToTime(currentTime);
               setIsCurrentTimeOutOfView(false);
             }}>
             Resume Auto-Scroll

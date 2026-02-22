@@ -21,7 +21,24 @@ const usePlayerStore = create<PlayerState>((set) => ({
   duration: 0,
   isPlaying: false,
   playerRef: null,
-  setPlay: (play) => set({ play }),
+  setPlay: (play) =>
+    set((state) => {
+      if (state.playerRef) {
+        if (play) {
+          const playResult = state.playerRef.play?.();
+          if (playResult && typeof (playResult as Promise<void>).catch === 'function') {
+            (playResult as Promise<void>).catch(() => {});
+          }
+        } else {
+          state.playerRef.pause?.();
+        }
+      }
+
+      return {
+        play,
+        ...(play ? {} : { isPlaying: false }),
+      };
+    }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),

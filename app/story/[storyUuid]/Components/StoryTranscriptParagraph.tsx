@@ -5,7 +5,7 @@ import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { useSearchStore } from '@/app/stores/useSearchStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import { scrollElementIntoContainer, scrollElementIntoContainerCenter } from '@/app/utils/scrollElementIntoContainer';
+import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { StoryTranscriptWord } from './StoryTranscriptWord';
 import { StoryTranscriptNERGroupWords } from './StoryTranscriptNERGroupWords';
@@ -14,6 +14,7 @@ import { Chunks } from '@/types/weaviate';
 import { Paragraph, Word } from '@/types/transcription';
 import { colors } from '@/lib/theme';
 import { isMobile } from '@/app/utils/util';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 type Props = {
   paragraph: Paragraph;
@@ -55,8 +56,8 @@ export const StoryTranscriptParagraph = memo(
   const traditionalCurrentMatchIndex = useSearchStore((state) => state.currentMatchIndex);
   const traditionalSearchTerm = useSearchStore((state) => state.searchTerm);
 
-  const seekTo = usePlayerStore((state) => state.seekTo);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const { seekOnly } = useTranscriptNavigation();
   const playbackTimeInParagraph = usePlayerStore((state) => {
     const t = state.currentTime;
     return t >= paragraph.start && t < paragraph.end ? t : null;
@@ -80,6 +81,43 @@ export const StoryTranscriptParagraph = memo(
   const transcriptTopOffset = isMobileView ? -44 : -36;
 
   const hasTraditionalHighlight = traditionalSearchTerm.trim().length > 0;
+  const hasSelectedNerLabels = selected_ner_labels.length > 0;
+  const selectedNerLabelSet = useMemo(() => new Set(selected_ner_labels), [selected_ner_labels]);
+
+  const nerMatchByWordIndex = useMemo(() => {
+    if (!hasSelectedNerLabels || ner_data.length === 0 || wordsInParagraph.length === 0) {
+      return new Map<number, any>();
+    }
+
+    const selectedNers = ner_data
+      .filter((ner: any) => selectedNerLabelSet.has(ner.label))
+      .sort((a: any, b: any) => a.start_time - b.start_time);
+
+    if (selectedNers.length === 0) {
+      return new Map<number, any>();
+    }
+
+    const matches = new Map<number, any>();
+    let wordCursor = 0;
+
+    for (const ner of selectedNers) {
+      while (wordCursor < wordsInParagraph.length && wordsInParagraph[wordCursor].end < ner.start_time) {
+        wordCursor++;
+      }
+
+      for (let i = wordCursor; i < wordsInParagraph.length; i++) {
+        const word = wordsInParagraph[i];
+        if (word.start > ner.end_time) break;
+
+        if (word.start >= ner.start_time && word.end <= ner.end_time && !matches.has(i)) {
+          matches.set(i, ner);
+        }
+      }
+    }
+
+    return matches;
+  }, [hasSelectedNerLabels, ner_data, selectedNerLabelSet, wordsInParagraph]);
+
   const traditionalMatchSet = useMemo(
     () => new Set(traditionalSearchMatches.map((match) => getWordKey(match))),
     [traditionalSearchMatches],
@@ -160,7 +198,7 @@ export const StoryTranscriptParagraph = memo(
         if (elementToScroll) {
           setTimeout(() => {
             isProgrammaticScrollRef.current = true;
-            scrollElementIntoContainerCenter(elementToScroll, scrollContainer);
+            scrollElementIntoContainer(elementToScroll, scrollContainer, transcriptTopOffset);
             setTimeout(() => {
               isProgrammaticScrollRef.current = false;
             }, 120);
@@ -277,10 +315,7 @@ export const StoryTranscriptParagraph = memo(
             word.start >= currentSemanticStart - MATCH_EPSILON &&
             word.end <= currentSemanticEnd + MATCH_EPSILON;
 
-          const nerMatch = ner_data.find(
-            (ner: any) =>
-              word.start >= ner.start_time && word.end <= ner.end_time && selected_ner_labels.includes(ner.label),
-          );
+          const nerMatch = nerMatchByWordIndex.get(wordIndex);
 
           const isNerSelected = Boolean(nerMatch);
 
@@ -315,7 +350,7 @@ export const StoryTranscriptParagraph = memo(
                 nerWords={nerWords}
                 label={nerMatch.label}
                 isActive={isNerCurrentlyActive}
-                onClick={() => seekTo(nerMatch.start_time)}
+                onClick={() => seekOnly(nerMatch.start_time)}
                 paragraph={paragraph}
               />
             );
