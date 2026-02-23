@@ -182,6 +182,7 @@ Full guide (DigitalOcean example): **[docs/DEPLOY_PRODUCTION.md](./docs/DEPLOY_P
 ## 📚 Documentation
 
 - **[CONFIGURATION.md](./CONFIGURATION.md)** - Portal configuration, colors, NER labels
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines and CLA signing via CLA Assistant
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Container architecture and services
 - **[docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md)** - JSON format and import process
 - **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** - Environment variables and advanced configuration
