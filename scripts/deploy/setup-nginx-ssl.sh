@@ -19,7 +19,7 @@ fi
 domain="$1"
 email="$2"
 app_port="${3:-3000}"
-server_name="$domain www.$domain"
+server_name="$domain"
 site_file="/etc/nginx/sites-available/ts-portal.conf"
 
 apt update
@@ -56,7 +56,7 @@ ufw allow 'Nginx Full'
 ufw --force enable
 ufw delete allow "$app_port" >/dev/null 2>&1 || true
 
-certbot --nginx --non-interactive --agree-tos --email "$email" --redirect -d "$domain" -d "www.$domain"
+certbot --nginx --non-interactive --agree-tos --email "$email" --redirect -d "$domain"
 certbot renew --dry-run || true
 
 systemctl reload nginx
