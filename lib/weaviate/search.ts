@@ -2,7 +2,7 @@
 import { Chunks, Testimonies, SchemaMap, SchemaTypes } from '@/types/weaviate';
 import { initWeaviateClient } from './client';
 import { FilterValue, QueryProperty } from 'weaviate-client';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export type CollectionFilterOption = {
