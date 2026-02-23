@@ -56,8 +56,21 @@ def _create_single_section(transcript_data: Dict[str, Any]) -> List[Dict[str, An
     
     # Add all paragraphs with word indices
     for para_idx, para in enumerate(transcript_data.get("paragraphs", [])):
+        para_start = para.get("start", 0)
+        para_end = para.get("end", 0)
+        raw_para_words = para.get("words") or []
+        
+        # Some transcripts provide global transcript.words but paragraph.words is null/empty.
+        if raw_para_words:
+            source_words = raw_para_words
+        else:
+            source_words = [
+                word for word in words
+                if para_start <= float(word.get("start", 0) or 0) <= para_end
+            ]
+        
         para_words = []
-        for word_idx, word in enumerate(para.get("words", [])):
+        for word_idx, word in enumerate(source_words):
             word_copy = word.copy()
             word_copy["section_idx"] = 0
             word_copy["para_idx"] = para_idx
@@ -66,8 +79,8 @@ def _create_single_section(transcript_data: Dict[str, Any]) -> List[Dict[str, An
         
         section_para = {
             "speaker": para.get("speaker", "Unknown"),
-            "start": para.get("start", 0),
-            "end": para.get("end", 0),
+            "start": para_start,
+            "end": para_end,
             "words": para_words,
             "ner": []
         }
@@ -98,14 +111,15 @@ def _create_indexed_sections(
     sections = []
     all_words = transcript_data.get("words", [])
     all_paragraphs = transcript_data.get("paragraphs", [])
+    section_metas = _prepare_section_metadata(index.get("metadata", []), all_words)
     
-    for section_idx, section_meta in enumerate(index.get("metadata", [])):
+    for section_idx, section_meta in enumerate(section_metas):
         section = {
             "timestamp": section_meta.get("timecode", "00:00:00"),
             "title": section_meta.get("title", f"Section {section_meta.get('index', 0)}"),
             "synopsis": section_meta.get("synopsis", ""),
             "speaker": "Unknown",
-            "start": section_meta.get("time", {}).get("start", 0),
+            "start": _section_start(section_meta),
             "end": section_meta.get("time", {}).get("end"),
             "paragraphs": []
         }
@@ -113,10 +127,10 @@ def _create_indexed_sections(
         section_start = section["start"]
         
         # Calculate section end time if not provided
-        if section["end"] is None:
+        if section["end"] is None or section["end"] <= section_start:
             section["end"] = _calculate_section_end(
-                section_meta,
-                index.get("metadata", []),
+                section_idx,
+                section_metas,
                 all_words
             )
         
@@ -170,38 +184,74 @@ def _create_indexed_sections(
     return sections
 
 
+def _section_start(section_meta: Dict[str, Any]) -> float:
+    """Read section start time with a safe default."""
+    return float(section_meta.get("time", {}).get("start", 0) or 0)
+
+
+def _prepare_section_metadata(
+    metadata: List[Dict[str, Any]],
+    all_words: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Sort metadata and auto-generate an initial section when needed."""
+    if not metadata:
+        return []
+    
+    sorted_metadata = sorted(metadata, key=_section_start)
+    first_section_start = _section_start(sorted_metadata[0])
+    earliest_word_start = float(all_words[0].get("start", 0) or 0) if all_words else 0
+    
+    # Add an explicit first section when transcript words start before first index section.
+    if earliest_word_start < first_section_start:
+        auto_section = {
+            "title": "First Section (auto-generated)",
+            "timecode": "00:00:00",
+            "time": {
+                "start": 0,
+                "end": first_section_start
+            },
+            "synopsis": "",
+            "notes": "",
+            "keywords": "",
+            "lines": []
+        }
+        sorted_metadata = [auto_section] + sorted_metadata
+        print(
+            "[Transform] Added auto-generated first section: "
+            f"0s - {first_section_start}s"
+        )
+    
+    return sorted_metadata
+
+
 def _calculate_section_end(
-    section_meta: Dict[str, Any],
+    section_position: int,
     all_section_metas: List[Dict[str, Any]],
     all_words: List[Dict[str, Any]]
 ) -> float:
     """Calculate section end time when not explicitly provided.
     
     Args:
-        section_meta: Current section metadata
+        section_position: Current section position in metadata list
         all_section_metas: All section metadata entries
         all_words: All transcript words
         
     Returns:
         Calculated end time in seconds
     """
-    current_index = section_meta.get("index", 0)
+    current_start = _section_start(all_section_metas[section_position])
     
-    # Find the next section
-    next_section = None
-    for meta in all_section_metas:
-        if meta.get("index", 0) > current_index:
-            next_section = meta
-            break
+    # Find the next section with a strictly greater start.
+    for next_position in range(section_position + 1, len(all_section_metas)):
+        next_start = _section_start(all_section_metas[next_position])
+        if next_start > current_start:
+            return next_start
     
-    if next_section:
-        return next_section.get("time", {}).get("start", 0)
-    else:
-        # Use last word's end time as transcript end
-        if all_words:
-            return all_words[-1].get("end", 0)
-        else:
-            return section_meta.get("time", {}).get("start", 0)
+    # Use last word's end time as transcript end.
+    if all_words:
+        return all_words[-1].get("end", 0)
+    
+    return current_start
 
 
 def _extract_section_words(
