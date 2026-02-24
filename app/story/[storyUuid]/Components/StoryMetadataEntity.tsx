@@ -7,12 +7,12 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { getNerColor } from '@/config/organizationConfig';
 import { groupBy } from 'lodash';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { NerEntityModal } from './NerEntityModal';
 import { colors, theme } from '@/lib/theme';
 import { getNerEntityRecordingCounts } from '@/lib/weaviate/search';
 
 const recordingCountKey = (text: string, label: string) => `${text.toLowerCase()}|${label}`;
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 export const StoryMetadataEntity = () => {
   /**
@@ -24,8 +24,8 @@ export const StoryMetadataEntity = () => {
    * store
    */
   const { storyHubPage, selected_ner_labels, setUpdateSelectedNerLabel } = useSemanticSearchStore();
-  const { seekTo, currentTime } = usePlayerStore();
-  const { setTargetScrollTime } = useTranscriptPanelStore();
+  const { currentTime } = usePlayerStore();
+  const { seekAndScroll } = useTranscriptNavigation();
 
   /**
    * state
@@ -77,8 +77,7 @@ export const StoryMetadataEntity = () => {
     const targetInstance = nextInstance || deduplicatedInstances[0];
 
     if (targetInstance) {
-      seekTo(targetInstance.start_time);
-      setTargetScrollTime(targetInstance.start_time);
+      seekAndScroll(targetInstance.start_time);
     }
   };
 

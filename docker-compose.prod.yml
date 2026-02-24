@@ -23,8 +23,6 @@ services:
       context: ./nlp-processor
       dockerfile: Dockerfile
     container_name: nlp-processor-prod
-    environment:
-      PYTHONUNBUFFERED: "1"
     env_file:
       - ./nlp-processor/.env
     depends_on:

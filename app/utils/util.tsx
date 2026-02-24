@@ -25,19 +25,20 @@ export const isMobile = () => {
   return false;
 };
 
-const formatTime = (seconds: number) => {
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
-
 export const getTimeRange = (startTime: number, endTime: number) => {
   const timeRange = startTime > 0 || endTime > 0 ? `${formatTime(startTime)} - ${formatTime(endTime)}` : '';
 
   return timeRange;
+};
+
+export const formatTime = (seconds: number): string => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  const hoursPrefix = hrs > 0 ? `${hrs}:` : '';
+  const minutesPart = hrs > 0 ? mins.toString().padStart(2, '0') : mins.toString();
+  const secondsPart = secs.toString().padStart(2, '0');
+
+  return `${hoursPrefix}${minutesPart}:${secondsPart}`;
 };

@@ -7,8 +7,9 @@ import usePlayerStore from '@/app/stores/usePlayerStore';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { getNerColor } from '@/config/organizationConfig';
 import { NerLabel } from '@/types/ner';
-import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { colors, theme } from '@/lib/theme';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { formatTime } from '@/app/utils/util';
 
 interface ChapterMarker {
   time: number;
@@ -27,9 +28,9 @@ interface NerMarker {
 }
 
 export const StoryProgressBar = () => {
-  const { currentTime, seekTo, duration } = usePlayerStore();
+  const { currentTime, duration } = usePlayerStore();
   const { transcript, storyHubPage, selected_ner_labels } = useSemanticSearchStore();
-  const { setTargetScrollTime } = useTranscriptPanelStore();
+  const { seekOnly, seekAndScroll } = useTranscriptNavigation();
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
   const [hoveredNer, setHoveredNer] = useState<NerMarker | null>(null);
   const [hoveredChapter, setHoveredChapter] = useState<ChapterMarker | null>(null);
@@ -78,9 +79,9 @@ export const StoryProgressBar = () => {
     const clickX = event.clientX - rect.left;
     const percentage = (clickX / rect.width) * 100;
     const newTime = (percentage / 100) * duration;
+    const boundedTime = Math.max(0, Math.min(newTime, duration));
 
-    setTargetScrollTime(Math.max(0, Math.min(newTime, duration)));
-    seekTo(Math.max(0, Math.min(newTime, duration)));
+    seekAndScroll(boundedTime);
   };
 
   // Handle mouse move for hover time
@@ -121,13 +122,6 @@ export const StoryProgressBar = () => {
     setHoveredTime(null);
     setHoveredNer(null);
     setHoveredChapter(null);
-  };
-
-  // Format time helper
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -234,7 +228,7 @@ export const StoryProgressBar = () => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  seekTo(chapter.time);
+                  seekOnly(chapter.time);
                 }}
                 onMouseEnter={() => setHoveredChapter(chapter)}
                 onMouseLeave={() => setHoveredChapter(null)}
@@ -263,7 +257,7 @@ export const StoryProgressBar = () => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  seekTo(ner.startTime);
+                  seekOnly(ner.startTime);
                 }}
                 onMouseEnter={() => setHoveredNer(ner)}
                 onMouseLeave={() => setHoveredNer(null)}

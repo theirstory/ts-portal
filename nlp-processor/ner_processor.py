@@ -181,7 +181,6 @@ def safe_ner_process(
     Returns:
         Tuple of (entities list, reason for empty result)
     """
-    t0 = time.time()
     t = (text or "").strip()
     if len(t) < min_length:
         return [], "too_short"
@@ -210,94 +209,8 @@ def safe_ner_process(
         
         return [], "no_entities"
     
-    except IndexError as e:
-        msg = str(e)
-        # Handle GLiNER bug: "max(): Expected reduction dim ... non-zero size."
-        if any(keyword in msg for keyword in ["Expected reduction dim", "non-zero size", "max():"]):
-            return [], "gliner_bug_empty"
+    except IndexError:
         return [], "gliner_bug_empty"
-
-
-def safe_ner_process_batch(
-    texts: List[str],
-    min_length: int = Config.MIN_TEXT_LENGTH_FOR_NER
-) -> List[Tuple[List[Any], NerEmptyReason]]:
-    """Process multiple texts for NER in batch with error handling.
-    
-    This is significantly faster than processing texts one by one as GLiNER
-    can process multiple texts in parallel.
-    
-    Args:
-        texts: List of texts to process
-        min_length: Minimum text length required for processing
-        
-    Returns:
-        List of (entities list, reason) tuples, one per input text
-    """
-    if not texts:
-        return []
-    
-    t0 = time.time()
-    ensure_ner_pipe()
-    
-    results: List[Tuple[List[Any], NerEmptyReason]] = []
-    
-    # Filter texts and track indices
-    valid_texts = []
-    valid_indices = []
-    
-    for idx, text in enumerate(texts):
-        t = (text or "").strip()
-        if len(t) < min_length:
-            results.append(([], "too_short"))
-        else:
-            valid_texts.append(t)
-            valid_indices.append(idx)
-            results.append(([], "no_entities"))  # Placeholder
-    
-    if not valid_texts:
-        return results
-    
-    try:
-        # Process all valid texts in batch using spaCy's pipe()
-        docs = list(nlp.pipe(valid_texts, batch_size=32))
-                
-        # Extract entities from each doc
-        for doc_idx, doc in enumerate(docs):
-            original_idx = valid_indices[doc_idx]
-            
-            # Primary method: doc.ents
-            ents = list(doc.ents) if doc.ents else []
-            if ents:
-                results[original_idx] = (ents, "ok")
-                continue
-            
-            # Fallback: doc.spans
-            spans_as_ents: List[Any] = []
-            for _, spans in doc.spans.items():
-                if not spans:
-                    continue
-                for span in spans:
-                    if getattr(span, "label_", None) and (span.text or "").strip():
-                        spans_as_ents.append(span)
-            
-            if spans_as_ents:
-                results[original_idx] = (spans_as_ents, "ok")
-            else:
-                results[original_idx] = ([], "no_entities")
-    
-    except IndexError as e:
-        # If batch processing fails, mark all as gliner_bug
-        for idx in valid_indices:
-            results[idx] = ([], "gliner_bug_empty")
-    
-    except Exception as e:
-        print(f"[NER] ⚠️  Batch NER error: {e}")
-        # If batch processing fails, mark all as errors
-        for idx in valid_indices:
-            results[idx] = ([], "gliner_bug_empty")
-    
-    return results
 
 
 def build_word_char_spans(words: List[Dict[str, Any]]) -> List[Tuple[int, int, Dict[str, Any]]]:

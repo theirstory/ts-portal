@@ -94,9 +94,6 @@ GLINER_MODEL=urchade/gliner_multi-v2.1
 # Confidence threshold (0.0-1.0)
 GLINER_THRESHOLD=0.3
 
-# Internal chunk size for NER processing
-GLINER_INTERNAL_CHUNK_SIZE=250
-
 # Minimum text length to run NER
 MIN_TEXT_LENGTH_FOR_NER=50
 ```

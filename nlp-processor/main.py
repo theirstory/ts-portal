@@ -4,7 +4,7 @@ import time
 import traceback
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, Query, Request, HTTPException
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -62,7 +62,6 @@ app = FastAPI(title="NLP Processor (Chunks + NER)")
 @app.post("/process-story")
 async def process_story(
     req: ProcessRequest,
-    request: Request,
     write_to_weaviate: bool = Query(True),
     chunk_seconds: float = Query(Config.DEFAULT_CHUNK_SECONDS),
     overlap_seconds: float = Query(Config.DEFAULT_CHUNK_OVERLAP_SECONDS),
@@ -72,7 +71,6 @@ async def process_story(
     
     Args:
         req: Request containing story payload
-        request: FastAPI request object
         write_to_weaviate: Whether to write results to Weaviate
         chunk_seconds: Duration of each chunk in seconds
         overlap_seconds: Overlap between chunks in seconds
@@ -251,7 +249,6 @@ async def process_story(
             
             # Batch paragraphs by token count
             current_batch = []
-            current_batch_words = []
             batch_num = 0
             
             for para_info in all_paragraphs:

@@ -23,6 +23,7 @@ import usePlayerStore from '@/app/stores/usePlayerStore';
 import { colors } from '@/lib/theme';
 import { StoryTranscriptToolbarMenuMobile } from './StoryTranscriptToolbarMenuMobile';
 import { MatchNavigation } from './StoryTranscriptToolbarMatchNavigation';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 interface StoryTranscriptToolbarProps {
   isMobile?: boolean;
@@ -33,6 +34,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
   const [canScrollFiltersLeft, setCanScrollFiltersLeft] = useState(false);
   const [canScrollFiltersRight, setCanScrollFiltersRight] = useState(false);
   const filtersScrollRef = useRef<HTMLDivElement | null>(null);
+  const previousSemanticSearchingRef = useRef(false);
 
   const runHybridSearchForStoryId = useSemanticSearchStore((state) => state.runHybridSearchForStoryId);
   const runVectorSearchForStoryId = useSemanticSearchStore((state) => state.runVectorSearchForStoryId);
@@ -44,6 +46,8 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
   const searchType = useSemanticSearchStore((state) => state.searchType);
   const transcript = useSemanticSearchStore((state) => state.transcript);
   const isSemanticSearching = useSemanticSearchStore((state) => state.isSemanticSearching);
+  const semanticMatches = useSemanticSearchStore((state) => state.matches);
+  const currentSemanticMatchIndex = useSemanticSearchStore((state) => state.currentMatchIndex);
   const setNerFilters = useSemanticSearchStore((state) => state.setNerFilters);
   const nerFilters = useSemanticSearchStore((state) => state.nerFilters);
 
@@ -56,13 +60,15 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
     clearSearch: clearTraditionalSearch,
   } = useSearchStore();
 
-  const { expandAll, collapseAll, areAllExpanded, setTargetScrollTime } = useTranscriptPanelStore();
+  const { expandAll, collapseAll, areAllExpanded } = useTranscriptPanelStore();
   const { minValue, maxValue } = useThreshold();
-  const { seekTo } = usePlayerStore();
+  const { isPlaying, setPlay } = usePlayerStore();
+  const { seekAndScroll } = useTranscriptNavigation();
 
   const runNerSearch = useCallback(
     (selectedLabels: NerLabel[]) => {
       if (!transcript?.sections || !allWords) return;
+      if (isPlaying) setPlay(false);
 
       // 1. Flatten NER
       const nerInstances: any[] = [];
@@ -125,8 +131,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
 
       if (unique.length > 0) {
         const firstMatch = unique[0];
-        seekTo(firstMatch.start);
-        setTargetScrollTime(firstMatch.start);
+        seekAndScroll(firstMatch.start);
       }
     },
     [
@@ -136,21 +141,28 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
       setTraditionalSearchTerm,
       setTraditionalMatches,
       setTraditionalIsSearching,
-      seekTo,
-      setTargetScrollTime,
+      seekAndScroll,
+      isPlaying,
+      setPlay,
     ],
   );
 
   const runTraditionalSearch = useCallback(
     (term: string) => {
       if (!transcript?.sections || !allWords) return;
+      if (isPlaying) setPlay(false);
 
       setIsSemanticSearching(false);
       setTraditionalSearchTerm(term);
       setTraditionalMatches([]);
       setTraditionalIsSearching(true);
-
-      runSearch(allWords);
+      setTimeout(() => {
+        const matches = runSearch(allWords);
+        const firstMatch = matches[0];
+        if (firstMatch) {
+          seekAndScroll(firstMatch.start);
+        }
+      }, 0);
     },
     [
       allWords,
@@ -159,9 +171,27 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
       setTraditionalIsSearching,
       setTraditionalMatches,
       setTraditionalSearchTerm,
+      seekAndScroll,
+      isPlaying,
+      setPlay,
       transcript?.sections,
     ],
   );
+
+  useEffect(() => {
+    const wasSemanticSearching = previousSemanticSearchingRef.current;
+    if (wasSemanticSearching && !isSemanticSearching) {
+      const targetMatch =
+        currentSemanticMatchIndex >= 0 ? semanticMatches[currentSemanticMatchIndex] : semanticMatches[0];
+      const startTime = targetMatch?.properties?.start_time;
+
+      if (typeof startTime === 'number') {
+        seekAndScroll(startTime);
+      }
+    }
+
+    previousSemanticSearchingRef.current = isSemanticSearching;
+  }, [isSemanticSearching, semanticMatches, currentSemanticMatchIndex, seekAndScroll]);
 
   useEffect(() => {
     const handleNerFilterSearch = (event: CustomEvent) => {
@@ -233,6 +263,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
   const runSemanticSearch = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
+    if (isPlaying) setPlay(false);
 
     // Avoid traditional highlights overriding semantic (blue) match highlighting.
     clearTraditionalSearch();

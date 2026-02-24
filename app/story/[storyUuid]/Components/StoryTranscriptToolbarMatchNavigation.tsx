@@ -8,7 +8,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { useSearchStore } from '@/app/stores/useSearchStore';
-import usePlayerStore from '@/app/stores/usePlayerStore';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 
 export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
   // Semantic
@@ -23,7 +23,7 @@ export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
   const traditionalNextMatch = useSearchStore((s) => s.nextMatch);
   const traditionalPreviousMatch = useSearchStore((s) => s.previousMatch);
 
-  const { seekTo } = usePlayerStore();
+  const { seekOnly } = useTranscriptNavigation();
 
   const hasSemantic = matches.length > 0;
   const hasTraditional = !hasSemantic && traditionalMatches.length > 0;
@@ -41,12 +41,25 @@ export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
       nextMatch();
 
       const startTime = next?.properties?.start_time;
-      if (startTime) seekTo(startTime);
+      seekOnly(startTime);
       return;
     }
 
+    const nextTraditionalIndex = (traditionalCurrentMatchIndex + 1) % traditionalMatches.length;
+    const nextTraditionalMatch = traditionalMatches[nextTraditionalIndex];
     traditionalNextMatch();
-  }, [total, hasSemantic, currentMatchIndex, matches, nextMatch, seekTo, traditionalNextMatch]);
+    seekOnly(nextTraditionalMatch?.start);
+  }, [
+    total,
+    hasSemantic,
+    currentMatchIndex,
+    matches,
+    nextMatch,
+    seekOnly,
+    traditionalCurrentMatchIndex,
+    traditionalMatches,
+    traditionalNextMatch,
+  ]);
 
   const handlePrevious = useCallback(() => {
     if (total === 0) return;
@@ -58,12 +71,26 @@ export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
       previousMatch();
 
       const startTime = prev?.properties?.start_time;
-      if (startTime) seekTo(startTime);
+      seekOnly(startTime);
       return;
     }
 
+    const previousTraditionalIndex =
+      traditionalCurrentMatchIndex <= 0 ? traditionalMatches.length - 1 : traditionalCurrentMatchIndex - 1;
+    const previousTraditionalMatch = traditionalMatches[previousTraditionalIndex];
     traditionalPreviousMatch();
-  }, [total, hasSemantic, currentMatchIndex, matches, previousMatch, seekTo, traditionalPreviousMatch]);
+    seekOnly(previousTraditionalMatch?.start);
+  }, [
+    total,
+    hasSemantic,
+    currentMatchIndex,
+    matches,
+    previousMatch,
+    seekOnly,
+    traditionalCurrentMatchIndex,
+    traditionalMatches,
+    traditionalPreviousMatch,
+  ]);
 
   if (!hasSemantic && !hasTraditional) return null;
 

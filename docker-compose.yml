@@ -48,8 +48,6 @@ services:
     container_name: nlp-processor
     ports:
       - "7070:7070"
-    environment:
-      PYTHONUNBUFFERED: "1"
     env_file:
       - ./nlp-processor/.env
     depends_on:

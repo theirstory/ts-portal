@@ -21,8 +21,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
-import usePlayerStore from '@/app/stores/usePlayerStore';
-import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import { getNerColor, getNerDisplayName } from '@/config/organizationConfig';
 import {
   searchNerEntitiesAcrossCollection,
@@ -32,7 +30,8 @@ import { WeaviateGenericObject } from 'weaviate-client';
 import { Chunks } from '@/types/weaviate';
 import { colors } from '@/lib/theme';
 import { Word } from '@/types/transcription';
-import { formatTime } from '@/app/utils/formatTime';
+import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { formatTime } from '@/app/utils/util';
 
 type HighlightPart = string | { highlight: true; text: string };
 
@@ -256,8 +255,7 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
   const [projectRecordingCount, setProjectRecordingCount] = useState<number | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const { storyHubPage, setUpdateSelectedNerLabel, selected_ner_labels, allWords } = useSemanticSearchStore();
-  const { seekTo } = usePlayerStore();
-  const { setTargetScrollTime } = useTranscriptPanelStore();
+  const { seekAndScroll } = useTranscriptNavigation();
   const nerLabel = entityLabel as (typeof selected_ner_labels)[number];
 
   const labelColor = useMemo(() => getNerColor(entityLabel), [entityLabel]);
@@ -350,8 +348,7 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
       setUpdateSelectedNerLabel(nerLabel);
     }
 
-    seekTo(occurrence.start_time);
-    setTargetScrollTime(occurrence.start_time);
+    seekAndScroll(occurrence.start_time);
 
     onClose();
   };
