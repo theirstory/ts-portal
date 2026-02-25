@@ -37,7 +37,6 @@ class Config:
     # GLiNER Model Configuration
     GLINER_MODEL = os.getenv("GLINER_MODEL", "urchade/gliner_multi-v2.1")
     GLINER_THRESHOLD = float(os.getenv("GLINER_THRESHOLD", "0.3"))
-    GLINER_INTERNAL_CHUNK_SIZE = int(os.getenv("GLINER_INTERNAL_CHUNK_SIZE", "250"))
     GLINER_LOAD_TIMEOUT_SECONDS = int(
         os.getenv("GLINER_LOAD_TIMEOUT_SECONDS", "240")
     )

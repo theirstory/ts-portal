@@ -9,6 +9,7 @@ import { getNerColor } from '@/config/organizationConfig';
 import { NerLabel } from '@/types/ner';
 import { colors, theme } from '@/lib/theme';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { formatTime } from '@/app/utils/util';
 
 interface ChapterMarker {
   time: number;
@@ -121,13 +122,6 @@ export const StoryProgressBar = () => {
     setHoveredTime(null);
     setHoveredNer(null);
     setHoveredChapter(null);
-  };
-
-  // Format time helper
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (

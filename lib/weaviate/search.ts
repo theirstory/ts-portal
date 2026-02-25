@@ -239,97 +239,25 @@ export async function hybridSearch<T extends SchemaTypes>(
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
   const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters);
 
-  // 1) BM25
-  const bm25Res = await myCollection.query.bm25(searchTerm, {
-    limit,
-    offset,
-    returnMetadata: ['score'],
-    filters: combinedFilter,
-    returnProperties,
-  });
-
-  // normalize score bm25 a 0..1
-  const bmScores = bm25Res.objects.map((o) => o.metadata?.score ?? 0);
-  const bmMax = Math.max(...bmScores, 0);
-  const bmMin = Math.min(...bmScores, 0);
-
-  const bmMap = new Map<string, number>();
-  for (const obj of bm25Res.objects) {
-    const id = (obj as any).uuid ?? (obj as any).id ?? '';
-    const raw = obj.metadata?.score ?? 0;
-    const norm = bmMax === bmMin ? 1 : (raw - bmMin) / (bmMax - bmMin);
-    if (id) bmMap.set(id, norm);
-  }
-
-  // 2) Vector search (nearVector) using local embedding
   const vector = await getLocalEmbedding(searchTerm);
-  const vecRes = await myCollection.query.nearVector(vector, {
+  const response = await myCollection.query.hybrid(searchTerm, {
+    vector,
+    alpha: 0.55,
+    fusionType: 'RelativeScore',
     limit,
     offset,
-    returnMetadata: ['distance', 'certainty'],
+    returnMetadata: ['score', 'distance', 'certainty'],
     filters: combinedFilter,
     returnProperties,
   });
 
-  // Convert certainty to 0..1 (usually already 0..1)
-  const vecMap = new Map<string, number>();
-  for (const obj of vecRes.objects) {
-    const id = (obj as any).uuid ?? (obj as any).id ?? '';
-    const certainty = obj.metadata?.certainty ?? 0;
-    if (id) vecMap.set(id, certainty);
-  }
-
-  // 3) Merge with combined score
-  // We combine both scores into a single one. If only one exists, use it fully.
-  // weights: adjust as desired (e.g. 0.55 vector / 0.45 bm25)
-  const hasBm25 = bm25Res.objects.length > 0;
-
-  const W_VEC = hasBm25 ? 0.55 : 1;
-  const W_BM25 = hasBm25 ? 0.45 : 0;
-
-  const mergedById = new Map<string, any>();
-
-  const upsert = (obj: any) => {
-    const id = obj?.uuid ?? obj?.id ?? obj?.metadata?.id ?? '';
-    if (!id) return;
-
-    const bm = bmMap.get(id) ?? 0;
-    const vec = vecMap.get(id) ?? obj?.metadata?.certainty ?? 0; // fallback al certainty real si existe
-    const combined = W_VEC * vec + W_BM25 * bm;
-
-    const prev = mergedById.get(id);
-    if (!prev || (prev.metadata?.score ?? 0) < combined) {
-      mergedById.set(id, {
-        ...obj,
-        metadata: {
-          ...(obj.metadata ?? {}),
-          score: combined,
-          bm25_score: bm,
-          vector_score: vec,
-        },
-      });
-    }
-  };
-
-  bm25Res.objects.forEach(upsert);
-  vecRes.objects.forEach(upsert);
-
-  // sort by combined score descending
-  let merged = Array.from(mergedById.values()).sort((a, b) => (b.metadata?.score ?? 0) - (a.metadata?.score ?? 0));
-
-  const scoresDebug = merged.map((x) => x?.metadata?.score ?? 0);
-  const maxCombined = Math.max(...scoresDebug, 0);
-  console.log('[hybridSearch] combined score max:', maxCombined, 'minValue:', minValue);
-
-  // apply min/max on combined score (0..1)
-  merged = merged.filter((item) => {
+  const filteredObjects = response.objects.filter((item) => {
     const score = item?.metadata?.score ?? 0;
     return (minValue === undefined || score >= minValue) && (maxValue === undefined || score <= maxValue);
   });
 
-  // dedupe by start_time
   const seen = new Set<number>();
-  const uniqueByStartTime = merged.filter((item) => {
+  const uniqueByStartTime = filteredObjects.filter((item) => {
     const start = (item.properties as any)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
@@ -338,7 +266,7 @@ export async function hybridSearch<T extends SchemaTypes>(
   });
 
   return {
-    ...vecRes,
+    ...response,
     objects: uniqueByStartTime.slice(0, limit),
   };
 }
@@ -425,85 +353,23 @@ export async function hybridSearchForStoryId<T extends SchemaTypes>(
   const combinedFilter: FilterValue =
     filtersArray.length > 1 ? { operator: 'And', filters: filtersArray, value: true } : filtersArray[0];
 
-  // 1) BM25
-  const bm25Res = await myCollection.query.bm25(searchTerm, {
-    limit,
-    returnMetadata: ['score'],
-    filters: combinedFilter,
-  });
-
-  // Normalize BM25 scores to 0..1
-  const bmScores = bm25Res.objects.map((o) => o.metadata?.score ?? 0);
-  const bmMax = Math.max(...bmScores, 0);
-  const bmMin = Math.min(...bmScores, 0);
-
-  const bmMap = new Map<string, number>();
-  for (const obj of bm25Res.objects) {
-    const id = (obj as any).uuid ?? (obj as any).id ?? '';
-    const raw = obj.metadata?.score ?? 0;
-    const norm = bmMax === bmMin ? 1 : (raw - bmMin) / (bmMax - bmMin);
-    if (id) bmMap.set(id, norm);
-  }
-
-  // 2) Vector search using local embedding
   const vector = await getLocalEmbedding(searchTerm);
-  const vecRes = await myCollection.query.nearVector(vector, {
+  const response = await myCollection.query.hybrid(searchTerm, {
+    vector,
+    alpha: 0.55,
+    fusionType: 'RelativeScore',
     limit,
-    returnMetadata: ['distance', 'certainty'],
+    returnMetadata: ['score', 'distance', 'certainty'],
     filters: combinedFilter,
   });
 
-  const vecMap = new Map<string, number>();
-  for (const obj of vecRes.objects) {
-    const id = (obj as any).uuid ?? (obj as any).id ?? '';
-    const certainty = obj.metadata?.certainty ?? 0;
-    if (id) vecMap.set(id, certainty);
-  }
-
-  // 3) Merge both searches with weighted scores
-  const hasBm25 = bm25Res.objects.length > 0;
-  const W_VEC = hasBm25 ? 0.55 : 1;
-  const W_BM25 = hasBm25 ? 0.45 : 0;
-
-  const mergedById = new Map<string, any>();
-
-  const upsert = (obj: any) => {
-    const id = obj?.uuid ?? obj?.id ?? '';
-    if (!id) return;
-
-    const bm = bmMap.get(id) ?? 0;
-    const vec = vecMap.get(id) ?? obj?.metadata?.certainty ?? 0;
-    const combined = W_VEC * vec + W_BM25 * bm;
-
-    const prev = mergedById.get(id);
-    if (!prev || (prev.metadata?.score ?? 0) < combined) {
-      mergedById.set(id, {
-        ...obj,
-        metadata: {
-          ...(obj.metadata ?? {}),
-          score: combined,
-          bm25_score: bm,
-          vector_score: vec,
-        },
-      });
-    }
-  };
-
-  bm25Res.objects.forEach(upsert);
-  vecRes.objects.forEach(upsert);
-
-  // Sort by combined score descending
-  let merged = Array.from(mergedById.values()).sort((a, b) => (b.metadata?.score ?? 0) - (a.metadata?.score ?? 0));
-
-  // Apply min/max filters
-  merged = merged.filter((item) => {
+  const filteredObjects = response.objects.filter((item) => {
     const score = item?.metadata?.score ?? 0;
     return (minValue === undefined || score >= minValue) && (maxValue === undefined || score <= maxValue);
   });
 
-  // Dedupe by start_time
   const seen = new Set<number>();
-  const uniqueByStartTime = merged.filter((item) => {
+  const uniqueByStartTime = filteredObjects.filter((item) => {
     const start = (item.properties as any)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
@@ -512,7 +378,7 @@ export async function hybridSearchForStoryId<T extends SchemaTypes>(
   });
 
   return {
-    ...vecRes,
+    ...response,
     objects: uniqueByStartTime.slice(0, limit),
   };
 }

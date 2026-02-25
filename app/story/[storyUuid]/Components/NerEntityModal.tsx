@@ -24,8 +24,8 @@ import { WeaviateGenericObject } from 'weaviate-client';
 import { Chunks } from '@/types/weaviate';
 import { colors } from '@/lib/theme';
 import { Word } from '@/types/transcription';
-import { formatTime } from '@/app/utils/formatTime';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { formatTime } from '@/app/utils/util';
 
 type HighlightPart = string | { highlight: true; text: string };
 
