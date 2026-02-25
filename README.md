@@ -14,7 +14,7 @@ A complete system to archive, process, and search video/audio interviews with th
 - **Multi-format**: Video and audio with synchronized transcriptions
 - **Live Highlighting**: Entities highlighted with clickable timestamps
 - **Multi-organization**: Centralized configuration system
-- **Docker**: Local deployment or cloud Weaviate connection
+- **Docker**: Local deployment or cloud Weaviate connection.
 
 ## 🛠️ Tech Stack
 
