@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -16,6 +17,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import CircularProgress from '@mui/material/CircularProgress';
 import { IndexesListView } from '@/components/IndexesListView';
 import { IndexesHorizontalView } from '@/components/IndexesHorizontalView';
@@ -42,7 +44,7 @@ function filterStories(
 }
 
 export default function IndexesPage() {
-  const [viewMode, setViewMode] = useState<'list' | 'horizontal'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'horizontal'>('horizontal');
   const [data, setData] = useState<IndexesApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,21 @@ export default function IndexesPage() {
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [data?.stories]);
 
+  const collectionOptions = useMemo(() => {
+    if (!data?.stories.length) return [];
+    const seen = new Map<string, { id: string; name: string; description: string }>();
+    for (const s of data.stories) {
+      if (s.collection_id && !seen.has(s.collection_id)) {
+        seen.set(s.collection_id, {
+          id: s.collection_id,
+          name: s.collection_name || s.collection_id,
+          description: s.collection_description ?? '',
+        });
+      }
+    }
+    return Array.from(seen.values());
+  }, [data?.stories]);
+
   const recordingsPerCollectionId = useMemo(() => {
     const m: Record<string, number> = {};
     for (const s of data?.stories ?? []) {
@@ -123,12 +140,12 @@ export default function IndexesPage() {
 
   const filteredCollectionsForDropdown = useMemo(() => {
     const q = collectionFilterTerm.trim().toLowerCase();
-    if (!q) return collections;
-    return collections.filter(
+    if (!q) return collectionOptions;
+    return collectionOptions.filter(
       (c) =>
         c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q),
     );
-  }, [collections, collectionFilterTerm]);
+  }, [collectionOptions, collectionFilterTerm]);
 
   const collectionMenuOpen = Boolean(collectionMenuAnchor);
   useEffect(() => {
@@ -160,8 +177,8 @@ export default function IndexesPage() {
         pb: { xs: 2, md: 3 },
         width: '100%',
       }}>
-      {/* Left sidebar: search and filters */}
-      {!loading && data && data.stories.length > 0 && (
+      {/* Left sidebar: search and filters (list view only; horizontal view uses inline filters) */}
+      {!loading && data && data.stories.length > 0 && viewMode === 'list' && (
         <Box
           sx={{
             flexShrink: 0,
@@ -185,7 +202,8 @@ export default function IndexesPage() {
             <TextField
               size="small"
               fullWidth
-              placeholder="Search"
+              variant="outlined"
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{
@@ -194,8 +212,15 @@ export default function IndexesPage() {
                     <SearchIcon fontSize="small" />
                   </InputAdornment>
                 ),
+                endAdornment: searchQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton aria-label="clear search" onClick={() => setSearchQuery('')} size="small">
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               }}
-              sx={{ mb: 2, bgcolor: 'background.paper' }}
+              sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: '8px' }}
             />
             <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
               Collection
@@ -208,7 +233,10 @@ export default function IndexesPage() {
               sx={{
                 textTransform: 'none',
                 justifyContent: 'space-between',
+                minHeight: 40,
+                pl: 1.5,
                 bgcolor: 'background.paper',
+                borderRadius: '8px',
                 border: `1px solid ${colors.common.border}`,
                 color: 'text.primary',
                 '&:hover': { bgcolor: colors.grey[100] },
@@ -220,7 +248,7 @@ export default function IndexesPage() {
             {selectedCollectionIds.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                 {selectedCollectionIds.map((id) => {
-                  const c = collections.find((x) => x.id === id);
+                  const c = collectionOptions.find((x) => x.id === id);
                   return (
                     <Chip
                       key={id}
@@ -261,9 +289,87 @@ export default function IndexesPage() {
             mb: 2,
             flexShrink: 0,
           }}>
-          <Typography variant="h4" fontWeight={700}>
-            All Indexes
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography variant="h4" fontWeight={700}>
+              All Indexes
+            </Typography>
+            {/* Inline filters for horizontal view (desktop): search + collection next to title */}
+            {!loading && data && data.stories.length > 0 && viewMode === 'horizontal' && (
+              <Box
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  alignItems: 'center',
+                  gap: 1.5,
+                  flexWrap: 'wrap',
+                }}>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchQuery ? (
+                      <InputAdornment position="end">
+                        <IconButton aria-label="clear search" onClick={() => setSearchQuery('')} size="small">
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                  sx={{
+                    width: { md: 380, lg: 440 },
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                  }}
+                />
+                <Button
+                  size="small"
+                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedCollectionIds.length === 0
+                    ? 'All collections'
+                    : `${selectedCollectionIds.length} selected`}
+                </Button>
+                {selectedCollectionIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                    {selectedCollectionIds.map((id) => {
+                      const c = collectionOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={c?.name ?? id}
+                          size="small"
+                          onDelete={() => handleCollectionToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.primary.light,
+                            color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
           {!loading && data && data.stories.length > 0 && (
             <ToggleButtonGroup
               value={viewMode}
@@ -287,7 +393,8 @@ export default function IndexesPage() {
             <TextField
               size="small"
               fullWidth
-              placeholder="Search indexes…"
+              variant="outlined"
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{
@@ -296,11 +403,18 @@ export default function IndexesPage() {
                     <SearchIcon fontSize="small" />
                   </InputAdornment>
                 ),
+                endAdornment: searchQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton aria-label="clear search" onClick={() => setSearchQuery('')} size="small">
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               }}
-              sx={{ mb: 1 }}
+              sx={{ mb: 1, bgcolor: colors.background.default, borderRadius: '8px' }}
             />
-<Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
-            Collection
+            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
+              Collection
             </Typography>
             <Button
               fullWidth
@@ -310,8 +424,13 @@ export default function IndexesPage() {
               sx={{
                 textTransform: 'none',
                 justifyContent: 'space-between',
+                minHeight: 40,
+                pl: 1.5,
+                bgcolor: colors.background.default,
+                borderRadius: '8px',
                 border: `1px solid ${colors.common.border}`,
                 color: 'text.primary',
+                '&:hover': { bgcolor: colors.grey[100] },
               }}>
               {selectedCollectionIds.length === 0
                 ? 'All collections'
@@ -320,7 +439,7 @@ export default function IndexesPage() {
             {selectedCollectionIds.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                 {selectedCollectionIds.map((id) => {
-                  const c = collections.find((x) => x.id === id);
+                  const c = collectionOptions.find((x) => x.id === id);
                   return (
                     <Chip
                       key={id}
@@ -415,7 +534,7 @@ export default function IndexesPage() {
           )}
         </>
       )}
-      {/* Shared collection dropdown menu (opened from sidebar or mobile button) */}
+      {/* Shared collection dropdown menu (opened from sidebar, inline, or mobile button) */}
       {!loading && data && data.stories.length > 0 && (
         <Menu
           anchorEl={collectionMenuAnchor}

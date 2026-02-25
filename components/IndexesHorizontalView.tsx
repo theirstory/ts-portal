@@ -67,9 +67,9 @@ export function IndexesHorizontalView({
           <Box
             key={story.uuid}
             sx={{
-              flex: '0 0 320px',
-              minWidth: 320,
-              maxWidth: 320,
+              flex: '0 0 360px',
+              minWidth: 360,
+              maxWidth: 360,
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
