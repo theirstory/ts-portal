@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Badge, Box, Button, Checkbox, Divider, IconButton, Menu, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
+import {
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  IconButton,
+  Menu,
+  MenuItem,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
@@ -11,10 +23,26 @@ import { useThreshold } from '@/app/stores/useThreshold';
 import { PAGINATION_ITEMS_PER_PAGE } from '@/app/constants';
 import { SearchType } from '@/types/searchType';
 
-export const CollectionsDropdown = ({ compact = false }: { compact?: boolean }) => {
+export type CollectionsDropdownOption = { id: string; name: string; description?: string };
+
+type CollectionsDropdownProps = {
+  compact?: boolean;
+  /** Controlled mode: pass collections and onSelectionChange to use local state instead of the search store */
+  collections?: CollectionsDropdownOption[];
+  selectedCollectionIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+};
+
+export const CollectionsDropdown = ({
+  compact = false,
+  collections: collectionsProp,
+  selectedCollectionIds: selectedIdsProp,
+  onSelectionChange,
+}: CollectionsDropdownProps) => {
+  const store = useSemanticSearchStore();
   const {
-    collections,
-    selectedCollectionIds,
+    collections: storeCollections,
+    selectedCollectionIds: storeSelectedIds,
     setSelectedCollectionIds,
     getAllStories,
     searchType,
@@ -24,8 +52,12 @@ export const CollectionsDropdown = ({ compact = false }: { compact?: boolean }) 
     run25bmSearch,
     nerFilters,
     setCurrentPage,
-  } = useSemanticSearchStore();
+  } = store;
   const { minValue, maxValue } = useThreshold();
+
+  const isControlled = collectionsProp != null && onSelectionChange != null;
+  const collections = isControlled ? collectionsProp : storeCollections;
+  const selectedCollectionIds = isControlled ? (selectedIdsProp ?? []) : storeSelectedIds;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,7 +70,7 @@ export const CollectionsDropdown = ({ compact = false }: { compact?: boolean }) 
     const query = searchTerm.trim().toLowerCase();
     if (!query) return collections;
     return collections.filter((collection) => {
-      const haystack = `${collection.name} ${collection.description} ${collection.id}`.toLowerCase();
+      const haystack = `${collection.name} ${collection.description ?? ''} ${collection.id}`.toLowerCase();
       return haystack.includes(query);
     });
   }, [collections, searchTerm]);
@@ -54,6 +86,10 @@ export const CollectionsDropdown = ({ compact = false }: { compact?: boolean }) 
   };
 
   const applyFilters = (collectionIds: string[]) => {
+    if (isControlled) {
+      onSelectionChange!(collectionIds);
+      return;
+    }
     setSelectedCollectionIds(collectionIds);
     setCurrentPage(1);
 
@@ -167,12 +203,15 @@ export const CollectionsDropdown = ({ compact = false }: { compact?: boolean }) 
           {filteredCollections.map((collection) => {
             const checked = pendingIds.includes(collection.id);
             return (
-              <MenuItem key={collection.id} onClick={() => handleToggle(collection.id)} sx={{ alignItems: 'flex-start', py: 1.2 }}>
+              <MenuItem
+                key={collection.id}
+                onClick={() => handleToggle(collection.id)}
+                sx={{ alignItems: 'flex-start', py: 1.2 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography fontWeight={600} fontSize="1rem" sx={{ wordBreak: 'break-word' }}>
                     {collection.name}
                   </Typography>
-                  {collection.description ? (
+                  {collection.description != null && collection.description !== '' ? (
                     <Typography
                       color="text.secondary"
                       fontSize="0.95rem"
