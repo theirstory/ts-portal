@@ -20,6 +20,9 @@
 /json
 weaviate-data.tar.gz
 
+# local backup (from scripts/backup-for-repo-recreate.sh)
+ts-portal-gmu-backup-*
+
 # misc
 .DS_Store
 .vscode
