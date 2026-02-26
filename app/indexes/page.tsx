@@ -19,10 +19,11 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import CircularProgress from '@mui/material/CircularProgress';
-import { IndexesListView } from '@/components/IndexesListView';
-import { IndexesHorizontalView } from '@/components/IndexesHorizontalView';
+
 import { colors } from '@/lib/theme';
 import type { IndexesApiResponse, IndexesStory, IndexChapter } from '@/app/api/indexes/route';
+import { IndexesListView } from '@/components/IndexesListView';
+import { IndexesHorizontalView } from '@/components/IndexesHorizontalView';
 
 function filterStories(
   stories: IndexesStory[],
@@ -37,8 +38,7 @@ function filterStories(
     if (story.interview_title.toLowerCase().includes(q)) return true;
     const chapters = chaptersByStoryId[story.uuid] ?? [];
     return chapters.some(
-      (ch) =>
-        ch.section_title.toLowerCase().includes(q) || (ch.synopsis && ch.synopsis.toLowerCase().includes(q)),
+      (ch) => ch.section_title.toLowerCase().includes(q) || (ch.synopsis && ch.synopsis.toLowerCase().includes(q)),
     );
   });
 }
@@ -77,17 +77,6 @@ export default function IndexesPage() {
     };
   }, []);
 
-  const collections = useMemo(() => {
-    if (!data?.stories.length) return [];
-    const seen = new Map<string, string>();
-    for (const s of data.stories) {
-      if (s.collection_id && !seen.has(s.collection_id)) {
-        seen.set(s.collection_id, s.collection_name || s.collection_id);
-      }
-    }
-    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
-  }, [data?.stories]);
-
   const collectionOptions = useMemo(() => {
     if (!data?.stories.length) return [];
     const seen = new Map<string, { id: string; name: string; description: string }>();
@@ -125,26 +114,20 @@ export default function IndexesPage() {
     for (const [storyId, chapters] of Object.entries(data.chaptersByStoryId)) {
       out[storyId] = chapters.filter(
         (ch) =>
-          ch.section_title.toLowerCase().includes(q) ||
-          (ch.synopsis != null && ch.synopsis.toLowerCase().includes(q)),
+          ch.section_title.toLowerCase().includes(q) || (ch.synopsis != null && ch.synopsis.toLowerCase().includes(q)),
       );
     }
     return out;
   }, [data?.chaptersByStoryId, searchQuery]);
 
   const handleCollectionToggle = (id: string) => {
-    setSelectedCollectionIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSelectedCollectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const filteredCollectionsForDropdown = useMemo(() => {
     const q = collectionFilterTerm.trim().toLowerCase();
     if (!q) return collectionOptions;
-    return collectionOptions.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q),
-    );
+    return collectionOptions.filter((c) => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
   }, [collectionOptions, collectionFilterTerm]);
 
   const collectionMenuOpen = Boolean(collectionMenuAnchor);
@@ -159,7 +142,7 @@ export default function IndexesPage() {
     setCollectionFilterTerm('');
   };
 
-  const handleViewChange = (_event: React.MouseEvent<HTMLElement>, newView: 'list' | 'horizontal') => {
+  const handleViewChange = (_event: React.MouseEvent<HTMLElement>, newView: 'list' | 'horizontal' | null) => {
     if (newView !== null) setViewMode(newView);
   };
 
@@ -241,9 +224,7 @@ export default function IndexesPage() {
                 color: 'text.primary',
                 '&:hover': { bgcolor: colors.grey[100] },
               }}>
-              {selectedCollectionIds.length === 0
-                ? 'All collections'
-                : `${selectedCollectionIds.length} selected`}
+              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
             </Button>
             {selectedCollectionIds.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
@@ -342,9 +323,7 @@ export default function IndexesPage() {
                     color: 'text.primary',
                     '&:hover': { bgcolor: colors.grey[100] },
                   }}>
-                  {selectedCollectionIds.length === 0
-                    ? 'All collections'
-                    : `${selectedCollectionIds.length} selected`}
+                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
                 </Button>
                 {selectedCollectionIds.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
@@ -432,9 +411,7 @@ export default function IndexesPage() {
                 color: 'text.primary',
                 '&:hover': { bgcolor: colors.grey[100] },
               }}>
-              {selectedCollectionIds.length === 0
-                ? 'All collections'
-                : `${selectedCollectionIds.length} selected`}
+              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
             </Button>
             {selectedCollectionIds.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
@@ -460,137 +437,128 @@ export default function IndexesPage() {
           </Box>
         )}
 
-      {loading && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            py: 6,
-            flexShrink: 0,
-            alignSelf: 'flex-start',
-            width: '100%',
-          }}>
-          <CircularProgress size={40} />
-        </Box>
-      )}
-
-      {error && (
-        <Typography color="error" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
-          {error}
-        </Typography>
-      )}
-
-      {!loading && !error && data && (
-        <>
-          {data.stories.length === 0 ? (
-            <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
-              No indexes available.
-            </Typography>
-          ) : (
-            <>
-              {filteredStories.length === 0 ? (
-                <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
-                  No indexes match your search or filter.
-                </Typography>
-              ) : (
-                <Box sx={{ flexShrink: 0, mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Results: 1–{filteredStories.length} of {filteredStories.length}
-                  </Typography>
-                </Box>
-              )}
-              {filteredStories.length > 0 && (
-                <Box
-                  sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflow: 'auto',
-                    pr: 0.5,
-                    '&::-webkit-scrollbar': { width: 6, height: 6 },
-                    '&::-webkit-scrollbar-track': { backgroundColor: colors.grey[100], borderRadius: 1 },
-                    '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: colors.grey[400],
-                      borderRadius: 1,
-                      '&:hover': { backgroundColor: colors.grey[500] },
-                    },
-                  }}>
-                  {viewMode === 'list' ? (
-                    <IndexesListView
-                      stories={filteredStories}
-                      chaptersByStoryId={filteredChaptersByStoryId}
-                      searchQuery={searchQuery}
-                    />
-                  ) : (
-                    <IndexesHorizontalView
-                      stories={filteredStories}
-                      chaptersByStoryId={filteredChaptersByStoryId}
-                      searchQuery={searchQuery}
-                    />
-                  )}
-                </Box>
-              )}
-            </>
-          )}
-        </>
-      )}
-      {/* Shared collection dropdown menu (opened from sidebar, inline, or mobile button) */}
-      {!loading && data && data.stories.length > 0 && (
-        <Menu
-          anchorEl={collectionMenuAnchor}
-          open={collectionMenuOpen}
-          onClose={closeCollectionMenu}
-          disableAutoFocusItem
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          slotProps={{ list: { dense: true, disablePadding: true } }}
-          sx={{
-            mt: 0.5,
-            '& .MuiPaper-root': { maxHeight: 360, width: 320 },
-          }}>
-          <Box sx={{ p: 1.5, borderBottom: `1px solid ${colors.common.border}` }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Filter collections..."
-              value={collectionFilterTerm}
-              onChange={(e) => setCollectionFilterTerm(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              inputRef={collectionFilterInputRef}
-              autoFocus
-            />
+        {loading && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 6,
+              flexShrink: 0,
+              alignSelf: 'flex-start',
+              width: '100%',
+            }}>
+            <CircularProgress size={40} />
           </Box>
-          <Box sx={{ maxHeight: 280, overflowY: 'auto', py: 0.5 }}>
-            {filteredCollectionsForDropdown.map((c) => {
-              const checked = selectedCollectionIds.includes(c.id);
-              const count = recordingsPerCollectionId[c.id] ?? 0;
-              return (
-                <MenuItem
-                  key={c.id}
-                  onClick={() => handleCollectionToggle(c.id)}
-                  sx={{ py: 0.75 }}
-                  dense>
-                  <Typography variant="body2" sx={{ flex: 1 }} noWrap>
-                    {c.name}
-                    {count >= 0 && ` (${count} recording${count !== 1 ? 's' : ''})`}
-                  </Typography>
-                  <Checkbox
-                    size="small"
-                    checked={checked}
-                    sx={{ p: 0.25 }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </MenuItem>
-              );
-            })}
-            {filteredCollectionsForDropdown.length === 0 && (
-              <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2 }}>
-                No collections match.
+        )}
+
+        {error && (
+          <Typography color="error" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
+            {error}
+          </Typography>
+        )}
+
+        {!loading && !error && data && (
+          <>
+            {data.stories.length === 0 ? (
+              <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
+                No indexes available.
               </Typography>
+            ) : (
+              <>
+                {filteredStories.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center', flexShrink: 0 }}>
+                    No indexes match your search or filter.
+                  </Typography>
+                ) : (
+                  <Box sx={{ flexShrink: 0, mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Results: 1–{filteredStories.length} of {filteredStories.length}
+                    </Typography>
+                  </Box>
+                )}
+                {filteredStories.length > 0 && (
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minHeight: 0,
+                      overflow: 'auto',
+                      pr: 0.5,
+                      '&::-webkit-scrollbar': { width: 6, height: 6 },
+                      '&::-webkit-scrollbar-track': { backgroundColor: colors.grey[100], borderRadius: 1 },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: colors.grey[400],
+                        borderRadius: 1,
+                        '&:hover': { backgroundColor: colors.grey[500] },
+                      },
+                    }}>
+                    {viewMode === 'list' ? (
+                      <IndexesListView
+                        stories={filteredStories}
+                        chaptersByStoryId={filteredChaptersByStoryId}
+                        searchQuery={searchQuery}
+                      />
+                    ) : (
+                      <IndexesHorizontalView
+                        stories={filteredStories}
+                        chaptersByStoryId={filteredChaptersByStoryId}
+                        searchQuery={searchQuery}
+                      />
+                    )}
+                  </Box>
+                )}
+              </>
             )}
-          </Box>
-        </Menu>
-      )}
+          </>
+        )}
+        {/* Shared collection dropdown menu (opened from sidebar, inline, or mobile button) */}
+        {!loading && data && data.stories.length > 0 && (
+          <Menu
+            anchorEl={collectionMenuAnchor}
+            open={collectionMenuOpen}
+            onClose={closeCollectionMenu}
+            disableAutoFocusItem
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            slotProps={{ list: { dense: true, disablePadding: true } }}
+            sx={{
+              mt: 0.5,
+              '& .MuiPaper-root': { maxHeight: 360, width: 320 },
+            }}>
+            <Box sx={{ p: 1.5, borderBottom: `1px solid ${colors.common.border}` }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Filter collections..."
+                value={collectionFilterTerm}
+                onChange={(e) => setCollectionFilterTerm(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                inputRef={collectionFilterInputRef}
+                autoFocus
+              />
+            </Box>
+            <Box sx={{ maxHeight: 280, overflowY: 'auto', py: 0.5 }}>
+              {filteredCollectionsForDropdown.map((c) => {
+                const checked = selectedCollectionIds.includes(c.id);
+                const count = recordingsPerCollectionId[c.id] ?? 0;
+                return (
+                  <MenuItem key={c.id} onClick={() => handleCollectionToggle(c.id)} sx={{ py: 0.75 }} dense>
+                    <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+                      {c.name}
+                      {count >= 0 && ` (${count} recording${count !== 1 ? 's' : ''})`}
+                    </Typography>
+                    <Checkbox size="small" checked={checked} sx={{ p: 0.25 }} onClick={(e) => e.stopPropagation()} />
+                  </MenuItem>
+                );
+              })}
+              {filteredCollectionsForDropdown.length === 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2 }}>
+                  No collections match.
+                </Typography>
+              )}
+            </Box>
+          </Menu>
+        )}
       </Box>
     </Box>
   );

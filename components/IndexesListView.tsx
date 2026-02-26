@@ -3,7 +3,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
 import Divider from '@mui/material/Divider';
 import Link from 'next/link';
 import { VideoThumbnail } from './VideoThumbnail';
@@ -90,60 +89,61 @@ export function IndexesListView({
                       {highlightSearchText(story.interview_title, searchQuery)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {durationFormatHandler(story.interview_duration)} — {chapters.length} chapter{chapters.length !== 1 ? 's' : ''}
+                      {durationFormatHandler(story.interview_duration)} — {chapters.length} chapter
+                      {chapters.length !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
                 </Box>
               </Link>
               {chapters.length > 0 && (
-              <Box
-                sx={{
-                  py: 0.5,
-                  pl: 2.5,
-                  borderLeft: `3px solid ${colors.grey[300]}`,
-                  ml: 0.5,
-                }}>
-                {chapters.map((ch) => (
-                  <Link
-                    key={`${story.uuid}-${ch.section_id}`}
-                    href={`/story/${story.uuid}?start=${ch.start_time}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Box
-                      sx={{
-                        py: 1.5,
-                        px: 1.5,
-                        mb: 1,
-                        borderRadius: 1,
-                        bgcolor: colors.background.paper,
-                        border: `1px solid ${colors.common.border}`,
-                        boxShadow: `0 1px 2px ${colors.common.shadow}`,
-                        '&:hover': { bgcolor: colors.grey[50] },
-                      }}>
-                      <Typography variant="body2" color="text.secondary" component="span" sx={{ mr: 1 }}>
-                        {formatTime(ch.start_time)}
-                      </Typography>
-                      <Typography variant="body2" component="span" fontWeight={500}>
-                        {highlightSearchText(ch.section_title, searchQuery)}
-                      </Typography>
-                      {ch.synopsis && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          component="span"
-                          sx={{
-                            mt: 0.5,
-                            fontSize: '0.8125rem',
-                            lineHeight: 1.4,
-                            display: 'block',
-                          }}>
-                          {highlightSearchText(ch.synopsis, searchQuery)}
+                <Box
+                  sx={{
+                    py: 0.5,
+                    pl: 2.5,
+                    borderLeft: `3px solid ${colors.grey[300]}`,
+                    ml: 0.5,
+                  }}>
+                  {chapters.map((ch) => (
+                    <Link
+                      key={`${story.uuid}-${ch.section_id}`}
+                      href={`/story/${story.uuid}?start=${ch.start_time}`}
+                      style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <Box
+                        sx={{
+                          py: 1.5,
+                          px: 1.5,
+                          mb: 1,
+                          borderRadius: 1,
+                          bgcolor: colors.background.paper,
+                          border: `1px solid ${colors.common.border}`,
+                          boxShadow: `0 1px 2px ${colors.common.shadow}`,
+                          '&:hover': { bgcolor: colors.grey[50] },
+                        }}>
+                        <Typography variant="body2" color="text.secondary" component="span" sx={{ mr: 1 }}>
+                          {formatTime(ch.start_time)}
                         </Typography>
-                      )}
-                    </Box>
-                  </Link>
-                ))}
-              </Box>
-            )}
+                        <Typography variant="body2" component="span" fontWeight={500}>
+                          {highlightSearchText(ch.section_title, searchQuery)}
+                        </Typography>
+                        {ch.synopsis && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            component="span"
+                            sx={{
+                              mt: 0.5,
+                              fontSize: '0.8125rem',
+                              lineHeight: 1.4,
+                              display: 'block',
+                            }}>
+                            {highlightSearchText(ch.synopsis, searchQuery)}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Link>
+                  ))}
+                </Box>
+              )}
             </Box>
           </React.Fragment>
         );

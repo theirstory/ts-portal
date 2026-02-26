@@ -12,6 +12,7 @@ import useLayoutState from '@/app/stores/useLayout';
 import { usePathname } from 'next/navigation';
 import { config, organizationConfig } from '@/config/organizationConfig';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
+import { colors } from '@/lib/theme';
 
 export interface NavLink {
   name: string;
@@ -140,7 +141,18 @@ export const AppTopBar = () => {
                       onClick={handleTopBarCollapseToggle}
                       size="small"
                       aria-label={isTopBarCollapsed ? 'Expand banner' : 'Collapse banner'}
-                      sx={{ color: config.theme.colors.primary.main }}>
+                      sx={{
+                        color: config.theme.colors.primary.contrastText,
+                        bgcolor: 'transparent',
+                        border: `1.5px solid ${config.theme.colors.primary.contrastText}`,
+                        width: 30,
+                        height: 30,
+                        '&:hover': {
+                          color: config.theme.colors.primary.main,
+                          borderColor: config.theme.colors.primary.main,
+                          bgcolor: 'action.hover',
+                        },
+                      }}>
                       {isTopBarCollapsed ? <KeyboardArrowDownIcon /> : <KeyboardArrowUpIcon />}
                     </IconButton>
                   </Tooltip>
@@ -153,7 +165,18 @@ export const AppTopBar = () => {
                       onClick={handleTopBarCollapseToggle}
                       size="small"
                       aria-label={isTopBarCollapsed ? 'Expand' : 'Collapse'}
-                      sx={{ color: config.theme.colors.primary.main }}>
+                      sx={{
+                        color: config.theme.colors.primary.contrastText,
+                        bgcolor: 'transparent',
+                        border: `1.5px solid ${config.theme.colors.primary.contrastText}`,
+                        width: 30,
+                        height: 30,
+                        '&:hover': {
+                          color: config.theme.colors.primary.main,
+                          borderColor: config.theme.colors.primary.main,
+                          bgcolor: 'action.hover',
+                        },
+                      }}>
                       {isTopBarCollapsed ? <KeyboardArrowDownIcon /> : <KeyboardArrowUpIcon />}
                     </IconButton>
                   </Tooltip>
@@ -229,7 +252,7 @@ export const AppTopBar = () => {
                         alignItems: 'flex-start',
                         width: 'fit-content',
                         maxWidth: 'min(100%, 980px)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                        backgroundColor: colors.common.overlay,
                         backdropFilter: 'blur(2px)',
                         borderRadius: '8px',
                         px: '14px',

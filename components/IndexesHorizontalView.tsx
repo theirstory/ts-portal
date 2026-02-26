@@ -3,7 +3,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
 import Link from 'next/link';
 import { VideoThumbnail } from './VideoThumbnail';
 import { durationFormatHandler, formatTime } from '@/app/utils/util';
@@ -98,7 +97,8 @@ export function IndexesHorizontalView({
                     {highlightSearchText(story.interview_title, searchQuery)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" display="block">
-                    {durationFormatHandler(story.interview_duration)} — {chapters.length} chapter{chapters.length !== 1 ? 's' : ''}
+                    {durationFormatHandler(story.interview_duration)} — {chapters.length} chapter
+                    {chapters.length !== 1 ? 's' : ''}
                   </Typography>
                 </Box>
               </Box>
@@ -130,7 +130,11 @@ export function IndexesHorizontalView({
                     <Typography variant="caption" color="text.secondary" display="block">
                       {formatTime(ch.start_time)}
                     </Typography>
-                    <Typography variant="body2" fontWeight={500} sx={{ display: 'block', wordBreak: 'break-word' }} component="span">
+                    <Typography
+                      variant="body2"
+                      fontWeight={500}
+                      sx={{ display: 'block', wordBreak: 'break-word' }}
+                      component="span">
                       {highlightSearchText(ch.section_title, searchQuery)}
                     </Typography>
                     {ch.synopsis && (

@@ -45,12 +45,7 @@ export type IndexesApiResponse = {
 export async function GET() {
   try {
     const [storiesResponse, chaptersByStoryId] = await Promise.all([
-      getAllStoriesFromCollection(
-        SchemaTypes.Testimonies,
-        [...STORIES_RETURN_PROPERTIES],
-        INDEXES_STORIES_LIMIT,
-        0,
-      ),
+      getAllStoriesFromCollection(SchemaTypes.Testimonies, [...STORIES_RETURN_PROPERTIES], INDEXES_STORIES_LIMIT, 0),
       getChaptersGroupedByStory(),
     ]);
 
@@ -104,9 +99,6 @@ export async function GET() {
     } satisfies IndexesApiResponse);
   } catch (error) {
     console.error('Error fetching indexes:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch indexes' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to fetch indexes' }, { status: 500 });
   }
 }

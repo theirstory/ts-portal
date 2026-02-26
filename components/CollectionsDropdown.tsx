@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Badge, Box, Button, Checkbox, Divider, IconButton, Menu, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
+import {
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  IconButton,
+  Menu,
+  MenuItem,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
@@ -191,7 +203,10 @@ export const CollectionsDropdown = ({
           {filteredCollections.map((collection) => {
             const checked = pendingIds.includes(collection.id);
             return (
-              <MenuItem key={collection.id} onClick={() => handleToggle(collection.id)} sx={{ alignItems: 'flex-start', py: 1.2 }}>
+              <MenuItem
+                key={collection.id}
+                onClick={() => handleToggle(collection.id)}
+                sx={{ alignItems: 'flex-start', py: 1.2 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography fontWeight={600} fontSize="1rem" sx={{ wordBreak: 'break-word' }}>
                     {collection.name}

@@ -19,7 +19,6 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { getNerColor, getNerDisplayName } from '@/config/organizationConfig';
 import {
@@ -41,6 +40,8 @@ interface NerDataItem {
   start_time: number;
   end_time: number;
 }
+
+type ChunkProps = Partial<Chunks>;
 
 interface NerEntityModalProps {
   open: boolean;
@@ -284,22 +285,23 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
   }, [allWords, entityLabel, entityText, storyHubPage?.properties.ner_data]);
 
   // Load collection data, total mention count, and recording count when modal opens
-  // Use high limit so "In the project" shows accurate total (Weaviate max 10k per query)
+  // Use high limit so "In the project" reflects most matches available in one query (Weaviate max 10k per query)
   useEffect(() => {
     if (!open) return;
-    const key = `${entityText.toLowerCase()}|${entityLabel}`;
     setProjectRecordingCount(null);
     setProjectMentionCount(null);
     setLoading(true);
-    Promise.all([
-      searchNerEntitiesAcrossCollection(entityText, entityLabel, currentStoryUuid, 10_000),
-      getNerEntityRecordingCounts([{ text: entityText, label: entityLabel }]),
-    ])
-      .then(([searchResult, counts]) => {
+    searchNerEntitiesAcrossCollection(entityText, entityLabel, currentStoryUuid, 10_000)
+      .then((searchResult) => {
         const objects = searchResult.objects;
+        const recordingIds = new Set<string>();
+        for (const obj of objects) {
+          const id = (obj.properties as ChunkProps)?.theirstory_id;
+          if (id) recordingIds.add(String(id));
+        }
         setCollectionOccurrences(objects);
         setProjectMentionCount(objects.length);
-        setProjectRecordingCount(counts[key] ?? 0);
+        setProjectRecordingCount(recordingIds.size);
       })
       .catch((error) => {
         console.error('Error loading collection occurrences:', error);
@@ -367,10 +369,14 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
 
   // Group project occurrences by recording (theirstory_id) for clearer display
   const occurrencesByRecording = useMemo(() => {
-    const byId = new Map<string, { interview_title: string; theirstory_id: string; occurrences: WeaviateGenericObject<Chunks>[] }>();
+    const byId = new Map<
+      string,
+      { interview_title: string; theirstory_id: string; occurrences: WeaviateGenericObject<Chunks>[] }
+    >();
     for (const obj of collectionOccurrences) {
-      const id = (obj.properties as any)?.theirstory_id ?? '';
-      const title = (obj.properties as any)?.interview_title ?? 'Unknown recording';
+      const props = obj.properties as ChunkProps;
+      const id = props?.theirstory_id ?? '';
+      const title = props?.interview_title ?? 'Unknown recording';
       if (!byId.has(id)) {
         byId.set(id, { interview_title: title, theirstory_id: id, occurrences: [] });
       }
@@ -515,8 +521,8 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
             ) : (
               <>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {mentionCountDisplay} mention{mentionCount !== 1 ? 's' : ''} across{' '}
-                  {recordingCount} recording{recordingCount !== 1 ? 's' : ''}
+                  {mentionCountDisplay} mention{mentionCount !== 1 ? 's' : ''} across {recordingCount} recording
+                  {recordingCount !== 1 ? 's' : ''}
                 </Typography>
                 <List sx={{ p: 0 }}>
                   {occurrencesByRecording.map((group) => {
@@ -545,13 +551,16 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
                             position: 'sticky',
                             top: 0,
                             zIndex: 1,
-                            boxShadow: (theme) => `0 2px 4px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'}`,
+                            boxShadow: (theme) => theme.shadows[1],
                             '&:hover': { backgroundColor: 'action.hover' },
                           }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, minWidth: 0 }}>
-                            <IconButton size="small" sx={{ p: 0.25 }} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
+                            <Box
+                              component="span"
+                              sx={{ p: 0.25, display: 'inline-flex', alignItems: 'center' }}
+                              aria-hidden="true">
                               {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                            </IconButton>
+                            </Box>
                             <Typography variant="subtitle1" fontWeight="600" color="primary" noWrap>
                               {group.interview_title}
                             </Typography>
@@ -562,46 +571,54 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
                         </Box>
                         <Collapse in={isExpanded} timeout="auto">
                           {group.occurrences.map((occurrence, index) => {
-                        const transcription = occurrence.properties.transcription || '';
-                        const collapsedContext = createSimpleContext(transcription, entityText, COLLAPSED_CHAR_WINDOW);
-                        const expandedContext = createSimpleContext(transcription, entityText, EXPANDED_CHAR_WINDOW);
+                            const transcription = occurrence.properties.transcription || '';
+                            const collapsedContext = createSimpleContext(
+                              transcription,
+                              entityText,
+                              COLLAPSED_CHAR_WINDOW,
+                            );
+                            const expandedContext = createSimpleContext(
+                              transcription,
+                              entityText,
+                              EXPANDED_CHAR_WINDOW,
+                            );
 
-                        return (
-                          <ListItem
-                            key={`${occurrence.uuid ?? occurrence.properties.theirstory_id}-${occurrence.properties.start_time}-${index}`}
-                            onClick={() => handleCollectionClick(occurrence)}
-                            sx={{
-                              cursor: 'pointer',
-                              borderRadius: 1,
-                              mb: 1,
-                              '&:hover': { backgroundColor: 'action.hover' },
-                              border: '1px solid',
-                              borderColor: 'divider',
-                            }}>
-                            <Box sx={{ width: '100%' }}>
-                              <Box
+                            return (
+                              <ListItem
+                                key={`${occurrence.uuid ?? occurrence.properties.theirstory_id}-${occurrence.properties.start_time}-${index}`}
+                                onClick={() => handleCollectionClick(occurrence)}
                                 sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'flex-end',
+                                  cursor: 'pointer',
+                                  borderRadius: 1,
                                   mb: 1,
+                                  '&:hover': { backgroundColor: 'action.hover' },
+                                  border: '1px solid',
+                                  borderColor: 'divider',
                                 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {formatTime(occurrence.properties.start_time)}
-                                </Typography>
-                              </Box>
+                                <Box sx={{ width: '100%' }}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-end',
+                                      mb: 1,
+                                    }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {formatTime(occurrence.properties.start_time)}
+                                    </Typography>
+                                  </Box>
 
-                              <ExpandableHighlightedText
-                                collapsedText={collapsedContext?.text || transcription}
-                                expandedText={expandedContext?.text || transcription}
-                                collapsedHighlightedParts={collapsedContext?.highlightedParts || null}
-                                expandedHighlightedParts={expandedContext?.highlightedParts || null}
-                                collapsedLines={3}
-                              />
-                            </Box>
-                          </ListItem>
-                        );
-                      })}
+                                  <ExpandableHighlightedText
+                                    collapsedText={collapsedContext?.text || transcription}
+                                    expandedText={expandedContext?.text || transcription}
+                                    collapsedHighlightedParts={collapsedContext?.highlightedParts || null}
+                                    expandedHighlightedParts={expandedContext?.highlightedParts || null}
+                                    collapsedLines={3}
+                                  />
+                                </Box>
+                              </ListItem>
+                            );
+                          })}
                         </Collapse>
                       </Box>
                     );

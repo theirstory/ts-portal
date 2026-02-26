@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Box from '@mui/material/Box';
+import { colors } from '@/lib/theme';
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -28,7 +29,7 @@ export function highlightSearchText(
             component="mark"
             key={i}
             sx={{
-              backgroundColor: 'rgba(255, 235, 59, 0.5)',
+              backgroundColor: colors.warning.main,
               padding: '0 1px',
               borderRadius: 0.25,
               ...highlightSx,
