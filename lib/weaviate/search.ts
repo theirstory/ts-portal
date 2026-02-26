@@ -25,6 +25,38 @@ type CollectionJsonMetadata = {
   image?: string;
 };
 
+type PropertyFilterBuilder = {
+  containsAny: (values: string[]) => FilterValue;
+  equal: (value: string) => FilterValue;
+  notEqual: (value: string) => FilterValue;
+};
+
+const TESTIMONIES_COLLECTION_PROPS: QueryProperty<Testimonies>[] = [
+  'collection_id',
+  'collection_name',
+  'collection_description',
+];
+
+const NER_SEARCH_RETURN_PROPS: QueryProperty<Chunks>[] = [
+  'interview_title',
+  'start_time',
+  'end_time',
+  'speaker',
+  'transcription',
+  'ner_labels',
+  'theirstory_id',
+];
+
+const CHAPTER_GROUP_RETURN_PROPS: QueryProperty<Chunks>[] = [
+  'theirstory_id',
+  'section_id',
+  'section_title',
+  'start_time',
+  'end_time',
+];
+
+const STORY_ID_ONLY_RETURN_PROPS: QueryProperty<Chunks>[] = ['theirstory_id'];
+
 async function loadCollectionMetadataMap(): Promise<Map<string, CollectionJsonMetadata>> {
   const collectionsRoot = path.join(process.cwd(), 'json', 'interviews');
   const metadataById = new Map<string, CollectionJsonMetadata>();
@@ -55,19 +87,24 @@ async function loadCollectionMetadataMap(): Promise<Map<string, CollectionJsonMe
   return metadataById;
 }
 
-function buildCombinedFilters<T extends SchemaTypes>(
-  myCollection: any,
+function getByPropertyFilter(collection: { filter: { byProperty: unknown } }) {
+  return collection.filter.byProperty as unknown as (property: string) => PropertyFilterBuilder;
+}
+
+function buildCombinedFilters(
+  myCollection: { filter: { byProperty: unknown } },
   nerFilters?: string[],
   collectionFilters?: string[],
 ): FilterValue | undefined {
   const filtersArray: FilterValue[] = [];
+  const byProperty = getByPropertyFilter(myCollection);
 
   if (nerFilters?.length) {
-    filtersArray.push(myCollection.filter.byProperty('ner_labels' as any).containsAny(nerFilters as any));
+    filtersArray.push(byProperty('ner_labels').containsAny(nerFilters));
   }
 
   if (collectionFilters?.length) {
-    filtersArray.push(myCollection.filter.byProperty('collection_id' as any).containsAny(collectionFilters as any));
+    filtersArray.push(byProperty('collection_id').containsAny(collectionFilters));
   }
 
   if (!filtersArray.length) return undefined;
@@ -143,13 +180,13 @@ export async function getAvailableCollections(limit = 5000): Promise<CollectionF
 
   const response = await myCollection.query.fetchObjects({
     limit,
-    returnProperties: ['collection_id', 'collection_name', 'collection_description'] as any,
+    returnProperties: TESTIMONIES_COLLECTION_PROPS,
   });
 
   const map = new Map<string, CollectionFilterOption>();
 
   for (const item of response.objects) {
-    const props: any = item.properties || {};
+    const props = (item.properties ?? {}) as Partial<Testimonies>;
     const id = String(props.collection_id || '').trim();
     if (!id) continue;
 
@@ -211,7 +248,7 @@ export async function vectorSearch<T extends SchemaTypes>(
   const seen = new Set<number>();
 
   const uniqueByStartTime = filteredObjects.filter((item) => {
-    const start = (item.properties as any)?.start_time;
+    const start = (item.properties as Partial<Chunks> | undefined)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
     seen.add(start);
@@ -258,7 +295,7 @@ export async function hybridSearch<T extends SchemaTypes>(
 
   const seen = new Set<number>();
   const uniqueByStartTime = filteredObjects.filter((item) => {
-    const start = (item.properties as any)?.start_time;
+    const start = (item.properties as Partial<Chunks> | undefined)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
     seen.add(start);
@@ -319,7 +356,7 @@ export async function bm25Search<T extends SchemaTypes>(
 
   const seen = new Set<number>();
   const uniqueByStartTime = filteredObjects.filter((item) => {
-    const start = (item.properties as any)?.start_time;
+    const start = (item.properties as Partial<Chunks> | undefined)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
     seen.add(start);
@@ -343,11 +380,12 @@ export async function hybridSearchForStoryId<T extends SchemaTypes>(
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
+  const byProperty = getByPropertyFilter(myCollection as unknown as { filter: { byProperty: unknown } });
 
-  const filtersArray: FilterValue[] = [myCollection.filter.byProperty('theirstory_id' as any).equal(theirStoryId)];
+  const filtersArray: FilterValue[] = [byProperty('theirstory_id').equal(theirStoryId)];
 
   if (nerFilters?.length) {
-    filtersArray.push(myCollection.filter.byProperty('ner_labels' as any).containsAny(nerFilters as any));
+    filtersArray.push(byProperty('ner_labels').containsAny(nerFilters));
   }
 
   const combinedFilter: FilterValue =
@@ -370,7 +408,7 @@ export async function hybridSearchForStoryId<T extends SchemaTypes>(
 
   const seen = new Set<number>();
   const uniqueByStartTime = filteredObjects.filter((item) => {
-    const start = (item.properties as any)?.start_time;
+    const start = (item.properties as Partial<Chunks> | undefined)?.start_time;
     if (typeof start !== 'number') return false;
     if (seen.has(start)) return false;
     seen.add(start);
@@ -394,11 +432,12 @@ export async function vectorSearchForStoryId<T extends SchemaTypes>(
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
+  const byProperty = getByPropertyFilter(myCollection as unknown as { filter: { byProperty: unknown } });
 
-  const filtersArray: FilterValue[] = [myCollection.filter.byProperty('theirstory_id' as any).equal(theirStoryId)];
+  const filtersArray: FilterValue[] = [byProperty('theirstory_id').equal(theirStoryId)];
 
   if (nerFilters?.length) {
-    filtersArray.push(myCollection.filter.byProperty('ner_labels' as any).containsAny(nerFilters as any));
+    filtersArray.push(byProperty('ner_labels').containsAny(nerFilters));
   }
 
   const combinedFilter: FilterValue =
@@ -446,11 +485,12 @@ export async function bm25SearchForStoryId<T extends SchemaTypes>(
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
+  const byProperty = getByPropertyFilter(myCollection as unknown as { filter: { byProperty: unknown } });
 
-  const filtersArray: FilterValue[] = [myCollection.filter.byProperty('theirstory_id' as any).equal(theirStoryId)];
+  const filtersArray: FilterValue[] = [byProperty('theirstory_id').equal(theirStoryId)];
 
   if (nerFilters?.length) {
-    filtersArray.push(myCollection.filter.byProperty('ner_labels' as any).containsAny(nerFilters as any));
+    filtersArray.push(byProperty('ner_labels').containsAny(nerFilters));
   }
 
   const combinedFilter: FilterValue =
@@ -500,15 +540,16 @@ export async function searchNerEntitiesAcrossCollection(
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<Chunks>('Chunks');
+  const byProperty = getByPropertyFilter(myCollection as unknown as { filter: { byProperty: unknown } });
 
   try {
     const filtersArray: FilterValue[] = [
-      myCollection.filter.byProperty('ner_text' as any).containsAny([entityText.toLowerCase()]),
-      myCollection.filter.byProperty('ner_labels' as any).containsAny([entityLabel]),
+      byProperty('ner_text').containsAny([entityText.toLowerCase()]),
+      byProperty('ner_labels').containsAny([entityLabel]),
     ];
 
     if (excludeStoryUuid) {
-      filtersArray.push(myCollection.filter.byProperty('theirstory_id' as any).notEqual(excludeStoryUuid));
+      filtersArray.push(byProperty('theirstory_id').notEqual(excludeStoryUuid));
     }
 
     const combinedFilter: FilterValue = {
@@ -520,15 +561,7 @@ export async function searchNerEntitiesAcrossCollection(
     const response = await myCollection.query.fetchObjects({
       limit,
       filters: combinedFilter,
-      returnProperties: [
-        'interview_title',
-        'start_time',
-        'end_time',
-        'speaker',
-        'transcription',
-        'ner_labels',
-        'theirstory_id',
-      ] as any,
+      returnProperties: NER_SEARCH_RETURN_PROPS,
     });
 
     return response;
@@ -536,4 +569,103 @@ export async function searchNerEntitiesAcrossCollection(
     console.error('Error searching NER entities across collection:', error);
     throw new Error('Failed to search NER entities across collection');
   }
+}
+
+export type IndexChapter = {
+  section_id: number;
+  section_title: string;
+  start_time: number;
+  end_time: number;
+};
+
+const INDEXES_CHUNKS_LIMIT = 10_000;
+
+/** Fetches chunks and groups by story (theirstory_id) and section_id for the indexes page. */
+export async function getChaptersGroupedByStory(): Promise<Record<string, IndexChapter[]>> {
+  const client = await initWeaviateClient();
+  const myCollection = client.collections.get<Chunks>('Chunks');
+  const response = await myCollection.query.fetchObjects({
+    limit: INDEXES_CHUNKS_LIMIT,
+    returnProperties: CHAPTER_GROUP_RETURN_PROPS,
+  });
+
+  const byStory = new Map<string, Map<number, { title: string; start: number; end: number }>>();
+  for (const obj of response.objects) {
+    const p = (obj.properties ?? {}) as Partial<Chunks>;
+    const storyId = p?.theirstory_id ?? '';
+    const sectionId = Number(p?.section_id ?? 0);
+    const title = String(p?.section_title ?? '').trim() || 'Untitled section';
+    const start = Number(p?.start_time ?? 0);
+    const end = Number(p?.end_time ?? 0);
+    if (!storyId) continue;
+    if (!byStory.has(storyId)) {
+      byStory.set(storyId, new Map());
+    }
+    const sections = byStory.get(storyId)!;
+    if (!sections.has(sectionId)) {
+      sections.set(sectionId, { title, start, end });
+    } else {
+      const cur = sections.get(sectionId)!;
+      cur.start = Math.min(cur.start, start);
+      cur.end = Math.max(cur.end, end);
+    }
+  }
+
+  const result: Record<string, IndexChapter[]> = {};
+  for (const [storyId, sections] of byStory.entries()) {
+    const arr = Array.from(sections.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([section_id, { title: section_title, start: start_time, end: end_time }]) => ({
+        section_id,
+        section_title,
+        start_time,
+        end_time,
+      }));
+    result[storyId] = arr;
+  }
+  return result;
+}
+
+const NER_ENTITY_RECORDING_COUNT_KEY = (text: string, label: string) => `${text.toLowerCase()}|${label}`;
+
+/** Returns how many distinct recordings (testimonies) contain each entity. */
+export async function getNerEntityRecordingCounts(
+  entities: { text: string; label: string }[],
+): Promise<Record<string, number>> {
+  if (entities.length === 0) return {};
+  const client = await initWeaviateClient();
+  const myCollection = client.collections.get<Chunks>('Chunks');
+  const byProperty = getByPropertyFilter(myCollection as unknown as { filter: { byProperty: unknown } });
+  const result: Record<string, number> = {};
+  const limit = 1000;
+
+  for (const { text, label } of entities) {
+    try {
+      const filtersArray: FilterValue[] = [
+        byProperty('ner_text').containsAny([text.toLowerCase()]),
+        byProperty('ner_labels').containsAny([label]),
+      ];
+      const combinedFilter: FilterValue = {
+        operator: 'And',
+        filters: filtersArray,
+        value: true,
+      };
+      const response = await myCollection.query.fetchObjects({
+        limit,
+        filters: combinedFilter,
+        returnProperties: STORY_ID_ONLY_RETURN_PROPS,
+      });
+      const ids = new Set<string>();
+      for (const obj of response.objects) {
+        const id = (obj.properties as Partial<Chunks> | undefined)?.theirstory_id;
+        if (id) ids.add(id);
+      }
+      result[NER_ENTITY_RECORDING_COUNT_KEY(text, label)] = ids.size;
+    } catch (err) {
+      console.error('Error getting recording count for entity:', text, label, err);
+      result[NER_ENTITY_RECORDING_COUNT_KEY(text, label)] = 0;
+    }
+  }
+
+  return result;
 }
