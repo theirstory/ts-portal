@@ -15,22 +15,7 @@
 # production
 /build
 
-# recording / media content (repo stays without interview data or built assets)
-# Ignore all of public except carousel images (for templates/PRs)
-/public/*
-!/public/images/
-/public/images/*
-!/public/images/carousel*
-weaviate-data.tar.gz
-
-# json: ignore project interview data and generated counts; keep templates and schemas for PRs/forks
-/json/entity-recording-counts.json
 !/json/interviews/example-collection/
-
-# local/deploy scripts and docs (not for upstream PR)
-setup-nginx-ssl.sh
-backup-for-repo-recreate.sh
-RESTORE_AFTER_REFORK.md
 
 # misc
 .DS_Store
