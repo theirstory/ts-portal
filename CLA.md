@@ -1,45 +1,107 @@
-# Contributor License Agreement (CLA)
+# Contributor License Agreement
 
-This Contributor License Agreement ("Agreement") applies to any contribution submitted to this project.
+**TheirStory, Inc.**
+Version 1.0 — Effective upon submission of a contribution
 
-Project: ts-portal  
-License: GNU Affero General Public License v3.0 (AGPL-3.0-only)
+---
 
-By submitting a contribution (code, documentation, assets, or any other material), you agree to the following:
+This Contributor License Agreement ("Agreement") governs any contribution of code, documentation, assets, or other material ("Contribution") submitted to any TheirStory, Inc. repository, including ts-portal (the "Project"). This Agreement is between TheirStory, Inc. ("TheirStory") and you, the individual or legal entity making the Contribution ("You").
+
+By submitting a pull request or otherwise contributing to the Project, You agree to the terms of this Agreement. If You are contributing on behalf of an employer or other organization, "You" includes that organization, and You represent that You are authorized to bind it to this Agreement.
+
+---
 
 ## 1. Definitions
 
-- "You" means the individual contributor or the legal entity on whose behalf the contribution is submitted.
-- "Contribution" means any original work intentionally submitted to the project.
+- **"Contribution"** means any original work of authorship, including modifications or additions to existing work, that You intentionally submit to TheirStory for inclusion in the Project.
 
-## 2. Copyright Ownership
+- **"Submit"** means any form of communication sent to TheirStory or its repositories, including pull requests, patches, issues with attached code, or electronic communications, but excluding communications conspicuously marked "Not a Contribution."
 
-You retain ownership of your Contribution.
+- **"You" / "Your"** means the individual contributor, or the legal entity on whose behalf a Contribution is made.
 
-## 3. License Grant to Project Maintainers
+---
 
-You grant the project maintainers and recipients of the project a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to use, reproduce, modify, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute your Contribution as part of this project under AGPL-3.0.
+## 2. Ownership of Contributions
 
-## 4. Inbound = Outbound
+You retain all copyright and other intellectual property rights in Your Contributions. This Agreement does not transfer ownership of Your Contributions to TheirStory. You are granting licenses only, as set out below.
 
-You agree that your Contribution is provided under the same license terms used by the project (AGPL-3.0), including any future versions explicitly adopted by the project maintainers.
+---
 
-## 5. Representations
+## 3. Copyright License Grant
 
-You represent that:
+You grant TheirStory a perpetual, worldwide, non-exclusive, royalty-free, irrevocable copyright license to:
 
-- You have the legal right to submit the Contribution.
-- The Contribution is your original work, or you have sufficient rights to submit it.
-- If your Contribution includes third-party material, you have identified it and ensured it is compatible with AGPL-3.0.
+- reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Your Contribution; and
+- use Your Contribution under any license TheirStory determines appropriate, including the Apache License, Version 2.0 ("Apache-2.0"), the GNU Affero General Public License v3.0 ("AGPL-3.0"), or any proprietary or commercial license used for TheirStory's enterprise or commercial offerings.
 
-## 6. No Warranty
+Recipients of software distributed through the ts-portal open source repository will receive Your Contribution under Apache-2.0, the license governing that repository. TheirStory retains the right to incorporate Your Contribution into other products and offerings under different license terms, including proprietary terms, as permitted by the license grant above.
 
-Unless otherwise required by applicable law or agreed in writing, your Contribution is provided "AS IS", without warranties or conditions of any kind.
+---
 
-## 7. Employer/Organization Consent
+## 4. Patent License Grant
 
-If you submit on behalf of an employer or organization, you represent that you are authorized to do so and to grant the rights in this Agreement.
+You grant TheirStory and recipients of software distributed by TheirStory a perpetual, worldwide, non-exclusive, royalty-free, irrevocable patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer Your Contribution and any works incorporating Your Contribution, where such license applies only to patent claims licensable by You that are necessarily infringed by Your Contribution alone or by the combination of Your Contribution with the Project to which it was submitted.
 
-## 8. Acceptance
+If any entity institutes patent litigation against You or any other party (including a cross-claim or counterclaim in a lawsuit) alleging that Your Contribution or any work into which it has been incorporated constitutes direct or contributory patent infringement, then all patent licenses granted to that entity under this Agreement shall terminate as of the date such litigation is filed.
 
-You agree to this Agreement by submitting a pull request to this repository and confirming acceptance via CLA Assistant.
+---
+
+## 5. Outbound License to the Community
+
+TheirStory commits that any distribution of Your Contribution through the public ts-portal repository will be made available under Apache-2.0. This section does not limit TheirStory's rights under Section 3 to use Your Contribution under other license terms in other contexts, including the AGPL-3.0-licensed community edition or proprietary enterprise offerings.
+
+---
+
+## 6. Representations and Warranties
+
+You represent and warrant that:
+
+- You have the legal right to submit the Contribution and to grant the licenses described in this Agreement;
+- Your Contribution is Your original work, or You have sufficient rights from the original author(s) or rights holder(s) to submit it and grant the rights in this Agreement;
+- Your Contribution does not, to the best of Your knowledge, infringe any third party's copyrights, trademarks, patents, or other intellectual property rights;
+- If Your Contribution includes any third-party material, You have identified such material clearly, confirmed it is compatible with Apache-2.0, and have the right to include it; and
+- If You are an employee contributing on behalf of your employer, You have confirmed that your employer has authorized this Contribution and the license grants herein, or that the Contribution is outside the scope of your employment.
+
+---
+
+## 7. Corporate Contributors
+
+If You are submitting a Contribution on behalf of a company or other legal entity, the entity itself must sign a separate Corporate Contributor License Agreement (CCLA) with TheirStory. An individual submitting on behalf of an entity represents that the entity has executed a CCLA or that they have authority to bind the entity to this Agreement.
+
+To request a CCLA, contact [help@theirstory.io](mailto:help@theirstory.io).
+
+---
+
+## 8. No Obligation to Use
+
+TheirStory is not obligated to include Your Contribution in the Project or any other product or service. TheirStory may accept, reject, modify, or decline to use any Contribution at its sole discretion.
+
+---
+
+## 9. No Warranty
+
+Unless required by applicable law or agreed to in writing, Your Contribution is provided "AS IS," WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+
+---
+
+## 10. Future Versions of This Agreement
+
+TheirStory may publish updated versions of this CLA. Contributions submitted after a new version takes effect will be governed by the new version. Contributions already submitted remain governed by the version in effect at the time of submission, unless You explicitly agree to the new version.
+
+---
+
+## 11. Governing Law
+
+This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of law provisions. Any disputes arising under this Agreement shall be resolved in the courts of Delaware.
+
+---
+
+## 12. Acceptance
+
+You agree to this Agreement by submitting a pull request to a TheirStory repository and confirming acceptance via CLA Assistant. Your GitHub username, email address (if available), and the timestamp of your confirmation are recorded as evidence of your acceptance and constitute a binding electronic signature for purposes of this Agreement.
+
+If You do not agree to these terms, do not submit a Contribution.
+
+---
+
+_Questions? Contact TheirStory at [help@theirstory.io](mailto:help@theirstory.io). This CLA is modeled on the [Apache Individual Contributor License Agreement (v2.0)](https://www.apache.org/licenses/icla.pdf) and the Google CLA._
