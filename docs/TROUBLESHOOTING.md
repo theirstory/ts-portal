@@ -12,9 +12,9 @@ docker compose ps
 docker compose logs --tail=50 | grep -i error
 
 # Health check all services
-curl http://localhost:8080/v1/.well-known/ready  # Weaviate
-curl http://localhost:7070/health                # NLP
-curl http://localhost:3000                       # Frontend
+curl http://localhost:8083/v1/.well-known/ready  # Weaviate
+curl http://localhost:7073/health                 # NLP
+curl http://localhost:3003                       # Frontend
 ```
 
 ## Startup Issues
@@ -67,18 +67,18 @@ Error: bind: address already in use
 **Solutions:**
 
 ```bash
-# Find process using port 3000
-lsof -ti:3000
+# Find process using port 3003
+lsof -ti:3003
 
 # Kill process
-lsof -ti:3000 | xargs kill -9
+lsof -ti:3003 | xargs kill -9
 
 # Or change port in docker-compose.yml
 ports:
-  - "3001:3000"  # Use 3001 instead
+  - "3004:3000"  # Use 3004 instead
 
 # Check all port conflicts
-lsof -ti:3000,7070,8080
+lsof -ti:3003,7073,8083
 ```
 
 ---
@@ -99,7 +99,7 @@ docker compose ps
 # Look for "healthy" status
 
 # Check Weaviate is responding
-curl http://localhost:8080/v1/.well-known/ready
+curl http://localhost:8083/v1/.well-known/ready
 
 # If unhealthy, check logs
 docker compose logs weaviate
@@ -108,7 +108,7 @@ docker compose logs weaviate
 docker compose restart weaviate
 
 # Give it time - can take 30-60s on first start
-watch -n 2 'curl -s http://localhost:8080/v1/.well-known/ready'
+watch -n 2 'curl -s http://localhost:8083/v1/.well-known/ready'
 ```
 
 ---
@@ -160,7 +160,7 @@ docker compose logs nlp-processor | grep -i chunk
 cat json/interviews/problem.json | jq '.transcript.sections[0].paragraphs[0].words | length'
 
 # Test processing directly
-curl -X POST http://localhost:7070/process-story \
+curl -X POST http://localhost:7073/process-story \
   -H "Content-Type: application/json" \
   -d @json/interviews/problem.json
 ```
@@ -187,7 +187,7 @@ cat json/interviews/problem.json | jq '.transcript.sections[].paragraphs[].words
 3. **NLP processor not healthy:**
 
 ```bash
-curl http://localhost:7070/health
+curl http://localhost:7073/health
 ```
 
 **Solutions:**
@@ -273,7 +273,7 @@ docker compose ps frontend
 docker compose logs -f frontend
 
 # Check for port conflicts
-lsof -ti:3000
+lsof -ti:3003
 
 # Restart
 docker compose restart frontend
@@ -297,15 +297,15 @@ docker compose up --build frontend
 
 ```bash
 # Verify data exists
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 
 # Test direct search
-curl -X POST http://localhost:8080/v1/graphql \
+curl -X POST http://localhost:8083/v1/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{Get {Chunks(limit: 1) {transcription}}}"}' | jq
 
 # Check vectors exist
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1" | \
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1" | \
   jq '.objects[0].vector | length'
 ```
 
@@ -316,10 +316,10 @@ curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1" | \
 docker compose run --rm weaviate-init
 
 # Verify NLP processor is healthy
-curl http://localhost:7070/health
+curl http://localhost:7073/health
 
 # Check embedding generation
-curl -X POST http://localhost:7070/embed \
+curl -X POST http://localhost:7073/embed \
   -H "Content-Type: application/json" \
   -d '{"text": "test"}'
 ```
@@ -340,11 +340,11 @@ curl -X POST http://localhost:7070/embed \
 docker compose logs weaviate-init | grep ner
 
 # Verify entities in database
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1" | \
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1" | \
   jq '.objects[0].properties.ner_data'
 
 # Check NER threshold
-curl http://localhost:7070/health | jq '.gliner_threshold'
+curl http://localhost:7073/health | jq '.gliner_threshold'
 ```
 
 **Solutions:**
@@ -412,11 +412,11 @@ docker system prune -a
 docker compose logs weaviate | grep -i slow
 
 # Check number of chunks
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 # Too many? (>10,000) → Increase CHUNK_SECONDS
 
 # Check vector size
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1" | \
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1" | \
   jq '.objects[0].vector | length'
 # Should be 384
 
@@ -567,7 +567,7 @@ docker volume rm portals_weaviate_data
 docker compose --profile local up
 
 # Or clear via API
-curl -X DELETE http://localhost:8080/v1/objects/Testimonies/{uuid}
+curl -X DELETE http://localhost:8083/v1/objects/Testimonies/{uuid}
 ```
 
 ---
@@ -602,7 +602,7 @@ docker compose config > debug-compose.yml
 
 - Clear everything: `docker compose down -v && docker compose up --build`
 - Wait longer: First startup can take 2-3 minutes
-- Check ports: Make sure 3000, 7070, 8080 are free
+- Check ports: Make sure 3003, 7073, 8083 are free
 - Restart Docker: Sometimes fixes mysterious issues
 
 4. **Still stuck?**

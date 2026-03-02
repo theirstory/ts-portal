@@ -18,7 +18,7 @@ fi
 
 domain="$1"
 email="$2"
-app_port="${3:-3000}"
+app_port="${3:-3003}"
 server_name="$domain www.$domain"
 site_file="/etc/nginx/sites-available/ts-portal.conf"
 

@@ -73,7 +73,7 @@ services:
     volumes:
       - ./config.json:/app/config.json:ro
     ports:
-      - "3000:3000"
+      - "3003:3000"
     restart: unless-stopped
 
 volumes:

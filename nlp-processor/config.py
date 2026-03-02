@@ -38,7 +38,7 @@ class Config:
     GLINER_MODEL = os.getenv("GLINER_MODEL", "urchade/gliner_multi-v2.1")
     GLINER_THRESHOLD = float(os.getenv("GLINER_THRESHOLD", "0.3"))
     GLINER_LOAD_TIMEOUT_SECONDS = int(
-        os.getenv("GLINER_LOAD_TIMEOUT_SECONDS", "240")
+        os.getenv("GLINER_LOAD_TIMEOUT_SECONDS", "600")
     )
     MIN_TEXT_LENGTH_FOR_NER = int(os.getenv("MIN_TEXT_LENGTH_FOR_NER", "50"))
     

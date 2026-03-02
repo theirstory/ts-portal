@@ -54,7 +54,7 @@ cp nlp-processor/.env.example nlp-processor/.env
 docker compose --profile local up
 
 # 3. Open in browser
-open http://localhost:3000
+open http://localhost:3003
 ```
 
 **Important:** Edit `config.json` to customize your portal with organization name, branding colors, logos, and NER entity labels. See [CONFIGURATION.md](./CONFIGURATION.md) for all configuration options.
@@ -67,9 +67,9 @@ Default embedding model is `sentence-transformers/LaBSE` (multilingual). If mode
 
 **Services:**
 
-- Frontend: `localhost:3000`
-- Weaviate: `localhost:8080`
-- NLP Processor: `localhost:7070`
+- Frontend: `localhost:3003`
+- Weaviate: `localhost:8083`
+- NLP Processor: `localhost:7073`
 
 ## 📥 Import Interviews
 
@@ -120,8 +120,8 @@ See `json/interviews/README.md` and `docs/IMPORTING_INTERVIEWS.md` for full deta
 
 ```bash
 # Count interviews and chunks
-curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 ```
 
 **JSON Format:** See [docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md)
@@ -150,7 +150,7 @@ sudo bash scripts/deploy/setup-docker-ubuntu.sh
 ./scripts/deploy/deploy-prod.sh
 
 # Site URL after deploy
-# http://YOUR_SERVER_IP:3000
+# http://YOUR_SERVER_IP:3003
 
 # Optional but recommended: domain + HTTPS + firewall
 # sudo bash scripts/deploy/setup-nginx-ssl.sh YOUR_DOMAIN YOUR_EMAIL 3000
@@ -211,17 +211,17 @@ docker compose run --rm weaviate-init # Reimport interviews
 docker volume rm portals_weaviate_data # Clear DB
 
 # Verify data
-curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 
 # Testing NLP
-curl -X POST http://localhost:7070/embed \
+curl -X POST http://localhost:7073/embed \
   -H "Content-Type: application/json" \
   -d '{"text": "Test sentence"}'
 
 # Health checks
-curl http://localhost:8080/v1/.well-known/ready  # Weaviate
-curl http://localhost:7070/health | jq          # NLP Processor
+curl http://localhost:8083/v1/.well-known/ready  # Weaviate
+curl http://localhost:7073/health | jq          # NLP Processor
 ```
 
 See [docs/COMMANDS.md](./docs/COMMANDS.md) for the complete list.

@@ -8,16 +8,16 @@ This document describes the Docker container architecture and how services inter
 
 | Container         | Purpose                        | Port        | Image/Base                       | Volumes                                       |
 | ----------------- | ------------------------------ | ----------- | -------------------------------- | --------------------------------------------- |
-| **weaviate**      | Vector database                | 8080, 50051 | semitechnologies/weaviate:1.35.0 | `weaviate_data`                               |
-| **nlp-processor** | NLP service (embeddings + NER) | 7070        | python:3.11-slim                 | `./nlp-processor:/app`<br>`huggingface_cache` |
+| **weaviate**      | Vector database                | 8083, 50054 (host) | semitechnologies/weaviate:1.35.0 | `weaviate_data`                               |
+| **nlp-processor** | NLP service (embeddings + NER) | 7073 (host)        | python:3.11-slim                 | `./nlp-processor:/app`<br>`huggingface_cache` |
 | **weaviate-init** | Schema + data import           | -           | node:20                          | `.:/app`<br>`node_modules`                    |
-| **frontend**      | Next.js web application        | 3000        | node:20                          | `.:/app`<br>`node_modules`<br>`yarn_cache`    |
+| **frontend**      | Next.js web application        | 3003 (host)        | node:20                          | `.:/app`<br>`node_modules`<br>`yarn_cache`    |
 
 ### Cloud Profile (`--profile cloud`)
 
 | Container          | Purpose         | Port | Notes                                 |
 | ------------------ | --------------- | ---- | ------------------------------------- |
-| **frontend_cloud** | Next.js web app | 3000 | Connects to external Weaviate cluster |
+| **frontend_cloud** | Next.js web app | 3003 (host) | Connects to external Weaviate cluster |
 
 ## Container Details
 
@@ -34,7 +34,7 @@ This document describes the Docker container architecture and how services inter
 **Healthcheck**:
 
 ```bash
-curl http://localhost:8080/v1/.well-known/ready
+curl http://localhost:8083/v1/.well-known/ready
 ```
 
 **When to use**: Local development, testing, demos  
@@ -74,7 +74,7 @@ curl http://localhost:8080/v1/.well-known/ready
 **Healthcheck:**
 
 ```bash
-curl http://localhost:7070/health
+curl http://localhost:7073/health
 ```
 
 **Environment Variables**: See [ENVIRONMENT.md](./ENVIRONMENT.md)
@@ -174,7 +174,7 @@ docker system df -v
 │  ┌──────────────┐      ┌──────────────┐               │
 │  │   frontend   │─────▶│   weaviate   │               │
 │  │  (Next.js)   │      │  (port 8080) │               │
-│  │  port 3000   │      └──────────────┘               │
+│  │  port 3003   │      └──────────────┘               │
 │  └──────────────┘             ▲                         │
 │         │                     │                         │
 │         │                     │                         │
@@ -187,13 +187,13 @@ docker system df -v
 └─────────────────────────────────────────────────────────┘
          │                        │
          ▼                        ▼
-   Host: 3000            Host: 7070, 8080
+   Host: 3003            Host: 7073, 8083
 ```
 
 **Flow:**
 
-1. User accesses frontend on `localhost:3000`
-2. Frontend queries Weaviate on `weaviate:8080` (internal) / `localhost:8080` (external)
+1. User accesses frontend on `localhost:3003`
+2. Frontend queries Weaviate on `weaviate:8080` (internal) / `localhost:8083` (external)
 3. Import process sends interviews to `nlp-processor:7070`
 4. NLP processor writes chunks with vectors to `weaviate:8080`
 
@@ -241,9 +241,9 @@ All services include health checks to ensure proper startup sequencing:
 docker compose ps
 
 # Individual health checks
-curl http://localhost:8080/v1/.well-known/ready  # Weaviate
-curl http://localhost:7070/health               # NLP Processor
-curl http://localhost:3000                      # Frontend
+curl http://localhost:8083/v1/.well-known/ready  # Weaviate
+curl http://localhost:7073/health               # NLP Processor
+curl http://localhost:3003                      # Frontend
 ```
 
 ## Resource Requirements

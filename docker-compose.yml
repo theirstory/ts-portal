@@ -2,10 +2,10 @@ services:
   weaviate:
     profiles: ["local"]
     image: semitechnologies/weaviate:1.35.0
-    container_name: weaviate
+    container_name: lapl-weaviate
     ports:
-      - "8080:8080"
-      - "50051:50051"
+      - "8083:8080"
+      - "50054:50051"
     environment:
       QUERY_DEFAULTS_LIMIT: "25"
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
@@ -26,7 +26,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: weaviate-init
+    container_name: lapl-weaviate-init
     env_file:
       - .env.local
     depends_on:
@@ -45,9 +45,9 @@ services:
     build:
       context: ./nlp-processor
       dockerfile: Dockerfile
-    container_name: nlp-processor
+    container_name: lapl-nlp-processor
     ports:
-      - "7070:7070"
+      - "7073:7070"
     env_file:
       - ./nlp-processor/.env
     depends_on:
@@ -70,9 +70,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: next-frontend
+    container_name: lapl-frontend
     ports:
-      - "3000:3000"
+      - "3003:3000"
     environment:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
@@ -97,9 +97,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: next-frontend-cloud
+    container_name: lapl-frontend-cloud
     ports:
-      - "3000:3000"
+      - "3003:3000"
     environment:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"

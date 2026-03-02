@@ -12,7 +12,7 @@ cp your-interviews/*.json json/interviews/
 docker compose run --rm weaviate-init
 
 # 3. Verify
-curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length'
 ```
 
 ## Collections By Folder
@@ -213,13 +213,13 @@ docker compose logs -f nlp-processor
 
 ```bash
 # Count imported testimonies
-curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length'
 
 # Count chunks
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 
 # View chunk quality stats
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1000" | jq '{
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1000" | jq '{
   total: (.objects | length),
   ending_with_period: [.objects[].properties.transcription | select(endswith("."))] | length,
   avg_words: ([.objects[].properties.transcription | split(" ") | length] | add / length | floor)
@@ -230,10 +230,10 @@ curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1000" | jq '{
 
 ```bash
 # Get testimony by ID
-curl -s "http://localhost:8080/v1/objects/Testimonies/{uuid}" | jq
+curl -s "http://localhost:8083/v1/objects/Testimonies/{uuid}" | jq
 
 # Get chunks for testimony
-curl -s "http://localhost:8080/v1/graphql" \
+curl -s "http://localhost:8083/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{
@@ -322,7 +322,7 @@ cat json/interviews/problem.json | jq '.transcript.sections[0].paragraphs[0].wor
 
 ```bash
 # Check NLP health
-curl http://localhost:7070/health
+curl http://localhost:7073/health
 
 # View logs
 docker compose logs --tail=100 nlp-processor
@@ -342,7 +342,7 @@ docker compose restart nlp-processor
 docker compose ps
 
 # Check health endpoint
-curl http://localhost:8080/v1/.well-known/ready
+curl http://localhost:8083/v1/.well-known/ready
 ```
 
 ## Batch Import Strategies
@@ -383,14 +383,14 @@ done
 ```bash
 # Expected vs actual testimonies
 EXPECTED=10
-ACTUAL=$(curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length')
+ACTUAL=$(curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length')
 echo "Expected: $EXPECTED, Actual: $ACTUAL"
 
 # Verify chunks exist for all testimonies
-curl -s "http://localhost:8080/v1/objects?class=Testimonies&limit=1000" | \
+curl -s "http://localhost:8083/v1/objects?class=Testimonies&limit=1000" | \
   jq -r '.objects[].id' | \
   while read uuid; do
-    COUNT=$(curl -s "http://localhost:8080/v1/graphql" \
+    COUNT=$(curl -s "http://localhost:8083/v1/graphql" \
       -H "Content-Type: application/json" \
       -d "{\"query\": \"{Get {Chunks(where: {path: [\\\"theirstory_id\\\"], operator: Equal, valueText: \\\"$uuid\\\"}) {_additional {id}}}}\"}" | \
       jq '.data.Get.Chunks | length')
@@ -402,7 +402,7 @@ curl -s "http://localhost:8080/v1/objects?class=Testimonies&limit=1000" | \
 
 ```bash
 # Count testimonies with NER data
-curl -s "http://localhost:8080/v1/objects?class=Testimonies&limit=1000" | \
+curl -s "http://localhost:8083/v1/objects?class=Testimonies&limit=1000" | \
   jq '[.objects[] | select(.properties.ner_labels | length > 0)] | length'
 ```
 
@@ -412,13 +412,13 @@ For programmatic imports or custom workflows:
 
 ```bash
 # Process single interview via API
-curl -X POST http://localhost:7070/process-story \
+curl -X POST http://localhost:7073/process-story \
   -H "Content-Type: application/json" \
   -d @json/interviews/example.json \
   | jq '.counts'
 
 # With custom chunking parameters
-curl -X POST "http://localhost:7070/process-story?chunk_seconds=60&overlap_seconds=10" \
+curl -X POST "http://localhost:7073/process-story?chunk_seconds=60&overlap_seconds=10" \
   -H "Content-Type: application/json" \
   -d @json/interviews/example.json
 ```

@@ -1,4 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
+import { request as httpRequest } from 'node:http';
 import { join } from 'node:path';
 
 function buildWeaviateUrl(): string {
@@ -25,6 +26,29 @@ const COLLECTION_META_JSON_FILES = new Set(['collection.json', 'collection.confi
 const COLLECTION_META_MD_FILES = ['COLLECTION.md', 'collection.md', 'README.md'];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+const NLP_REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
+
+function nlpPost(url: string, jsonBody: string): Promise<{ status: number; text: string }> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = httpRequest(
+      { hostname: parsed.hostname, port: parsed.port, path: parsed.pathname + parsed.search, method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(jsonBody) },
+        timeout: NLP_REQUEST_TIMEOUT_MS },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ status: res.statusCode ?? 0, text: Buffer.concat(chunks).toString() }));
+        res.on('error', reject);
+      },
+    );
+    req.on('timeout', () => { req.destroy(new Error(`NLP request timed out after ${NLP_REQUEST_TIMEOUT_MS / 1000}s`)); });
+    req.on('error', reject);
+    req.write(jsonBody);
+    req.end();
+  });
+}
 
 type CollectionMetadata = {
   id: string;
@@ -297,18 +321,13 @@ async function processInterviewFileThroughNlp(job: InterviewImportJob): Promise<
   const body = wrapAsProcessRequest(raw, job.collection);
 
   const url = `${NLP_URL}/process-story?write_to_weaviate=true&run_ner=true`;
+  const payload = JSON.stringify(body);
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  const text = await res.text().catch(() => '');
-  if (!res.ok) {
+  const { status, text } = await nlpPost(url, payload);
+  if (status < 200 || status >= 300) {
     throw new Error(
       `[weaviate-import] NLP process failed for ${job.filePath} (collection=${job.collection.id}). ` +
-        `HTTP ${res.status}. ${text}`,
+        `HTTP ${status}. ${text}`,
     );
   }
 

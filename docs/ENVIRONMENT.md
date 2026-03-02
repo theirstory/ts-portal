@@ -19,11 +19,11 @@ Located in project root.
 ### Weaviate Connection
 
 ```bash
-# Local development (defaults)
-WEAVIATE_HOST_URL=http://localhost:8080
-WEAVIATE_PORT=8080
-WEAVIATE_GRPC_HOST_URL=http://localhost:8080
-WEAVIATE_GRPC_PORT=50051
+# Local development (defaults; when connecting from host to Docker use port 8083)
+WEAVIATE_HOST_URL=localhost
+WEAVIATE_PORT=8083
+WEAVIATE_GRPC_HOST_URL=localhost
+WEAVIATE_GRPC_PORT=50054
 WEAVIATE_SECURE=false
 
 # Cloud deployment
@@ -150,8 +150,9 @@ CHOKIDAR_USEPOLLING=true
 Create `.env.local`:
 
 ```bash
-# Minimal - only if you need custom settings
-WEAVIATE_HOST_URL=http://localhost:8080
+# Minimal - when connecting from host to Docker (port 8083)
+WEAVIATE_HOST_URL=localhost
+WEAVIATE_PORT=8083
 ```
 
 Create `nlp-processor/.env.local`:
@@ -193,7 +194,7 @@ Variables are loaded in this order (later overrides earlier):
 ### Check NLP processor config:
 
 ```bash
-curl http://localhost:7070/health | jq
+curl http://localhost:7073/health | jq
 ```
 
 Response:

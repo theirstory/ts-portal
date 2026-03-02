@@ -153,19 +153,19 @@ docker compose logs -f weaviate-init
 
 ```bash
 # Count testimonies
-curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies" | jq '.objects | length'
 
 # Count chunks
-curl -s "http://localhost:8080/v1/objects?class=Chunks" | jq '.objects | length'
+curl -s "http://localhost:8083/v1/objects?class=Chunks" | jq '.objects | length'
 
 # View sample testimony
-curl -s "http://localhost:8080/v1/objects?class=Testimonies&limit=1" | jq '.objects[0]'
+curl -s "http://localhost:8083/v1/objects?class=Testimonies&limit=1" | jq '.objects[0]'
 
 # View sample chunk
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1" | jq '.objects[0]'
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1" | jq '.objects[0]'
 
 # Check chunk quality
-curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1000" | jq '{
+curl -s "http://localhost:8083/v1/objects?class=Chunks&limit=1000" | jq '{
   total: (.objects | length),
   ending_with_period: [.objects[].properties.transcription | select(endswith("."))] | length,
   avg_words: ([.objects[].properties.transcription | split(" ") | length] | add / length | floor),
@@ -241,30 +241,30 @@ docker compose exec nlp-processor ping weaviate
 
 ```bash
 # Weaviate
-curl http://localhost:8080/v1/.well-known/ready
+curl http://localhost:8083/v1/.well-known/ready
 
 # NLP Processor
-curl http://localhost:7070/health | jq
+curl http://localhost:7073/health | jq
 
 # Frontend
-curl http://localhost:3000
+curl http://localhost:3003
 ```
 
 ### Testing NLP Features
 
 ```bash
 # Test embeddings
-curl -X POST http://localhost:7070/embed \
+curl -X POST http://localhost:7073/embed \
   -H "Content-Type: application/json" \
   -d '{"text": "This is a test sentence for embedding generation."}'
 
 # Process single interview
-curl -X POST http://localhost:7070/process-story \
+curl -X POST http://localhost:7073/process-story \
   -H "Content-Type: application/json" \
   -d @json/interviews/example.json
 
 # Custom chunking parameters
-curl -X POST "http://localhost:7070/process-story?chunk_seconds=60&overlap_seconds=10" \
+curl -X POST "http://localhost:7073/process-story?chunk_seconds=60&overlap_seconds=10" \
   -H "Content-Type: application/json" \
   -d @json/interviews/example.json
 ```
@@ -273,7 +273,7 @@ curl -X POST "http://localhost:7070/process-story?chunk_seconds=60&overlap_secon
 
 ```bash
 # Semantic search via GraphQL
-curl -X POST http://localhost:8080/v1/graphql \
+curl -X POST http://localhost:8083/v1/graphql \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{
@@ -294,7 +294,7 @@ curl -X POST http://localhost:8080/v1/graphql \
   }' | jq
 
 # Search with filters
-curl -X POST http://localhost:8080/v1/graphql \
+curl -X POST http://localhost:8083/v1/graphql \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{
@@ -321,16 +321,16 @@ curl -X POST http://localhost:8080/v1/graphql \
 
 ```bash
 # View full schema
-curl http://localhost:8080/v1/schema | jq
+curl http://localhost:8083/v1/schema | jq
 
 # View Testimonies class
-curl http://localhost:8080/v1/schema/Testimonies | jq
+curl http://localhost:8083/v1/schema/Testimonies | jq
 
 # View Chunks class
-curl http://localhost:8080/v1/schema/Chunks | jq
+curl http://localhost:8083/v1/schema/Chunks | jq
 
 # Check vectorizer config
-curl http://localhost:8080/v1/schema | jq '.classes[] | {name: .class, vectorizer: .vectorizer}'
+curl http://localhost:8083/v1/schema | jq '.classes[] | {name: .class, vectorizer: .vectorizer}'
 ```
 
 ## Debugging
