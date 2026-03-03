@@ -42,11 +42,11 @@ A complete system to archive, process, and search video/audio interviews with th
 ### Get started in 4 easy steps
 
 ```bash
-# 1. Clone and configure
+# 1. Clone the repository
 git clone git@github.com:theirstory/ts-portal.git
 cd ts-portal
 
-# 2. Copy example and env files
+# 2. Copy config and env files from example
 cp config.example.json config.json # Edit config.json with your organization details
 cp .env.example .env.local
 cp nlp-processor/.env.example nlp-processor/.env
@@ -84,17 +84,9 @@ If you have interviews already uploaded to TheirStory, you can easily obtain the
 
 ### Importing the Data
 
-```bash
-# 1. Add your collection subfolders and interview JSON files under:
-json/interviews/
+Recommended approach: create one subfolder per collection with a `collection.json` file and place interview JSON files inside each folder.
 
-# 2. Manual import
-docker compose run --rm weaviate-init
-```
-
-Recommended approach: create one subfolder per collection and place interview JSON files inside each folder.
-
-If you place JSON files directly under `json/interviews/` (without subfolder), they are imported into the `default` collection.
+You can use `json/interviews/example-collection/collection.json` as a copy-paste template for new collections.
 
 Example:
 
@@ -108,11 +100,21 @@ json/interviews/
     └── interview-2.json
 ```
 
-See `json/interviews/README.md` and `docs/IMPORTING_INTERVIEWS.md` for full details.
+Note: If needed, you can skip subfolders: JSON files placed directly under `json/interviews/` are imported into the `default` collection.
+
+```bash
+# 1. Add your collection subfolders and interview JSON files under:
+json/interviews/
+
+# 2. Manual import
+docker compose run --rm weaviate-init
+```
+
+See [docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md) for full details.
 
 **Process:**
 
-1. Hybrid chunking (~30s + sentence boundaries)
+1. Hybrid chunking
 2. Embedding generation
 3. NER extraction (people, places, organizations, etc.)
 4. Storage in Weaviate with vectors
