@@ -39,21 +39,22 @@ A complete system to archive, process, and search video/audio interviews with th
 
 ## 🚀 Quick Start
 
+### Get started in 4 easy steps
+
 ```bash
 # 1. Clone and configure
 git clone git@github.com:theirstory/ts-portal.git
 cd ts-portal
 
-cp config.example.json config.json
-# Edit config.json with your organization details
-
+# 2. Copy example and env files
+cp config.example.json config.json # Edit config.json with your organization details
 cp .env.example .env.local
 cp nlp-processor/.env.example nlp-processor/.env
 
-# 2. Start services
+# 3. Start services
 docker compose --profile local up
 
-# 3. Open in browser
+# 4. Open in browser
 open http://localhost:3000
 ```
 
@@ -77,7 +78,7 @@ Default embedding model is `sentence-transformers/LaBSE` (multilingual). If mode
 
 If you have interviews already uploaded to TheirStory, you can easily obtain the JSON files:
 
-1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v022/
+1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v028/
 2. Log in with your TheirStory username and password
 3. Download the JSON files for your interviews
 
