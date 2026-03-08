@@ -20,7 +20,9 @@ function formatTime(seconds: number): string {
 export const ChatCitationChip = ({ citation, siblings }: Props) => {
   const setActiveCitation = useChatStore((s) => s.setActiveCitation);
 
-  const tooltipContent = `${citation.speaker} — "${citation.interviewTitle}" (${formatTime(citation.startTime)})`;
+  const tooltipContent = citation.isChapterSynopsis
+    ? `Chapter Summary — "${citation.interviewTitle}" · ${citation.sectionTitle}`
+    : `${citation.speaker} — "${citation.interviewTitle}" (${formatTime(citation.startTime)})`;
 
   return (
     <Tooltip title={tooltipContent} arrow placement="top">
@@ -34,8 +36,8 @@ export const ChatCitationChip = ({ citation, siblings }: Props) => {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: colors.primary.main,
-          color: colors.primary.contrastText,
+          bgcolor: citation.isChapterSynopsis ? colors.success.main : colors.primary.main,
+          color: citation.isChapterSynopsis ? colors.success.contrastText : colors.primary.contrastText,
           fontSize: '0.7rem',
           fontWeight: 700,
           borderRadius: '4px',
@@ -48,7 +50,7 @@ export const ChatCitationChip = ({ citation, siblings }: Props) => {
           verticalAlign: 'super',
           transition: 'background-color 0.15s',
           '&:hover': {
-            bgcolor: colors.primary.dark,
+            bgcolor: citation.isChapterSynopsis ? colors.success.dark : colors.primary.dark,
           },
         }}>
         {citation.index}

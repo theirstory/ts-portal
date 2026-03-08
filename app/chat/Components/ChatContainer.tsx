@@ -34,7 +34,7 @@ export const ChatContainer = () => {
       </Box>
       <Box
         sx={{
-          width: isSidePanelOpen ? { xs: '100%', md: '50%' } : '0%',
+          width: isSidePanelOpen ? { xs: '100%', md: '40%' } : '0%',
           minWidth: isSidePanelOpen ? { xs: '100%', md: 400 } : 0,
           transition: 'width 0.3s ease, min-width 0.3s ease',
           overflow: 'hidden',

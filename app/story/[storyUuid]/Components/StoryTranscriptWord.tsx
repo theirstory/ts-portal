@@ -64,7 +64,6 @@ export const StoryTranscriptWord = memo(
         data-word-index={wordIndex}
         sx={{
           fontSize: '12px',
-          paddingRight: '2px',
           cursor: 'pointer',
           userSelect: 'text',
           backgroundColor: isCurrent
@@ -83,9 +82,7 @@ export const StoryTranscriptWord = memo(
             : isCurrent || isPast
               ? colors.text.primary
               : colors.text.disabled,
-          display: 'inline-block',
-          whiteSpace: 'normal',
-          wordBreak: 'break-word',
+          display: 'inline',
           transition: 'color 0.3s ease, background-color 0.3s ease',
           animation: isInUrlRangeHighlight ? `${urlRangeHighlightFade} 5s ease-in-out 1` : 'none',
         }}>

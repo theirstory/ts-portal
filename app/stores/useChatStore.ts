@@ -132,7 +132,7 @@ export const useChatStore = create<ChatStore>()(
                     'sendMessage:text',
                   );
                 } else if (chunk.type === 'done') {
-                  // Ensure final citations are set
+                  // Ensure final citations are set and auto-open All Sources panel
                   set(
                     (state) => {
                       const msgs = [...state.messages];
@@ -140,7 +140,18 @@ export const useChatStore = create<ChatStore>()(
                       if (last?.role === 'assistant' && citations) {
                         msgs[msgs.length - 1] = { ...last, citations };
                       }
-                      return { messages: msgs, isStreaming: false };
+                      const firstCitation = citations?.[0];
+                      return {
+                        messages: msgs,
+                        isStreaming: false,
+                        ...(firstCitation
+                          ? {
+                              activeCitation: firstCitation,
+                              activeCitationSiblings: citations ?? [],
+                              sidePanelMode: 'recording' as const,
+                            }
+                          : {}),
+                      };
                     },
                     false,
                     'sendMessage:done',

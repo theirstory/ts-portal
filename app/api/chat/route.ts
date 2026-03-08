@@ -1,25 +1,29 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { retrieveChunksForChat } from '@/lib/weaviate/chatRetrieval';
+import { retrieveChunksForChat, retrieveAllChapterSynopses } from '@/lib/weaviate/chatRetrieval';
 import { ChatRequest, Citation } from '@/types/chat';
 
 const anthropic = new Anthropic();
 
-function buildSystemPrompt(citations: Citation[]): string {
-  const sourcesBlock = citations
-    .map(
-      (c) =>
-        `[${c.index}] Speaker: ${c.speaker} | Interview: "${c.interviewTitle}" | Section: "${c.sectionTitle}" | Time: ${formatTime(c.startTime)}–${formatTime(c.endTime)}\n"${c.transcription}"`,
-    )
+function buildSystemPrompt(allCitations: Citation[]): string {
+  const sourcesBlock = allCitations
+    .map((c) => {
+      if (c.isChapterSynopsis) {
+        return `[${c.index}] (Chapter Summary) Interview: "${c.interviewTitle}" | Chapter: "${c.sectionTitle}" | Time: ${formatTime(c.startTime)}–${formatTime(c.endTime)}\nSummary: ${c.transcription}`;
+      }
+      return `[${c.index}] (Transcript Excerpt) Speaker: ${c.speaker} | Interview: "${c.interviewTitle}" | Section: "${c.sectionTitle}" | Time: ${formatTime(c.startTime)}–${formatTime(c.endTime)}\n"${c.transcription}"`;
+    })
     .join('\n\n');
 
-  return `You are a helpful research assistant for an oral history interview archive. Answer questions based on the interview transcript excerpts provided below.
+  return `You are a helpful research assistant for an oral history interview archive. Answer questions based on the sources provided below. Sources include both chapter summaries (high-level overviews) and transcript excerpts (detailed quotes).
 
 RULES:
 - Use numbered citations like [1], [2] to reference sources. Always cite your sources.
-- Include direct quotes from the transcripts when relevant, using quotation marks.
+- You MUST cite every source that is relevant to your answer, including chapter summaries.
+- Include direct quotes from transcript excerpts when relevant, using quotation marks.
 - If the sources don't contain enough information to answer, say so honestly.
 - Be concise but thorough. Synthesize information across multiple sources when relevant.
 - When multiple speakers discuss the same topic, note the different perspectives.
+- For broad questions about themes or patterns, draw on the chapter summaries to cover the full breadth of the collection.
 
 SOURCES:
 ${sourcesBlock}`;
@@ -40,9 +44,36 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const citations = await retrieveChunksForChat(query, 8);
+    const [chunkCitations, synopses] = await Promise.all([
+      retrieveChunksForChat(query, 20),
+      retrieveAllChapterSynopses(),
+    ]);
 
-    const systemPrompt = buildSystemPrompt(citations);
+    // Convert synopses to citations and merge with chunk citations
+    const synopsisCitations: Citation[] = synopses.map((s) => ({
+      index: 0, // will be re-indexed below
+      transcription: s.synopsis,
+      speaker: '',
+      interviewTitle: s.interviewTitle,
+      sectionTitle: s.sectionTitle,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      theirstoryId: s.theirstoryId,
+      videoUrl: s.videoUrl,
+      isAudioFile: s.isAudioFile,
+      isChapterSynopsis: true,
+    }));
+
+    // Transcript excerpts first, then chapter summaries, all numbered sequentially
+    const allCitations = [...chunkCitations, ...synopsisCitations].map((c, i) => ({
+      ...c,
+      index: i + 1,
+    }));
+
+    const systemPrompt = buildSystemPrompt(allCitations);
+
+    // Send all citations to the client but track which are chunks for display
+    const citations = allCitations;
 
     const anthropicMessages = messages.map((m) => ({
       role: m.role as 'user' | 'assistant',

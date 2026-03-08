@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useChatStore } from '@/app/stores/useChatStore';
@@ -13,6 +13,53 @@ function formatTime(seconds: number): string {
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
+
+const ExpandableText = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const textRef = useRef<HTMLElement>(null);
+  const [isClamped, setIsClamped] = useState(false);
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (el) {
+      setIsClamped(el.scrollHeight > el.clientHeight + 1);
+    }
+  }, [text]);
+
+  return (
+    <>
+      <Typography
+        ref={textRef}
+        variant="body2"
+        color="text.primary"
+        sx={{
+          mt: 0.5,
+          lineHeight: 1.5,
+          ...(!expanded && {
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }),
+        }}>
+        {text}
+      </Typography>
+      {(isClamped || expanded) && (
+        <Typography
+          component="span"
+          variant="caption"
+          color="primary"
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            setExpanded((prev) => !prev);
+          }}
+          sx={{ cursor: 'pointer', fontWeight: 600, mt: 0.25, display: 'inline-block' }}>
+          {expanded ? 'Show less' : 'Show more'}
+        </Typography>
+      )}
+    </>
+  );
+};
 
 const SearchResultCard = ({ citation }: { citation: Citation }) => {
   const selectSearchResult = useChatStore((s) => s.selectSearchResult);
@@ -74,19 +121,7 @@ const SearchResultCard = ({ citation }: { citation: Citation }) => {
           {citation.speaker} &middot; {formatTime(citation.startTime)}–
           {formatTime(citation.endTime)}
         </Typography>
-        <Typography
-          variant="body2"
-          color="text.primary"
-          sx={{
-            mt: 0.5,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: 1.5,
-          }}>
-          {citation.transcription}
-        </Typography>
+        <ExpandableText text={citation.transcription} />
       </Box>
     </Box>
   );

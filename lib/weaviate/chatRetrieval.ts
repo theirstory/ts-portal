@@ -1,9 +1,9 @@
 'use server';
 
-import { Chunks, SchemaTypes } from '@/types/weaviate';
+import { Chunks, SchemaTypes, Testimonies } from '@/types/weaviate';
 import { Citation } from '@/types/chat';
 import { initWeaviateClient } from './client';
-import { getLocalEmbedding, bm25Search, vectorSearch, hybridSearch } from './search';
+import { getLocalEmbedding, bm25Search, vectorSearch, hybridSearch, getAllStoriesFromCollection } from './search';
 import { QueryProperty } from 'weaviate-client';
 
 const CHAT_RETURN_PROPS: QueryProperty<Chunks>[] = [
@@ -173,4 +173,60 @@ export async function retrieveChunksForSearch(
 
   const deduped = deduplicateCitations(citations);
   return deduped.slice(0, limit).map((c, i) => ({ ...c, index: i + 1 }));
+}
+
+export type ChapterSynopsis = {
+  interviewTitle: string;
+  sectionTitle: string;
+  synopsis: string;
+  theirstoryId: string;
+  videoUrl: string;
+  isAudioFile: boolean;
+  startTime: number;
+  endTime: number;
+};
+
+export async function retrieveAllChapterSynopses(): Promise<ChapterSynopsis[]> {
+  const response = await getAllStoriesFromCollection(
+    SchemaTypes.Testimonies,
+    ['interview_title', 'transcription', 'video_url', 'isAudioFile'],
+    500,
+    0,
+  );
+
+  const synopses: ChapterSynopsis[] = [];
+  for (const obj of response?.objects ?? []) {
+    const props = obj.properties as Record<string, unknown>;
+    const title = String(props?.interview_title ?? '');
+    const storyId = obj.uuid ?? '';
+    const videoUrl = String(props?.video_url ?? '');
+    const isAudioFile = Boolean(props?.isAudioFile);
+    const raw = props?.transcription;
+    if (typeof raw !== 'string' || !raw) continue;
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        sections?: Array<{ title?: string; synopsis?: string; start?: number; end?: number }>;
+      };
+      for (const section of parsed?.sections ?? []) {
+        const synopsis = section.synopsis?.trim();
+        if (synopsis) {
+          synopses.push({
+            interviewTitle: title,
+            sectionTitle: section.title?.trim() || 'Untitled',
+            synopsis,
+            theirstoryId: storyId,
+            videoUrl,
+            isAudioFile,
+            startTime: section.start ?? 0,
+            endTime: section.end ?? 0,
+          });
+        }
+      }
+    } catch {
+      // skip unparseable transcriptions
+    }
+  }
+
+  return synopses;
 }

@@ -17,6 +17,7 @@ export type Citation = {
   videoUrl: string;
   isAudioFile?: boolean;
   score?: number;
+  isChapterSynopsis?: boolean;
 };
 
 export type ChatRequest = {
