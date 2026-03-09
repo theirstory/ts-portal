@@ -65,6 +65,7 @@ export function IndexesHorizontalView({
         return (
           <Box
             key={story.uuid}
+            id="indexes-story-card"
             sx={{
               flex: '0 0 360px',
               minWidth: 360,
@@ -76,9 +77,11 @@ export function IndexesHorizontalView({
             }}>
             <Link href={`/story/${story.uuid}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
               <Box
+                id="indexes-story-header"
+                minHeight={92}
                 sx={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   gap: 1.5,
                   p: 1.5,
                   width: '100%',
@@ -117,6 +120,7 @@ export function IndexesHorizontalView({
                   href={`/story/${story.uuid}?start=${ch.start_time}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}>
                   <Box
+                    id="indexes-chapter-card"
                     sx={{
                       py: 1,
                       px: 1.5,

@@ -547,7 +547,13 @@ export default function IndexesPage() {
                       {c.name}
                       {count >= 0 && ` (${count} recording${count !== 1 ? 's' : ''})`}
                     </Typography>
-                    <Checkbox size="small" checked={checked} sx={{ p: 0.25 }} onClick={(e) => e.stopPropagation()} />
+                    <Checkbox
+                      size="small"
+                      checked={checked}
+                      sx={{ p: 0.25 }}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => handleCollectionToggle(c.id)}
+                    />
                   </MenuItem>
                 );
               })}
