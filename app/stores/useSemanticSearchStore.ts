@@ -24,18 +24,18 @@ type SemanticSearchStore = {
   searchType: SearchType;
   searchTerm: string;
   loading: boolean;
-  stories: WeaviateReturn<Testimonies | Chunks> | null;
-  story: WeaviateGenericObject<Chunks> | null;
+  stories: WeaviateReturn<Testimonies | Chunks, undefined> | null;
+  story: WeaviateGenericObject<Chunks, undefined> | null;
 
-  storyHubPage: WeaviateGenericObject<Testimonies> | null;
+  storyHubPage: WeaviateGenericObject<Testimonies, undefined> | null;
   transcript: Transcription | null;
   allWords: Word[] | null;
   isSemanticSearching: boolean;
   loadingSearch: boolean;
   selected_ner_labels: NerLabel[];
-  matches: WeaviateGenericObject<Chunks>[];
+  matches: WeaviateGenericObject<Chunks, undefined>[];
   currentMatchIndex: number;
-  result: WeaviateReturn<Chunks | Testimonies> | null;
+  result: WeaviateReturn<Chunks | Testimonies, undefined> | null;
   currentPage: number;
   hasNextStoriesPage: boolean;
   nerFilters: string[];
@@ -389,7 +389,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             maxValue,
           );
 
-          const matches = response as WeaviateReturn<Chunks>;
+          const matches = response as WeaviateReturn<Chunks, undefined>;
           const uniqueMatches = matches.objects.filter(
             (obj, index, self) =>
               index === self.findIndex((t) => t.properties.start_time === obj.properties.start_time),
@@ -439,7 +439,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             minValue,
             maxValue,
           );
-          const matches = response as WeaviateReturn<Chunks>;
+          const matches = response as WeaviateReturn<Chunks, undefined>;
 
           const uniqueMatches = matches.objects.filter(
             (obj, index, self) =>
@@ -489,7 +489,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             maxValue,
           );
 
-          const matches = response as WeaviateReturn<Chunks>;
+          const matches = response as WeaviateReturn<Chunks, undefined>;
 
           const uniqueMatches = matches.objects.filter(
             (obj, index, self) =>

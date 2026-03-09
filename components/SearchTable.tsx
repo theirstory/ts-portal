@@ -12,7 +12,7 @@ export const SearchTable = () => {
   const { result } = useSemanticSearchStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const results = result as WeaviateReturn<Chunks> | null;
+  const results = result as WeaviateReturn<Chunks, undefined> | null;
   const resultsArray = results?.objects || [];
 
   if (isMobile) {

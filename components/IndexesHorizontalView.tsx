@@ -13,7 +13,7 @@ import type { IndexesStory, IndexChapter } from '@/app/api/indexes/route';
 import type { WeaviateGenericObject } from 'weaviate-client';
 import type { Testimonies } from '@/types/weaviate';
 
-function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies> {
+function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies, undefined> {
   return {
     uuid: story.uuid,
     properties: {
@@ -37,7 +37,7 @@ function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testi
     metadata: {},
     references: {},
     vectors: {},
-  } as WeaviateGenericObject<Testimonies>;
+  } as WeaviateGenericObject<Testimonies, undefined>;
 }
 
 export function IndexesHorizontalView({

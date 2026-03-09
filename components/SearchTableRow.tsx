@@ -11,7 +11,7 @@ import { WeaviateGenericObject } from 'weaviate-client';
 import { VideoThumbnail } from './VideoThumbnail';
 
 interface Props {
-  result: WeaviateGenericObject<Chunks>;
+  result: WeaviateGenericObject<Chunks, undefined>;
   index: number;
   isMobile?: boolean;
 }

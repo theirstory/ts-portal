@@ -14,7 +14,7 @@ export const VideoThumbnail = ({
   audioFileSize,
   startTime,
 }: {
-  story: WeaviateGenericObject<Testimonies> | WeaviateGenericObject<Chunks>;
+  story: WeaviateGenericObject<Testimonies, undefined> | WeaviateGenericObject<Chunks, undefined>;
   aspectRatio?: number;
   fontSize: number;
   audioFileSize: { width: string; height: string };

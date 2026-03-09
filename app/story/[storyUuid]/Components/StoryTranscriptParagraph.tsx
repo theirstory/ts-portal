@@ -25,7 +25,7 @@ type Props = {
 
 const getWordKey = (word: Word) => `s-${word.section_idx}-p-${word.para_idx}-word-${word.word_idx}`;
 
-export const getSemanticMatchForWord = (semanticMatches: WeaviateGenericObject<Chunks>[], word: Word) => {
+export const getSemanticMatchForWord = (semanticMatches: WeaviateGenericObject<Chunks, undefined>[], word: Word) => {
   return semanticMatches.find((match) => {
     const matchStart = match.properties?.start_time;
     const matchEnd = match.properties?.end_time;
