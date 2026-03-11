@@ -75,18 +75,28 @@ async function waitForReady(): Promise<void> {
 
 async function waitForNlpReady(): Promise<void> {
   const url = `${NLP_URL}/health`;
+  const maxWaitSeconds = 300;
 
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < maxWaitSeconds; i++) {
     try {
       const res = await fetch(url);
-      if (res.ok) return;
+      if (res.ok) {
+        const body = await res.json() as { embedding_loaded?: boolean };
+        if (body.embedding_loaded) return;
+        if (i > 0 && i % 15 === 0) {
+          console.log(`[weaviate-import] NLP is up but embedding model still loading... (${i}s)`);
+        }
+      }
     } catch {
       // ignore
+    }
+    if (i > 0 && i % 15 === 0) {
+      console.log(`[weaviate-import] Still waiting for NLP at ${url}... (${i}s)`);
     }
     await sleep(1000);
   }
 
-  throw new Error(`[weaviate-import] NLP not ready after timeout: ${url}`);
+  throw new Error(`[weaviate-import] NLP not ready after ${maxWaitSeconds}s: ${url}`);
 }
 
 async function deleteAllObjectsFromClass(className: string): Promise<void> {
@@ -302,6 +312,7 @@ async function processInterviewFileThroughNlp(job: InterviewImportJob): Promise<
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10 * 60 * 1000), // 10 minutes
   });
 
   const text = await res.text().catch(() => '');

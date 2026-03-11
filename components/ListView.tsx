@@ -15,7 +15,7 @@ export const ListView = () => {
   const { stories, nerFilters } = useSemanticSearchStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const storiesTestimonies = stories as WeaviateReturn<Testimonies> | null;
+  const storiesTestimonies = stories as WeaviateReturn<Testimonies, any> | null;
   const storiesFilteredByNer = storiesTestimonies?.objects.filter((story) =>
     nerFilters.length > 0 ? story.properties.ner_labels.some((label: NerLabel) => nerFilters.includes(label)) : true,
   );

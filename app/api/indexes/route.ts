@@ -35,6 +35,7 @@ export type IndexChapter = {
   start_time: number;
   end_time: number;
   synopsis?: string;
+  keywords?: string[];
 };
 
 export type IndexesApiResponse = {
@@ -65,31 +66,49 @@ export async function GET() {
       };
     });
 
-    // Build section synopses from transcription JSON (sections[].synopsis) per story
+    // Parse transcription JSON for synopsis and keywords per section
+    function parseKeywords(value: unknown): string[] {
+      if (typeof value !== 'string' || !value.trim()) return [];
+      const raw = value.replace(/\*\*/g, '').trim();
+      return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
     const synopsisByStoryId: Record<string, string[]> = {};
+    const keywordsByStoryId: Record<string, string[][]> = {};
     for (const obj of storiesResponse?.objects ?? []) {
       const uuid = obj.uuid ?? '';
       const raw = (obj.properties as Record<string, unknown>)?.transcription;
       if (typeof raw !== 'string' || !raw) {
         synopsisByStoryId[uuid] = [];
+        keywordsByStoryId[uuid] = [];
         continue;
       }
       try {
-        const parsed = JSON.parse(raw) as { sections?: Array<{ synopsis?: string }> };
+        const parsed = JSON.parse(raw) as {
+          sections?: Array<{ synopsis?: string; keywords?: string }>;
+        };
         const sections = parsed?.sections ?? [];
         synopsisByStoryId[uuid] = sections.map((s) => String(s?.synopsis ?? '').trim());
+        keywordsByStoryId[uuid] = sections.map((s) => parseKeywords(s?.keywords));
       } catch {
         synopsisByStoryId[uuid] = [];
+        keywordsByStoryId[uuid] = [];
       }
     }
 
-    // Enrich chapters with synopsis by section_id (index)
+    // Enrich chapters with synopsis and keywords by section_id (index)
     const enrichedChaptersByStoryId: Record<string, IndexChapter[]> = {};
     for (const [storyId, chapters] of Object.entries(chaptersByStoryId)) {
       const synopses = synopsisByStoryId[storyId] ?? [];
+      const keywordsList = keywordsByStoryId[storyId] ?? [];
       enrichedChaptersByStoryId[storyId] = chapters.map((ch) => ({
         ...ch,
         synopsis: synopses[ch.section_id] ?? undefined,
+        keywords:
+          keywordsList[ch.section_id]?.length ? keywordsList[ch.section_id] : undefined,
       }));
     }
 

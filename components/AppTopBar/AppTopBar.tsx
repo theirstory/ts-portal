@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { LogoArchive } from '@/app/assets/svg/LogoArchive';
 import { CarouselTopBar } from '../CarouselTopBar/CarouselTopBar';
 import useLayoutState from '@/app/stores/useLayout';
-import { usePathname } from 'next/navigation';
-import { config, organizationConfig } from '@/config/organizationConfig';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { config, organizationConfig, isChatEnabled } from '@/config/organizationConfig';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { colors } from '@/lib/theme';
 
@@ -25,7 +26,13 @@ export const AppTopBar = () => {
   const { collections, loadCollections } = useSemanticSearchStore();
 
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isEmbed = searchParams.get('embed') === 'true';
+
+  if (isEmbed) return null;
   const isStoryPage = pathname.startsWith('/story/');
+  const isChatPage = pathname.startsWith('/discover');
+  const isFullScreenPage = isStoryPage || isChatPage;
   const isHeaderOverlayEnabled = config?.ui?.portalHeaderOverlay?.enabled ?? true;
   const organizationLogoPath = config.organization.logo?.path?.trim();
   const shouldUseCustomLogo = Boolean(organizationLogoPath);
@@ -36,12 +43,12 @@ export const AppTopBar = () => {
   };
 
   useEffect(() => {
-    if (isStoryPage) {
+    if (isFullScreenPage) {
       setIsTopBarCollapsed(true);
       return;
     }
     setIsTopBarCollapsed(false);
-  }, [isStoryPage, setIsTopBarCollapsed]);
+  }, [isFullScreenPage, setIsTopBarCollapsed]);
 
   useEffect(() => {
     if (collections.length === 0) {
@@ -96,46 +103,37 @@ export const AppTopBar = () => {
               </Box>
             </Link>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
-                <Link
-                  href="/"
-                  style={{
-                    color: config.theme.colors.primary.contrastText,
-                    textDecoration: 'none',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    minHeight: 0,
-                  }}>
+              <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, '& a': { color: config.theme.colors.primary.contrastText, textDecoration: 'none', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', minHeight: 0, opacity: 0.85, transition: 'opacity 0.15s', '&:hover': { opacity: 1 } } }}>
+                <Link href="/">
                   RECORDINGS
                 </Link>
-                <Link
-                  href="/indexes"
-                  style={{
-                    color: config.theme.colors.primary.contrastText,
-                    textDecoration: 'none',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    minHeight: 0,
-                  }}>
+                <Link href="/indexes">
                   INDEXES
                 </Link>
                 {shouldShowCollectionsLink && (
-                  <Link
-                    href="/collections"
-                    style={{
-                      color: config.theme.colors.primary.contrastText,
-                      textDecoration: 'none',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      minHeight: 0,
-                    }}>
+                  <Link href="/collections">
                     COLLECTIONS
                   </Link>
                 )}
-                {!isStoryPage && (
+                {isChatEnabled && (
+                  <Box
+                    component={Link}
+                    href="/discover"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      border: `1.5px solid ${config.theme.colors.primary.contrastText}`,
+                      borderRadius: '6px',
+                      padding: '3px 10px',
+                      opacity: '0.85 !important',
+                      '&:hover': { opacity: '1 !important', bgcolor: 'rgba(255,255,255,0.1)' },
+                    }}>
+                    <AutoAwesomeIcon sx={{ fontSize: 14 }} />
+                    DISCOVER
+                  </Box>
+                )}
+                {!isFullScreenPage && (
                   <Tooltip title={isTopBarCollapsed ? 'Expand' : 'Collapse'}>
                     <IconButton
                       onClick={handleTopBarCollapseToggle}
@@ -182,47 +180,37 @@ export const AppTopBar = () => {
                   </Tooltip>
                 </Box>
               )}
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                <Link
-                  href="/"
-                  style={{
-                    color: config.theme.colors.primary.contrastText,
-                    textDecoration: 'none',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                  }}>
+              <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 3, '& a': { color: config.theme.colors.primary.contrastText, textDecoration: 'none', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', opacity: 0.85, transition: 'opacity 0.15s', '&:hover': { opacity: 1 } } }}>
+                <Link href="/">
                   RECORDINGS
                 </Link>
-              </Box>
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                <Link
-                  href="/indexes"
-                  style={{
-                    color: config.theme.colors.primary.contrastText,
-                    textDecoration: 'none',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                  }}>
+                <Link href="/indexes">
                   INDEXES
                 </Link>
-              </Box>
-              {shouldShowCollectionsLink && (
-                <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                  <Link
-                    href="/collections"
-                    style={{
-                      color: config.theme.colors.primary.contrastText,
-                      textDecoration: 'none',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
-                    }}>
+                {shouldShowCollectionsLink && (
+                  <Link href="/collections">
                     COLLECTIONS
                   </Link>
-                </Box>
-              )}
+                )}
+                {isChatEnabled && (
+                  <Box
+                    component={Link}
+                    href="/discover"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      border: `1.5px solid ${config.theme.colors.primary.contrastText}`,
+                      borderRadius: '6px',
+                      padding: '4px 12px',
+                      opacity: '0.85 !important',
+                      '&:hover': { opacity: '1 !important', bgcolor: 'rgba(255,255,255,0.1)' },
+                    }}>
+                    <AutoAwesomeIcon sx={{ fontSize: 16 }} />
+                    DISCOVER
+                  </Box>
+                )}
+              </Box>
               <Typography
                 variant="caption"
                 color={config.theme.colors.primary.contrastText}

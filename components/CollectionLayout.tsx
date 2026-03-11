@@ -20,7 +20,7 @@ export default function CollectionLayout() {
   const { loading: semanticSearchLoading, stories, result, currentPage, hasSearched } = useSemanticSearchStore();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
-  const storiesTestimonies = stories as WeaviateReturn<Testimonies> | null;
+  const storiesTestimonies = stories as WeaviateReturn<Testimonies, any> | null;
   const results = result?.objects || [];
 
   const handleViewChange = (_event: React.MouseEvent<HTMLElement>, newView: 'list' | 'grid') => {

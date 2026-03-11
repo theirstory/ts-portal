@@ -57,7 +57,7 @@ curl http://localhost:8080/v1/.well-known/ready
 
 - FastAPI (Python 3.11)
 - GLiNER multi-v2.1 (zero-shot NER)
-- sentence-transformers/LaBSE
+- sentence-transformers/multi-qa-mpnet-base-dot-v1
 - Weaviate Python client
 
 **Volumes:**

@@ -37,6 +37,14 @@ yarn-error.log*
 # Use config.example.json as a template
 config.json
 
+# collection-specific data and assets
+json/interviews/
+public/images/
+
+# SSH keys
+civics-unplugged
+civics-unplugged.pub
+
 # TypeScript build cache
 tsconfig.tsbuildinfo
 

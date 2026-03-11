@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import React from 'react';
+import React, { Suspense } from 'react';
 import './globals.css';
 import { AppTopBar } from '@/components/AppTopBar/AppTopBar';
 import { MainContainer } from './MainContainer';
+import { EmbedGuard } from './EmbedGuard';
 import MaterialUIThemeProvider from '@/components/ThemeProvider';
+import { FloatingChatDrawer } from '@/components/FloatingChatDrawer';
 
 export const metadata: Metadata = {
   title: 'Research Portal',
@@ -19,10 +21,15 @@ export default function RootLayout({
     <html className=" overflow-x-hidden" lang="en">
       <body suppressHydrationWarning>
         <MaterialUIThemeProvider>
-          <MainContainer>
-            <AppTopBar />
-            {children}
-          </MainContainer>
+          <Suspense>
+            <MainContainer>
+              <EmbedGuard>
+                <AppTopBar />
+              </EmbedGuard>
+              {children}
+              <FloatingChatDrawer />
+            </MainContainer>
+          </Suspense>
         </MaterialUIThemeProvider>
       </body>
     </html>

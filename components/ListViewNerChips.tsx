@@ -7,7 +7,7 @@ import React from 'react';
 import { WeaviateGenericObject } from 'weaviate-client';
 import { colors } from '@/lib/theme';
 
-export const ListViewNerChips = ({ story }: { story: WeaviateGenericObject<Testimonies> }) => {
+export const ListViewNerChips = ({ story }: { story: WeaviateGenericObject<Testimonies, any> }) => {
   const { nerFilters } = useSemanticSearchStore();
   const filteredNerLabels = story.properties.ner_labels.filter((label: NerLabel) => nerFilters.includes(label));
 

@@ -17,14 +17,14 @@ class Config:
     
     # Chunking Configuration
     DEFAULT_CHUNK_SECONDS = float(os.getenv("CHUNK_SECONDS", "30"))
-    DEFAULT_CHUNK_OVERLAP_SECONDS = float(os.getenv("CHUNK_OVERLAP_SECONDS", "8"))
+    DEFAULT_CHUNK_OVERLAP_SECONDS = float(os.getenv("CHUNK_OVERLAP_SECONDS", "0"))
     MIN_WORDS_PER_CHUNK = int(os.getenv("MIN_WORDS_PER_CHUNK", "10"))
     MIN_CHARS_PER_CHUNK = int(os.getenv("MIN_CHARS_PER_CHUNK", "50"))
     MAX_WORDS_PER_CHUNK = int(os.getenv("MAX_WORDS_PER_CHUNK", "200"))
     
     # Hybrid Chunking Configuration (time + sentence boundaries)
     PREFER_SENTENCE_BREAKS = os.getenv("PREFER_SENTENCE_BREAKS", "true").lower() == "true"
-    LOOKAHEAD_SECONDS = float(os.getenv("LOOKAHEAD_SECONDS", "3.0"))
+    LOOKAHEAD_SECONDS = float(os.getenv("LOOKAHEAD_SECONDS", "8.0"))
     
     # NER Configuration
     CONFIG_PATH = os.getenv("CONFIG_PATH", "../config.json")
@@ -45,7 +45,7 @@ class Config:
     # HuggingFace Local Embeddings Configuration
     EMBEDDING_MODEL = os.getenv(
         "EMBEDDING_MODEL",
-        "sentence-transformers/LaBSE",
+        "sentence-transformers/multi-qa-mpnet-base-dot-v1",
     )
     USE_GPU = os.getenv("USE_GPU", "false").lower() == "true"
     EMBEDDING_LOAD_TIMEOUT_SECONDS = int(

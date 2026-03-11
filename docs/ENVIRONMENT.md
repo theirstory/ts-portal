@@ -102,7 +102,7 @@ MIN_TEXT_LENGTH_FOR_NER=50
 
 ```bash
 # Sentence transformer model
-EMBEDDING_MODEL=sentence-transformers/LaBSE
+EMBEDDING_MODEL=sentence-transformers/multi-qa-mpnet-base-dot-v1
 
 # Use GPU if available (requires CUDA)
 USE_GPU=false
@@ -204,8 +204,8 @@ Response:
   "weaviate_url": "http://weaviate:8080",
   "beacon_host": "localhost",
   "gliner_model": "urchade/gliner_multi-v2.1",
-  "embedding_model": "sentence-transformers/LaBSE",
-  "embedding_dimension": 384,
+  "embedding_model": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
+  "embedding_dimension": 768,
   "use_gpu": false,
   "labels_count": 6
 }

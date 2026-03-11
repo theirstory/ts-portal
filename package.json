@@ -9,9 +9,9 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "next build --webpack",
-    "dev": "next dev -p 3004 --webpack",
-    "dev:cloud": "dotenv -e .env.cloud -- next dev -p 3004 --webpack",
-    "dev:local": "dotenv -e .env.local -- next dev -p 3004 --webpack",
+    "dev": "next dev -p 3001 --webpack",
+    "dev:cloud": "dotenv -e .env.cloud -- next dev -p 3001 --webpack",
+    "dev:local": "dotenv -e .env.local -- next dev -p 3001 --webpack",
     "start": "next start",
     "weaviate:generate-schemas": "tsx scripts/init-schema.ts",
     "weaviate:import": "tsx scripts/import-interviews-weaviate.ts",
@@ -23,6 +23,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.0",

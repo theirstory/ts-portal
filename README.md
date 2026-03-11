@@ -64,7 +64,7 @@ open http://localhost:3000
 
 ## NLP Environment Notes
 
-Default embedding model is `sentence-transformers/LaBSE` (multilingual). If model loading fails or is too heavy, use `sentence-transformers/all-MiniLM-L6-v2` as a lighter fallback.
+Default embedding model is `sentence-transformers/multi-qa-mpnet-base-dot-v1` (optimized for English semantic search, 768-dim). If model loading fails or is too heavy, use `sentence-transformers/all-MiniLM-L6-v2` as a lighter fallback.
 
 **Services:**
 

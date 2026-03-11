@@ -87,6 +87,12 @@ export interface ThemeColorsConfig {
   };
 }
 
+export interface FeaturesConfig {
+  chat?: {
+    enabled?: boolean;
+  };
+}
+
 export interface AppConfig {
   organization: OrganizationConfig;
   theme: {
@@ -101,6 +107,7 @@ export interface AppConfig {
       enabled?: boolean;
     };
   };
+  features?: FeaturesConfig;
   ner: {
     labels: NerLabelConfig[];
     fallbackColors: string[];
@@ -115,6 +122,7 @@ export const organizationConfig = config.organization;
 export const themeColors = config.theme.colors;
 export const nerLabels = config.ner.labels;
 export const nerFallbackColors = config.ner.fallbackColors;
+export const isChatEnabled = config.features?.chat?.enabled ?? false;
 
 const normalize = (value: string) => value?.trim()?.toLowerCase();
 

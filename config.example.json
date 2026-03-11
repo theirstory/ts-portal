@@ -89,6 +89,13 @@
     }
   },
 
+  "features": {
+    "chat": {
+      "_comment": "Enable or disable the /discover page. When false, the Discover link is hidden from navigation.",
+      "enabled": false
+    }
+  },
+
   "ner": {
     "labels": [
       {
