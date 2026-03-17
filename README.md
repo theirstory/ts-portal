@@ -62,7 +62,7 @@ open http://localhost:3000
 
 ### Chat provider configuration
 
-The `/discover` chat now supports multiple LLM providers through a shared provider abstraction.
+The `/discover` RAG chat now supports multiple LLM providers through a shared provider abstraction.
 
 - Set the default non-secret chat settings in `config.json` under `features.chat`:
   - `provider`: `anthropic`, `openai`, or `openai-compatible`
@@ -183,7 +183,7 @@ cd ts-portal
 sudo bash scripts/deploy/setup-docker-ubuntu.sh
 # If prompted about /etc/ssh/sshd_config, choose: keep the local version currently installed
 
-# If you want to use Discover chat create and edit the .env.production file with you api keys
+# If you want to use Discover (RAG chat) create and edit the .env.production file with you api keys
 cp -n .env.production.example .env.production
 nano .env.production
 
