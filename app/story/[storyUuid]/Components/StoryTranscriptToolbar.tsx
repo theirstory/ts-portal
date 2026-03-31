@@ -255,12 +255,11 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
     setCanScrollFiltersRight(maxScrollLeft - element.scrollLeft > 1);
   }, []);
 
-    const citationParams = useMemo(() => {
+  const citationParams = useMemo(() => {
     if (!storyHubPage?.properties) return null;
     const p = storyHubPage.properties;
     const participants = Array.isArray(p.participants) ? p.participants : [];
-    const pageUrl =
-      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
     return {
       interviewTitle: p.interview_title || 'Untitled',
       participants: participants.length ? participants : undefined,
@@ -365,7 +364,9 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
             sx={{
               flex: 1,
               minWidth: 0,
-              fontSize: isMobile ? '0.875rem' : '1rem',
+              '& .MuiInputBase-input': {
+                fontSize: isMobile ? '16px' : '1rem',
+              },
             }}
             inputProps={{ 'aria-label': 'search' }}
           />
@@ -381,7 +382,10 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
           {isMobile ? (
             <Box display="flex" alignItems="center" gap={0.25} flexShrink={0}>
               <MatchNavigation compact />
-              <StoryTranscriptToolbarMenuMobile toggleAllSections={toggleAllSections} onCiteClick={() => setCitationModalOpen(true)} />
+              <StoryTranscriptToolbarMenuMobile
+                toggleAllSections={toggleAllSections}
+                onCiteClick={() => setCitationModalOpen(true)}
+              />
             </Box>
           ) : (
             <>

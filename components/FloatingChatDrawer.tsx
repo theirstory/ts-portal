@@ -89,6 +89,7 @@ function groupByRecording(citations: Citation[]): RecordingGroup[] {
 export const FloatingChatDrawer = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -291,7 +292,7 @@ export const FloatingChatDrawer = () => {
     <ChatInteractionProvider value={chatContextValue}>
       {/* Floating AI button */}
       {!open && (
-        <Tooltip title={`Ask AI (${shortcutLabel})`} placement="left">
+        <Tooltip title={isDesktop ? `Ask AI (${shortcutLabel})` : 'Ask AI'} placement="left">
           <IconButton
             onClick={() => setOpen(true)}
             sx={{
@@ -339,7 +340,7 @@ export const FloatingChatDrawer = () => {
               py: 1.5,
               borderBottom: '1px solid',
               borderColor: 'divider',
-              bgcolor: colors.primary.main,
+              bgcolor: isDesktop ? colors.grey[900] : colors.primary.main,
               color: colors.primary.contrastText,
               flexShrink: 0,
             }}>
@@ -348,9 +349,11 @@ export const FloatingChatDrawer = () => {
               <Typography variant="subtitle2" fontWeight={700}>
                 Ask AI
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                {shortcutLabel}
-              </Typography>
+              {isDesktop && (
+                <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                  {shortcutLabel}
+                </Typography>
+              )}
             </Box>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               {messages.length > 0 && (

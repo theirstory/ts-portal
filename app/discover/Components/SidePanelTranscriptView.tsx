@@ -15,6 +15,8 @@ import {
   InputAdornment,
   ToggleButtonGroup,
   ToggleButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -121,7 +123,10 @@ const TranscriptWord = ({
         cursor: 'pointer',
         display: 'inline',
         backgroundColor: getBgColor(),
-        color: isPast && !isActive && !isHighlighted && !isActiveMatch && !isThematicHighlight ? colors.text.secondary : colors.text.primary,
+        color:
+          isPast && !isActive && !isHighlighted && !isActiveMatch && !isThematicHighlight
+            ? colors.text.secondary
+            : colors.text.primary,
         borderRadius: isActive || isActiveMatch || isActiveThematicMatch ? '2px' : undefined,
         outline: isActiveMatch || isActiveThematicMatch ? `2px solid ${colors.primary.main}` : undefined,
         transition: 'background-color 0.1s, color 0.1s',
@@ -199,26 +204,18 @@ const TranscriptSection = ({
         {section.paragraphs.map((para, pIdx) => (
           <Box key={pIdx} sx={{ mb: 1.5 }}>
             {para.speaker && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={600}
-                sx={{ display: 'block', mb: 0.25 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ display: 'block', mb: 0.25 }}>
                 {para.speaker} &middot; {formatTimestamp(para.start)}
               </Typography>
             )}
             <Typography variant="body2" component="div" sx={{ lineHeight: 1.8 }}>
               {para.words.map((word, wIdx) => {
-                const isPlaying =
-                  currentTime >= word.start &&
-                  currentTime < (para.words[wIdx + 1]?.start ?? word.end);
+                const isPlaying = currentTime >= word.start && currentTime < (para.words[wIdx + 1]?.start ?? word.end);
                 const isPast = currentTime >= word.end;
-                const isCitationHighlight =
-                  word.start >= highlightStart && word.end <= highlightEnd;
+                const isCitationHighlight = word.start >= highlightStart && word.end <= highlightEnd;
 
                 // Text search matching
-                const isSearchMatch =
-                  !!searchLower && word.text.toLowerCase().includes(searchLower);
+                const isSearchMatch = !!searchLower && word.text.toLowerCase().includes(searchLower);
                 const matchKey = isSearchMatch ? `${sectionIndex}-${pIdx}-${wIdx}` : undefined;
                 const isActiveMatch = matchKey !== undefined && matchKey === activeMatchKey;
 
@@ -267,6 +264,8 @@ const TranscriptSection = ({
 };
 
 export const SidePanelTranscriptView = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const transcriptCitation = useChatStore((s) => s.transcriptCitation);
   const previousMode = useChatStore((s) => s.previousMode);
   const storeGoBack = useChatStore((s) => s.goBack);
@@ -429,7 +428,7 @@ export const SidePanelTranscriptView = () => {
         body: JSON.stringify({ storyId, query: q }),
       });
       if (!res.ok) throw new Error('Search failed');
-      const data = await res.json() as { matches: ThematicMatch[] };
+      const data = (await res.json()) as { matches: ThematicMatch[] };
       setThematicResults(mergeThematicMatches(data.matches));
     } catch (err) {
       console.error('Thematic search error:', err);
@@ -446,9 +445,7 @@ export const SidePanelTranscriptView = () => {
     // Expand the section containing the thematic match
     const range = thematicResults[activeThematicIndex];
     if (range && data) {
-      const sIdx = data.transcription.sections.findIndex(
-        (s) => range.startTime >= s.start && range.startTime < s.end,
-      );
+      const sIdx = data.transcription.sections.findIndex((s) => range.startTime >= s.start && range.startTime < s.end);
       if (sIdx >= 0) {
         setExpandedSections((prev) => {
           if (prev.has(sIdx)) return prev;
@@ -550,11 +547,13 @@ export const SidePanelTranscriptView = () => {
 
   const backLabel = previousMode === 'search' ? 'Back to results' : 'Back to source';
   const hasResults = totalMatches > 0;
-  const placeholder = searchMode === null
-    ? 'Select a search type...'
-    : isThematic
-      ? 'Search by concept (press Enter)...'
-      : 'Search transcript...';
+  const showMatchNavigation = !!searchTerm.trim() && hasResults;
+  const placeholder =
+    searchMode === null
+      ? 'Select a search type...'
+      : isThematic
+        ? 'Search by concept (press Enter)...'
+        : 'Search transcript...';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -564,19 +563,15 @@ export const SidePanelTranscriptView = () => {
           position: 'sticky',
           top: 0,
           zIndex: 1,
-          bgcolor: colors.background.paper,
+          bgcolor: isMobile ? colors.background.paper : colors.grey[100],
           display: 'flex',
           alignItems: 'center',
           borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderColor: isMobile ? 'divider' : colors.grey[300],
           px: 1,
           py: 0.5,
         }}>
-        <Button
-          size="small"
-          startIcon={<ArrowBackIcon />}
-          onClick={goBack}
-          sx={{ textTransform: 'none' }}>
+        <Button size="small" startIcon={<ArrowBackIcon />} onClick={goBack} sx={{ textTransform: 'none' }}>
           {backLabel}
         </Button>
         {storyId && (
@@ -630,6 +625,16 @@ export const SidePanelTranscriptView = () => {
                 fullWidth
                 placeholder={placeholder}
                 value={searchTerm}
+                sx={{
+                  bgcolor: colors.background.default,
+                  borderRadius: '8px',
+                  '& .MuiInputBase-input': {
+                    fontSize: {
+                      xs: '16px',
+                      md: '12px',
+                    },
+                  },
+                }}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   if (searchMode === null) {
@@ -657,7 +662,7 @@ export const SidePanelTranscriptView = () => {
                             }
                           }}
                           size="small"
-                          sx={{ height: 26, mr: 0.5 }}>
+                          sx={{ height: { xs: 32, md: 26 }, mr: 0.5 }}>
                           <ToggleButton
                             value="text"
                             sx={{
@@ -717,7 +722,11 @@ export const SidePanelTranscriptView = () => {
                         </Box>
                       )}
                       <Box sx={{ width: '1px', height: 20, bgcolor: colors.grey[300], mr: 0.75 }} />
-                      {thematicLoading ? <CircularProgress size={16} /> : <SearchIcon fontSize="small" sx={{ color: colors.text.secondary }} />}
+                      {thematicLoading ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SearchIcon fontSize="small" sx={{ color: colors.text.secondary }} />
+                      )}
                     </InputAdornment>
                   ),
                   endAdornment: searchTerm.trim() ? (
@@ -748,48 +757,72 @@ export const SidePanelTranscriptView = () => {
                     </InputAdornment>
                   ) : null,
                 }}
-                sx={{ bgcolor: colors.background.default, borderRadius: '8px' }}
               />
-              <Box
-                component="button"
-                onClick={goToPrevMatch}
-                disabled={!hasResults}
-                sx={{
-                  border: 'none',
-                  bgcolor: 'transparent',
-                  cursor: hasResults ? 'pointer' : 'default',
-                  opacity: hasResults ? 1 : 0.3,
-                  p: 0.5,
-                  borderRadius: 1,
-                  display: 'flex',
-                  '&:hover': hasResults ? { bgcolor: colors.grey[100] } : {},
-                }}>
-                <KeyboardArrowUpIcon fontSize="small" />
-              </Box>
-              <Box
-                component="button"
-                onClick={goToNextMatch}
-                disabled={!hasResults}
-                sx={{
-                  border: 'none',
-                  bgcolor: 'transparent',
-                  cursor: hasResults ? 'pointer' : 'default',
-                  opacity: hasResults ? 1 : 0.3,
-                  p: 0.5,
-                  borderRadius: 1,
-                  display: 'flex',
-                  '&:hover': hasResults ? { bgcolor: colors.grey[100] } : {},
-                }}>
-                <KeyboardArrowDownIcon fontSize="small" />
-              </Box>
+              {showMatchNavigation && (
+                <>
+                  <Box
+                    component="button"
+                    onClick={goToPrevMatch}
+                    sx={{
+                      border: 'none',
+                      bgcolor: 'transparent',
+                      cursor: 'pointer',
+                      width: 32,
+                      height: 32,
+                      p: 0,
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      alignSelf: 'center',
+                      lineHeight: 0,
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    <KeyboardArrowUpIcon fontSize="small" />
+                  </Box>
+                  <Box
+                    component="button"
+                    onClick={goToNextMatch}
+                    sx={{
+                      border: 'none',
+                      bgcolor: 'transparent',
+                      cursor: 'pointer',
+                      width: 32,
+                      height: 32,
+                      p: 0,
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      alignSelf: 'center',
+                      lineHeight: 0,
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    <KeyboardArrowDownIcon fontSize="small" />
+                  </Box>
+                </>
+              )}
             </Box>
           </Box>
 
           {/* Thematic results summary */}
           {isThematic && thematicResults.length > 0 && (
-            <Box sx={{ px: 1.5, py: 0.75, bgcolor: `${colors.success.main}10`, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+            <Box
+              sx={{
+                px: 1.5,
+                py: 0.75,
+                bgcolor: `${colors.success.main}10`,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                flexShrink: 0,
+              }}>
               <Typography variant="caption" color="text.secondary">
-                {thematicResults.length} thematic match{thematicResults.length !== 1 ? 'es' : ''} — {thematicResults[activeThematicIndex]?.speaker && `${thematicResults[activeThematicIndex].speaker} · `}{thematicResults[activeThematicIndex]?.sectionTitle} · {formatTimestamp(thematicResults[activeThematicIndex]?.startTime ?? 0)}
+                {thematicResults.length} thematic match{thematicResults.length !== 1 ? 'es' : ''} —{' '}
+                {thematicResults[activeThematicIndex]?.speaker && `${thematicResults[activeThematicIndex].speaker} · `}
+                {thematicResults[activeThematicIndex]?.sectionTitle} ·{' '}
+                {formatTimestamp(thematicResults[activeThematicIndex]?.startTime ?? 0)}
               </Typography>
             </Box>
           )}
