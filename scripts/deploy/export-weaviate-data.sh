@@ -7,13 +7,13 @@ set -euo pipefail
 #   export + upload/sync to server:
 #     ./scripts/deploy/export-weaviate-data.sh <backup_path> <volume_name> <user@server> <remote_repo_path>
 # Example:
-#     ./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@206.189.161.190 /root/ts-portal
+#     ./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@206.189.161.190 /root/ts-portal-uconn
 
 backup_path="${1:-$PWD/weaviate-data.tar.gz}"
 project_name="${COMPOSE_PROJECT_NAME:-$(basename "$PWD")}"
 volume_name="${2:-${project_name}_weaviate_data}"
 server="${3:-}"
-remote_repo_path="${4:-/root/ts-portal}"
+remote_repo_path="${4:-/root/ts-portal-uconn}"
 
 if [[ -n "$server" ]]; then
   if [[ "$server" == *"YOUR_SERVER_IP"* ]] || [[ "$server" == "user@"* ]]; then
@@ -24,7 +24,7 @@ if [[ -n "$server" ]]; then
 
   if [[ "$remote_repo_path" == *"path/to/"* ]]; then
     echo "Invalid remote_repo_path: $remote_repo_path"
-    echo "Use a real path like: /root/ts-portal"
+    echo "Use a real path like: /root/ts-portal-uconn"
     exit 1
   fi
 fi
