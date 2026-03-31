@@ -28,6 +28,7 @@ import MuxPlayerElement from '@mux/mux-player';
 import { useChatStore } from '@/app/stores/useChatStore';
 import { useChatInteraction } from '@/app/discover/ChatInteractionContext';
 import { colors } from '@/lib/theme';
+import { muxPlayerThemeProps } from '@/lib/theme/muxPlayerTheme';
 import { Transcription, Section, Word } from '@/types/transcription';
 import { TextSelectionPopover } from './TextSelectionPopover';
 
@@ -615,9 +616,9 @@ export const SidePanelTranscriptView = () => {
               startTime={highlightStart}
               forwardSeekOffset={10}
               backwardSeekOffset={10}
-              accentColor={colors.secondary.main}
+              accentColor={muxPlayerThemeProps.accentColor}
               onTimeUpdate={handleTimeUpdate}
-              style={{ width: '100%', aspectRatio: data.isAudioFile ? 'auto' : '21/9' }}
+              style={{ ...muxPlayerThemeProps.style, aspectRatio: data.isAudioFile ? 'auto' : '21/9' }}
             />
           </Box>
 

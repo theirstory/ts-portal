@@ -33,6 +33,7 @@ import { ChatInteractionProvider } from '@/app/discover/ChatInteractionContext';
 import { SidePanelTranscriptView } from '@/app/discover/Components/SidePanelTranscriptView';
 import { Citation } from '@/types/chat';
 import { colors } from '@/lib/theme';
+import { muxPlayerThemeProps } from '@/lib/theme/muxPlayerTheme';
 import { isChatEnabled } from '@/config/organizationConfig';
 import { getMuxPlaybackId } from '@/app/utils/converters';
 import { highlightSearchText } from '@/app/indexes/highlightSearch';
@@ -418,8 +419,8 @@ export const FloatingChatDrawer = () => {
                   startTime={activeCitation.startTime}
                   forwardSeekOffset={10}
                   backwardSeekOffset={10}
-                  accentColor={colors.secondary.main}
-                  style={{ width: '100%', aspectRatio: activeCitation.isAudioFile ? 'auto' : '16/9' }}
+                  accentColor={muxPlayerThemeProps.accentColor}
+                  style={{ ...muxPlayerThemeProps.style, aspectRatio: activeCitation.isAudioFile ? 'auto' : '16/9' }}
                 />
               </Box>
 

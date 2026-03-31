@@ -24,6 +24,7 @@ import { AudioFileWave } from '@/app/assets/svg/AudioFileWave';
 import { Citation } from '@/types/chat';
 import { getMuxPlaybackId } from '@/app/utils/converters';
 import { colors } from '@/lib/theme';
+import { muxPlayerThemeProps } from '@/lib/theme/muxPlayerTheme';
 import { highlightSearchText } from '@/app/indexes/highlightSearch';
 
 // Chapter synopses use a teal/green accent; transcript clips use primary blue
@@ -734,8 +735,8 @@ export const SidePanelRecordingView = () => {
               startTime={activeCitation.startTime}
               forwardSeekOffset={10}
               backwardSeekOffset={10}
-              accentColor={colors.secondary.main}
-              style={{ width: '100%', aspectRatio: activeCitation.isAudioFile ? 'auto' : '16/9' }}
+              accentColor={muxPlayerThemeProps.accentColor}
+              style={{ ...muxPlayerThemeProps.style, aspectRatio: activeCitation.isAudioFile ? 'auto' : '16/9' }}
             />
           </Box>
 
