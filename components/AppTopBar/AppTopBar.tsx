@@ -103,36 +103,26 @@ export const AppTopBar = () => {
               </Box>
             </Link>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1, '& a': { color: config.theme.colors.primary.contrastText, textDecoration: 'none', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', minHeight: 0, opacity: 0.85, transition: 'opacity 0.15s', '&:hover': { opacity: 1 } } }}>
-                <Link href="/">
-                  RECORDINGS
-                </Link>
-                <Link href="/indexes">
-                  INDEXES
-                </Link>
-                {shouldShowCollectionsLink && (
-                  <Link href="/collections">
-                    COLLECTIONS
-                  </Link>
-                )}
-                {isChatEnabled && (
-                  <Box
-                    component={Link}
-                    href="/discover"
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      border: `1.5px solid ${config.theme.colors.primary.contrastText}`,
-                      borderRadius: '6px',
-                      padding: '3px 10px',
-                      opacity: '0.85 !important',
-                      '&:hover': { opacity: '1 !important', bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}>
-                    <AutoAwesomeIcon sx={{ fontSize: 14 }} />
-                    DISCOVER
-                  </Box>
-                )}
+              <Box
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  alignItems: 'center',
+                  gap: 1,
+                  '& a': {
+                    color: config.theme.colors.primary.contrastText,
+                    textDecoration: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    minHeight: 0,
+                    opacity: 0.85,
+                    transition: 'opacity 0.15s',
+                    '&:hover': { opacity: 1 },
+                  },
+                }}>
+                <Link href="/">RECORDINGS</Link>
+                <Link href="/indexes">INDEXES</Link>
+                {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
                 {!isFullScreenPage && (
                   <Tooltip title={isTopBarCollapsed ? 'Expand' : 'Collapse'}>
                     <IconButton
@@ -180,18 +170,25 @@ export const AppTopBar = () => {
                   </Tooltip>
                 </Box>
               )}
-              <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 3, '& a': { color: config.theme.colors.primary.contrastText, textDecoration: 'none', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', opacity: 0.85, transition: 'opacity 0.15s', '&:hover': { opacity: 1 } } }}>
-                <Link href="/">
-                  RECORDINGS
-                </Link>
-                <Link href="/indexes">
-                  INDEXES
-                </Link>
-                {shouldShowCollectionsLink && (
-                  <Link href="/collections">
-                    COLLECTIONS
-                  </Link>
-                )}
+              <Box
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  alignItems: 'center',
+                  gap: 3,
+                  '& a': {
+                    color: config.theme.colors.primary.contrastText,
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    opacity: 0.85,
+                    transition: 'opacity 0.15s',
+                    '&:hover': { opacity: 1 },
+                  },
+                }}>
+                <Link href="/">RECORDINGS</Link>
+                <Link href="/indexes">INDEXES</Link>
+                {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
                 {isChatEnabled && (
                   <Box
                     component={Link}
@@ -254,7 +251,7 @@ export const AppTopBar = () => {
                   color={config.theme.colors.primary.contrastText}
                   sx={{
                     mb: 1,
-                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' },
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
                     lineHeight: { xs: 1.2, md: 1.167 },
                   }}>
                   {organizationConfig.displayName}

@@ -249,7 +249,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
           }}>
           <Button
             size="small"
-            color="info"
+            color="primary"
             sx={{ textTransform: 'none' }}
             variant="contained"
             onClick={() => {

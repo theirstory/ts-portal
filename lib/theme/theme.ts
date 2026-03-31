@@ -182,6 +182,12 @@ const themeOptions: ThemeOptions = {
           '& .MuiInputLabel-root.Mui-focused': {
             color: colors.primary.main,
           },
+          '@media (max-width:600px)': {
+            // we add this to prevent auto zooming on mobile when focusing input fields
+            '& .MuiInputBase-input': {
+              fontSize: '16px',
+            },
+          },
         },
       },
     },

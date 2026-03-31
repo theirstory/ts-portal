@@ -12,6 +12,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   InputAdornment,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
@@ -84,6 +86,8 @@ function groupByRecording(citations: Citation[]): RecordingGroup[] {
 }
 
 export const FloatingChatDrawer = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -361,14 +365,16 @@ export const FloatingChatDrawer = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title="Open full chat">
-                <IconButton
-                  size="small"
-                  onClick={() => window.open('/discover', '_blank')}
-                  sx={{ color: colors.primary.contrastText }}>
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              {!isMobile && (
+                <Tooltip title="Open full chat">
+                  <IconButton
+                    size="small"
+                    onClick={() => window.open('/discover', '_blank')}
+                    sx={{ color: colors.primary.contrastText }}>
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
               <IconButton size="small" onClick={() => setOpen(false)} sx={{ color: colors.primary.contrastText }}>
                 <CloseIcon fontSize="small" />
               </IconButton>

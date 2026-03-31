@@ -15,9 +15,9 @@
   "theme": {
     "colors": {
       "primary": {
-        "main": "#1976d2",
-        "light": "#2196f3",
-        "dark": "#1565c0",
+        "main": "#041c42",
+        "light": "#1f3b6d",
+        "dark": "#021126",
         "contrastText": "#ffffff"
       },
       "secondary": {

@@ -369,7 +369,7 @@ export function ChatComposer({
       sx={{
         display: 'flex',
         gap: 1,
-        px: 0,
+        px: compact ? 1 : 0,
         py: compact ? 1 : 2,
         alignItems: compact ? 'center' : 'flex-end',
         flexShrink: 0,

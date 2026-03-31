@@ -259,7 +259,11 @@ export default function IndexesPage() {
             />
             {hasMultipleCollections && (
               <>
-                <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
                   Collection
                 </Typography>
                 <Button
@@ -467,7 +471,9 @@ export default function IndexesPage() {
                       color: 'text.primary',
                       '&:hover': { bgcolor: colors.grey[100] },
                     }}>
-                    {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
+                    {selectedCollectionIds.length === 0
+                      ? 'All collections'
+                      : `${selectedCollectionIds.length} selected`}
                   </Button>
                 )}
                 {hasKeywords && (
@@ -575,7 +581,11 @@ export default function IndexesPage() {
             />
             {hasMultipleCollections && (
               <>
-                <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
                   Collection
                 </Typography>
                 <Button
