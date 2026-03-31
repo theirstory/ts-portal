@@ -256,7 +256,7 @@ curl -s "http://localhost:8080/v1/graphql" \
 docker compose down
 
 # Remove database (keeps models cached)
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 
 # Restart and reimport
 docker compose --profile local up

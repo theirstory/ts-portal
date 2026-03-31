@@ -495,7 +495,7 @@ docker system df -v
 docker system prune -a --volumes
 
 # Remove specific volumes
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 docker volume rm portals_huggingface_cache
 
 # Clean build cache
@@ -563,7 +563,7 @@ docker compose --profile local up
 ```bash
 # Clear and reimport
 docker compose down
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 docker compose --profile local up
 
 # Or clear via API

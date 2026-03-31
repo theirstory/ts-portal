@@ -178,7 +178,7 @@ curl -s "http://localhost:8080/v1/objects?class=Chunks&limit=1000" | jq '{
 
 ```bash
 # Remove Weaviate database only
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 
 # Remove all volumes (database + models)
 docker compose down -v
@@ -188,7 +188,7 @@ docker volume rm portals_huggingface_cache
 
 # Clear and restart
 docker compose down
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 docker compose --profile local up
 ```
 
@@ -199,7 +199,7 @@ docker compose --profile local up
 docker volume ls
 
 # Inspect volume
-docker volume inspect portals_weaviate_data
+docker volume inspect ts-portal-uconn_weaviate_data
 docker volume inspect portals_huggingface_cache
 
 # Check volume size
@@ -210,13 +210,13 @@ docker volume prune
 
 # Backup volume
 docker run --rm \
-  -v portals_weaviate_data:/data \
+  -v ts-portal-uconn_weaviate_data:/data \
   -v $(pwd):/backup \
   alpine tar czf /backup/weaviate-backup.tar.gz -C /data .
 
 # Restore volume
 docker run --rm \
-  -v portals_weaviate_data:/data \
+  -v ts-portal-uconn_weaviate_data:/data \
   -v $(pwd):/backup \
   alpine tar xzf /backup/weaviate-backup.tar.gz -C /data
 ```
@@ -468,7 +468,7 @@ alias portal-down='docker compose down'
 alias portal-logs='docker compose logs -f'
 alias portal-import='docker compose run --rm weaviate-init'
 alias portal-status='docker compose ps'
-alias portal-clean='docker compose down -v && docker volume rm portals_weaviate_data'
+alias portal-clean='docker compose down -v && docker volume rm ts-portal-uconn_weaviate_data'
 ```
 
 ## Environment-Specific Commands

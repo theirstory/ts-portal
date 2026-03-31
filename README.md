@@ -205,7 +205,7 @@ On your local terminal:
 
 ```bash
 # One command: export backup + sync config/json/public + upload backup
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_SERVER_IP /root/ts-portal-uconn
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal-uconn_weaviate_data root@143.198.171.87 /root/ts-portal-uconn
 ```
 
 On the server terminal:
@@ -249,7 +249,7 @@ docker compose ps                     # Service status
 
 # Data
 docker compose run --rm weaviate-init # Reimport interviews
-docker volume rm portals_weaviate_data # Clear DB
+docker volume rm ts-portal-uconn_weaviate_data # Clear DB
 
 # Verify data
 curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'

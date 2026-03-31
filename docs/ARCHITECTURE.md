@@ -159,7 +159,7 @@ docker volume inspect portals_huggingface_cache
 docker compose down -v
 
 # Remove only database (keeps models cached)
-docker volume rm portals_weaviate_data
+docker volume rm ts-portal-uconn_weaviate_data
 
 # Check volume size
 docker system df -v
