@@ -6,10 +6,27 @@ import { MainContainer } from './MainContainer';
 import { EmbedGuard } from './EmbedGuard';
 import MaterialUIThemeProvider from '@/components/ThemeProvider';
 import { FloatingChatDrawer } from '@/components/FloatingChatDrawer';
+import { organizationConfig } from '@/config/organizationConfig';
+
+const siteTitle =
+  organizationConfig.displayName && organizationConfig.name && organizationConfig.displayName !== organizationConfig.name
+    ? `${organizationConfig.displayName} - ${organizationConfig.name}`
+    : organizationConfig.displayName || organizationConfig.name;
+const siteDescription = organizationConfig.description;
 
 export const metadata: Metadata = {
-  title: 'Research Portal',
-  description: 'TheirStory Research Portal - Explore recorded interviews, lectures, and oral histories',
+  title: siteTitle,
+  description: siteDescription,
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: siteTitle,
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({

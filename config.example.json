@@ -6,7 +6,7 @@
     "displayName": "Your Portal Title",
     "description": "Description of your portal and collection. This appears on the main page.",
     "logo": {
-      "_comment": "Optional custom logo path from /public (example: /images/logo.png). If empty, default LogoArchive is used.",
+      "_comment": "Optional custom logo path from /public (example: /images/logo.png or /images/logo.svg). If empty, default LogoArchive is used.",
       "path": "",
       "alt": "Organization logo"
     }
@@ -80,7 +80,8 @@
   "ui": {
     "carouselTopBar": {
       "intervalMs": 5000,
-      "_comment": "Paths can be absolute (from /public) or full URLs.",
+      "_comment": "Paths can be absolute (from /public) or full URLs. Leave images empty to use a solid backgroundColor.",
+      "backgroundColor": "",
       "images": ["/images/carousel1.jpg", "/images/carousel2.jpg", "/images/carousel3.jpg"]
     },
     "portalHeaderOverlay": {

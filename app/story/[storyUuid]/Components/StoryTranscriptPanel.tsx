@@ -249,8 +249,14 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
           }}>
           <Button
             size="small"
-            color="info"
-            sx={{ textTransform: 'none' }}
+            sx={{
+              textTransform: 'none',
+              bgcolor: colors.primary.dark,
+              color: colors.primary.contrastText,
+              '&:hover': {
+                bgcolor: colors.primary.light,
+              },
+            }}
             variant="contained"
             onClick={() => {
               scrollToTime(currentTime);

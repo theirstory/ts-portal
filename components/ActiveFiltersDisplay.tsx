@@ -34,7 +34,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
     getAllStories,
     setCurrentPage,
   } = useSemanticSearchStore();
-  const { setIsTopBarCollapsed } = useLayoutState();
+  const { setTopBarCollapsedAuto } = useLayoutState();
   const { minValue, maxValue } = useThreshold();
 
   const selectedCollectionMap = new Map(collections.map((collection) => [collection.id, collection.name]));
@@ -133,9 +133,9 @@ export const ActiveFiltersDisplay: React.FC = () => {
   useEffect(() => {
     const hasActiveFilters = nerFilters.length > 0 || selectedCollectionIds.length > 0;
     if (isMobile && hasActiveFilters) {
-      setIsTopBarCollapsed(true);
+      setTopBarCollapsedAuto(true);
     }
-  }, [isMobile, nerFilters.length, selectedCollectionIds.length, setIsTopBarCollapsed]);
+  }, [isMobile, nerFilters.length, selectedCollectionIds.length, setTopBarCollapsedAuto]);
 
   if (nerFilters.length === 0 && selectedCollectionIds.length === 0) {
     return null;

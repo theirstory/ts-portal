@@ -2,7 +2,7 @@ import { retrieveChunksForChat, retrieveAllChapterSynopses } from '@/lib/weaviat
 import { ChatRequest, Citation } from '@/types/chat';
 import { createChatProvider, getChatProviderSettings } from '@/lib/ai/chatProvider';
 
-function buildSystemPrompt(allCitations: Citation[]): string {
+function buildSystemPrompt(allCitations: Citation[], responseLanguage: string): string {
   const sourcesBlock = allCitations
     .map((c) => {
       if (c.isChapterSynopsis) {
@@ -17,13 +17,20 @@ function buildSystemPrompt(allCitations: Citation[]): string {
 RULES:
 - Use numbered citations like [1], [2] to reference sources. 
 - Always cite your sources next to the relevant information. Not at the end of the answer, but right after the fact. For example: "The interviewee discusses their childhood in New York [3]."
-- Only use bracketed citations for source numbers. Never output ranges like [3-5], and never put timestamps in brackets.
+- Only use bracketed citations for source numbers.
+- The only valid citation format is a single number in brackets, like [3].
+- Never output ranges like [3-5].
+- Never output comma-separated or grouped citations inside one pair of brackets, like [3, 4] or [3, 5-7].
+- If you need multiple citations, write them as separate adjacent citations, like [3][4][5].
+- Never put timestamps in brackets.
 - You MUST cite every source that is relevant to your answer, including chapter summaries.
 - Include direct quotes from transcript excerpts when relevant, using quotation marks.
 - If the sources don't contain enough information to answer, say so honestly.
 - Be concise but thorough. Synthesize information across multiple sources when relevant.
 - When multiple speakers discuss the same topic, note the different perspectives.
 - For broad questions about themes or patterns, draw on the chapter summaries to cover the full breadth of the collection.
+- Write the entire answer in ${responseLanguage}.
+- If you include a direct quote from a source, keep the quote in its original language, but keep your explanation in ${responseLanguage}.
 
 SOURCES:
 ${sourcesBlock}`;
@@ -46,7 +53,7 @@ function getUserFacingDiscoverError(err: unknown): string {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as ChatRequest;
-    const { messages, query } = body;
+    const { messages, query, responseLanguage } = body;
 
     if (!query?.trim()) {
       return Response.json({ error: 'Query is required' }, { status: 400 });
@@ -86,7 +93,7 @@ export async function POST(request: Request) {
             index: i + 1,
           }));
 
-          const systemPrompt = buildSystemPrompt(allCitations);
+          const systemPrompt = buildSystemPrompt(allCitations, responseLanguage?.trim() || 'English');
           const citations = allCitations;
 
           // Send citations to client

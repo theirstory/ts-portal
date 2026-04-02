@@ -70,7 +70,7 @@ export const SearchBox = ({
     collections,
   } = useSemanticSearchStore();
   const { minValue, maxValue } = useThreshold();
-  const { isTopBarCollapsed, setIsTopBarCollapsed } = useLayoutState();
+  const { isTopBarCollapsed, setTopBarCollapsedAuto } = useLayoutState();
   const hasMultipleCollections = collections.length > 1;
   const mobilePrimaryFlex = hasMultipleCollections ? 5.5 : 7.5;
   const mobileSecondaryFlex = hasMultipleCollections ? 1.5 : 1.25;
@@ -81,7 +81,7 @@ export const SearchBox = ({
 
     setCurrentPage(1);
     clearSearch();
-    setIsTopBarCollapsed(true);
+    setTopBarCollapsedAuto(true);
     setSearchTerm(inputValue);
     setHasSearched(true);
 
@@ -100,7 +100,7 @@ export const SearchBox = ({
 
   const handleClearSearch = () => {
     setHasSearched(false);
-    setIsTopBarCollapsed(false);
+    setTopBarCollapsedAuto(false);
     setSearchTerm('');
     setInputValue('');
     clearSearch();
@@ -110,7 +110,7 @@ export const SearchBox = ({
     if (event.key === 'Enter') {
       setSearchTerm(inputValue);
       setHasSearched(true);
-      setIsTopBarCollapsed(true);
+      setTopBarCollapsedAuto(true);
       runSemanticSearch();
     }
   };

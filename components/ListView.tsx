@@ -152,14 +152,19 @@ export const ListView = () => {
         sx={{
           display: 'grid',
           alignItems: 'start',
-          gridTemplateColumns: '120px 200px 1fr 100px',
+          gridTemplateColumns: '120px 200px 1fr',
           gap: 2,
           p: 2.5,
           bgcolor: colors.grey[100],
-          borderRadius: 1,
+          borderRadius: 0,
           fontWeight: 600,
           fontSize: '0.875rem',
           color: colors.text.primary,
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
+          boxShadow: `0 1px 0 ${colors.common.border}`,
+          borderBottom: `1px solid ${colors.common.border}`,
         }}>
         <Box>Thumbnail</Box>
         <Box
@@ -171,16 +176,6 @@ export const ListView = () => {
           Recording
         </Box>
         <Box>Description</Box>
-        <Box
-          sx={{
-            textAlign: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-          }}>
-          Duration
-        </Box>
       </Box>
 
       {/* Table Rows */}
@@ -192,7 +187,7 @@ export const ListView = () => {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '120px 200px 1fr 100px',
+              gridTemplateColumns: '120px 200px 1fr',
               gap: 2,
               p: 2.5,
               alignItems: 'start',
@@ -256,25 +251,6 @@ export const ListView = () => {
                 )}
                 <ListViewNerChips story={story} />
               </Box>
-            </Box>
-
-            {/* Duration */}
-            <Box
-              sx={{
-                paddingTop: 0.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-              <Typography
-                variant="body2"
-                fontWeight={500}
-                sx={{
-                  color: 'black',
-                  fontSize: '0.75rem',
-                }}>
-                {durationFormatHandler(story.properties.interview_duration)}
-              </Typography>
             </Box>
           </Box>
         </Link>

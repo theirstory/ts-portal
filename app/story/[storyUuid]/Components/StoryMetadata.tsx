@@ -5,6 +5,7 @@ import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { StoryMetadataEntity } from './StoryMetadataEntity';
 import { useState } from 'react';
 import { colors } from '@/lib/theme';
+import { formatStoryDate } from '@/app/utils/util';
 
 interface StoryMetadataProps {
   isMobile?: boolean;
@@ -16,6 +17,7 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
 
   const { interview_title, interview_description, recording_date, publisher, participants } =
     storyHubPage?.properties || {};
+  const formattedRecordingDate = formatStoryDate(recording_date);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -45,7 +47,7 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
           )}
 
           <Typography variant="caption" color="text.secondary">
-            {recording_date ?? 'No date available'} - {publisher ?? ''}
+            {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
           </Typography>
 
           <Divider sx={{ my: 1 }} />
@@ -134,7 +136,7 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
             )}
 
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {recording_date ?? 'No date available'} - {publisher ?? ''}
+              {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
             </Typography>
 
             <Divider sx={{ my: 2 }} />

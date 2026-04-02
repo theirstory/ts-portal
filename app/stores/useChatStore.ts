@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatMessage, Citation, ChatStreamChunk } from '@/types/chat';
+import { config } from '@/config/organizationConfig';
 
 type SidePanelMode = 'hidden' | 'recording' | 'search' | 'transcript';
 type SearchType = 'bm25' | 'vector' | 'hybrid';
@@ -9,6 +10,7 @@ type ChatStore = {
   messages: ChatMessage[];
   isStreaming: boolean;
   streamingStatus: string | null;
+  selectedLanguage: string;
   activeRequestController: AbortController | null;
   sidePanelMode: SidePanelMode;
   activeCitation: Citation | null;
@@ -28,6 +30,7 @@ type ChatStore = {
 
   sendMessage: (content: string) => Promise<void>;
   stopStreaming: () => void;
+  setSelectedLanguage: (language: string) => void;
   setActiveCitation: (citation: Citation, siblings?: Citation[]) => void;
   setHoveredCitationIndex: (index: number | null, fromPanel?: boolean) => void;
   closeSidePanel: () => void;
@@ -47,6 +50,17 @@ function nextId(): string {
   return `msg-${++messageIdCounter}`;
 }
 
+const toStorageSlug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const chatStoreName = `chat-store:${
+  toStorageSlug(config.organization.displayName || config.organization.name) || 'default'
+}`;
+
 export const useChatStore = create<ChatStore>()(
   devtools(
     persist(
@@ -54,6 +68,7 @@ export const useChatStore = create<ChatStore>()(
         messages: [],
         isStreaming: false,
         streamingStatus: null,
+        selectedLanguage: 'English',
         activeRequestController: null,
         sidePanelMode: 'hidden',
         activeCitation: null,
@@ -109,6 +124,7 @@ export const useChatStore = create<ChatStore>()(
               body: JSON.stringify({
                 messages: apiMessages,
                 query: content,
+                responseLanguage: get().selectedLanguage,
               }),
             });
 
@@ -340,6 +356,8 @@ export const useChatStore = create<ChatStore>()(
           controller?.abort();
         },
 
+        setSelectedLanguage: (language: string) => set({ selectedLanguage: language }, false, 'setSelectedLanguage'),
+
         setActiveCitation: (citation: Citation, siblings?: Citation[]) => {
           const msgs = get().messages;
           let promptText = get().activePromptText;
@@ -504,8 +522,8 @@ export const useChatStore = create<ChatStore>()(
         clearScrollToCitation: () => set({ scrollToCitationIndex: null }, false, 'clearScrollToCitation'),
       }),
       {
-        name: 'chat-store',
-        partialize: (state) => ({ messages: state.messages }),
+        name: chatStoreName,
+        partialize: (state) => ({ messages: state.messages, selectedLanguage: state.selectedLanguage }),
       },
     ),
     { name: 'Chat Store' },

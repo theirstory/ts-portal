@@ -105,6 +105,7 @@ export interface AppConfig {
     carouselTopBar?: {
       images?: string[];
       intervalMs?: number;
+      backgroundColor?: string;
     };
     portalHeaderOverlay?: {
       enabled?: boolean;

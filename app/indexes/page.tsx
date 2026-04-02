@@ -161,6 +161,7 @@ export default function IndexesPage() {
     if (!q) return collectionOptions;
     return collectionOptions.filter((c) => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
   }, [collectionOptions, collectionFilterTerm]);
+  const hasMultipleCollections = collectionOptions.length > 1;
 
   const collectionMenuOpen = Boolean(collectionMenuAnchor);
   useEffect(() => {
@@ -191,6 +192,7 @@ export default function IndexesPage() {
     if (!q) return allUniqueKeywords;
     return allUniqueKeywords.filter((k) => k.toLowerCase().includes(q));
   }, [allUniqueKeywords, keywordFilterTerm]);
+  const hasKeywords = allUniqueKeywords.length > 0;
 
   const handleViewChange = (_event: React.MouseEvent<HTMLElement>, newView: 'list' | 'horizontal' | null) => {
     if (newView !== null) setViewMode(newView);
@@ -255,132 +257,146 @@ export default function IndexesPage() {
               }}
               sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: '8px' }}
             />
-            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
-              Collection
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: 'background.paper',
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-            </Button>
-            {selectedCollectionIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedCollectionIds.map((id) => {
-                  const c = collectionOptions.find((x) => x.id === id);
-                  return (
-                    <Chip
-                      key={id}
-                      label={c?.name ?? id}
-                      size="small"
-                      onDelete={() => handleCollectionToggle(id)}
-                      sx={{
-                        flexShrink: 0,
-                        backgroundColor: colors.primary.light,
-                        color: colors.primary.contrastText,
-                        fontWeight: 500,
-                      }}
-                    />
-                  );
-                })}
-              </Box>
+            {hasMultipleCollections && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
+                  Collection
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
+                </Button>
+                {selectedCollectionIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedCollectionIds.map((id) => {
+                      const c = collectionOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={c?.name ?? id}
+                          size="small"
+                          onDelete={() => handleCollectionToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.primary.light,
+                            color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </>
             )}
-            <Typography
-              variant="subtitle2"
-              fontWeight={600}
-              color="text.primary"
-              sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
-              Keyword
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: 'background.paper',
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
-            </Button>
-            {selectedKeywordIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedKeywordIds.map((kw) => (
-                  <Chip
-                    key={kw}
-                    label={kw}
-                    size="small"
-                    onDelete={() => handleKeywordToggle(kw)}
-                    sx={{
-                      flexShrink: 0,
-                      backgroundColor: colors.primary.light,
-                      color: colors.primary.contrastText,
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
+            {hasKeywords && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Keyword
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                </Button>
+                {selectedKeywordIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedKeywordIds.map((kw) => (
+                      <Chip
+                        key={kw}
+                        label={kw}
+                        size="small"
+                        onDelete={() => handleKeywordToggle(kw)}
+                        sx={{
+                          flexShrink: 0,
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.contrastText,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Box>
       )}
 
       {/* Keyword filter menu (shared for list and horizontal view) */}
-      <Menu
-        anchorEl={keywordMenuAnchor}
-        open={keywordMenuOpen}
-        onClose={() => {
-          setKeywordMenuAnchor(null);
-          setKeywordFilterTerm('');
-        }}
-        PaperProps={{ sx: { maxHeight: 320, width: 320 } }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}>
-        <Box sx={{ px: 1.5, py: 1 }}>
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="Filter keywords..."
-            value={keywordFilterTerm}
-            onChange={(e) => setKeywordFilterTerm(e.target.value)}
-            onKeyDown={(e) => e.stopPropagation()}
-            inputRef={keywordFilterInputRef}
-            InputProps={{ startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> }}
-          />
-        </Box>
-        {filteredKeywordsForDropdown.slice(0, 100).map((kw) => (
-          <MenuItem key={kw} onClick={() => handleKeywordToggle(kw)} dense>
-            <Checkbox size="small" checked={selectedKeywordIds.includes(kw)} sx={{ mr: 1 }} />
-            <Typography variant="body2" noWrap>
-              {kw}
+      {hasKeywords && (
+        <Menu
+          anchorEl={keywordMenuAnchor}
+          open={keywordMenuOpen}
+          onClose={() => {
+            setKeywordMenuAnchor(null);
+            setKeywordFilterTerm('');
+          }}
+          PaperProps={{ sx: { maxHeight: 320, width: 320 } }}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}>
+          <Box sx={{ px: 1.5, py: 1 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Filter keywords..."
+              value={keywordFilterTerm}
+              onChange={(e) => setKeywordFilterTerm(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              inputRef={keywordFilterInputRef}
+              InputProps={{ startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> }}
+            />
+          </Box>
+          {filteredKeywordsForDropdown.slice(0, 100).map((kw) => (
+            <MenuItem key={kw} onClick={() => handleKeywordToggle(kw)} dense>
+              <Checkbox size="small" checked={selectedKeywordIds.includes(kw)} sx={{ mr: 1 }} />
+              <Typography variant="body2" noWrap>
+                {kw}
+              </Typography>
+            </MenuItem>
+          ))}
+          {filteredKeywordsForDropdown.length > 100 && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1 }}>
+              Use search to narrow. Showing first 100.
             </Typography>
-          </MenuItem>
-        ))}
-        {filteredKeywordsForDropdown.length > 100 && (
-          <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1 }}>
-            Use search to narrow. Showing first 100.
-          </Typography>
-        )}
-      </Menu>
+          )}
+        </Menu>
+      )}
 
       {/* Main content */}
       <Box
@@ -440,39 +456,45 @@ export default function IndexesPage() {
                     borderRadius: '8px',
                   }}
                 />
-                <Button
-                  size="small"
-                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-                  endIcon={<KeyboardArrowDownIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    minHeight: 40,
-                    pl: 1.5,
-                    bgcolor: colors.background.default,
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.common.border}`,
-                    color: 'text.primary',
-                    '&:hover': { bgcolor: colors.grey[100] },
-                  }}>
-                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-                </Button>
-                <Button
-                  size="small"
-                  onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
-                  endIcon={<KeyboardArrowDownIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    minHeight: 40,
-                    pl: 1.5,
-                    bgcolor: colors.background.default,
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.common.border}`,
-                    color: 'text.primary',
-                    '&:hover': { bgcolor: colors.grey[100] },
-                  }}>
-                  {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
-                </Button>
-                {selectedCollectionIds.length > 0 && (
+                {hasMultipleCollections && (
+                  <Button
+                    size="small"
+                    onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: 40,
+                      pl: 1.5,
+                      bgcolor: colors.background.default,
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.common.border}`,
+                      color: 'text.primary',
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    {selectedCollectionIds.length === 0
+                      ? 'All collections'
+                      : `${selectedCollectionIds.length} selected`}
+                  </Button>
+                )}
+                {hasKeywords && (
+                  <Button
+                    size="small"
+                    onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: 40,
+                      pl: 1.5,
+                      bgcolor: colors.background.default,
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.common.border}`,
+                      color: 'text.primary',
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                  </Button>
+                )}
+                {hasMultipleCollections && selectedCollectionIds.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
                     {selectedCollectionIds.map((id) => {
                       const c = collectionOptions.find((x) => x.id === id);
@@ -493,7 +515,7 @@ export default function IndexesPage() {
                     })}
                   </Box>
                 )}
-                {selectedKeywordIds.length > 0 && (
+                {hasKeywords && selectedKeywordIds.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
                     {selectedKeywordIds.map((kw) => (
                       <Chip
@@ -557,90 +579,102 @@ export default function IndexesPage() {
               }}
               sx={{ mb: 1, bgcolor: colors.background.default, borderRadius: '8px' }}
             />
-            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
-              Collection
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: colors.background.default,
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-            </Button>
-            {selectedCollectionIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedCollectionIds.map((id) => {
-                  const c = collectionOptions.find((x) => x.id === id);
-                  return (
-                    <Chip
-                      key={id}
-                      label={c?.name ?? id}
-                      size="small"
-                      onDelete={() => handleCollectionToggle(id)}
-                      sx={{
-                        flexShrink: 0,
-                        backgroundColor: colors.primary.light,
-                        color: colors.primary.contrastText,
-                        fontWeight: 500,
-                      }}
-                    />
-                  );
-                })}
-              </Box>
+            {hasMultipleCollections && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
+                  Collection
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
+                </Button>
+                {selectedCollectionIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedCollectionIds.map((id) => {
+                      const c = collectionOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={c?.name ?? id}
+                          size="small"
+                          onDelete={() => handleCollectionToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.primary.light,
+                            color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </>
             )}
-            <Typography
-              variant="subtitle2"
-              fontWeight={600}
-              color="text.primary"
-              sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
-              Keyword
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: colors.background.default,
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
-            </Button>
-            {selectedKeywordIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedKeywordIds.map((kw) => (
-                  <Chip
-                    key={kw}
-                    label={kw}
-                    size="small"
-                    onDelete={() => handleKeywordToggle(kw)}
-                    sx={{
-                      flexShrink: 0,
-                      backgroundColor: colors.primary.light,
-                      color: colors.primary.contrastText,
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
+            {hasKeywords && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Keyword
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                </Button>
+                {selectedKeywordIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedKeywordIds.map((kw) => (
+                      <Chip
+                        key={kw}
+                        label={kw}
+                        size="small"
+                        onDelete={() => handleKeywordToggle(kw)}
+                        sx={{
+                          flexShrink: 0,
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.contrastText,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         )}
@@ -720,7 +754,7 @@ export default function IndexesPage() {
           </>
         )}
         {/* Shared collection dropdown menu (opened from sidebar, inline, or mobile button) */}
-        {!loading && data && data.stories.length > 0 && (
+        {!loading && data && data.stories.length > 0 && hasMultipleCollections && (
           <Menu
             anchorEl={collectionMenuAnchor}
             open={collectionMenuOpen}

@@ -10,12 +10,95 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { ChatMessage } from './ChatMessage';
 import { TextSelectionPopover } from './TextSelectionPopover';
+import { type ChatLanguage, LanguageSelector, VoiceInputButton, VoiceRecordingComposer } from './ChatComposerControls';
+import { useVoiceRecorder } from './useVoiceRecorder';
 import { colors } from '@/lib/theme';
 
-export const STARTER_QUESTIONS = [
-  'What are interesting questions this collection could uniquely answer?',
-  'What are common themes across the collection?',
-];
+type ChatCopy = {
+  title: string;
+  placeholderLong: string;
+  placeholderShort: string;
+  starterQuestions: string[];
+};
+
+const CHAT_COPY: Record<ChatLanguage, ChatCopy> = {
+  English: {
+    title: 'Ask about the interviews',
+    placeholderLong: 'Ask a question about the interviews...',
+    placeholderShort: 'Ask a question...',
+    starterQuestions: [
+      'What are interesting questions this collection could uniquely answer?',
+      'What are common themes across the collection?',
+    ],
+  },
+  Español: {
+    title: 'Pregunta sobre las entrevistas',
+    placeholderLong: 'Haz una pregunta sobre las entrevistas...',
+    placeholderShort: 'Haz una pregunta...',
+    starterQuestions: [
+      '¿Qué preguntas interesantes podría responder de forma única esta colección?',
+      '¿Cuáles son los temas más comunes en la colección?',
+    ],
+  },
+  Français: {
+    title: 'Posez des questions sur les entretiens',
+    placeholderLong: 'Posez une question sur les entretiens...',
+    placeholderShort: 'Posez une question...',
+    starterQuestions: [
+      'Quelles questions intéressantes cette collection pourrait-elle éclairer de façon unique ?',
+      'Quels sont les thèmes communs dans l’ensemble de la collection ?',
+    ],
+  },
+  Deutsch: {
+    title: 'Fragen Sie zu den Interviews',
+    placeholderLong: 'Stellen Sie eine Frage zu den Interviews...',
+    placeholderShort: 'Stellen Sie eine Frage...',
+    starterQuestions: [
+      'Welche interessanten Fragen könnte diese Sammlung auf einzigartige Weise beantworten?',
+      'Welche gemeinsamen Themen ziehen sich durch die Sammlung?',
+    ],
+  },
+  Português: {
+    title: 'Pergunte sobre as entrevistas',
+    placeholderLong: 'Faça uma pergunta sobre as entrevistas...',
+    placeholderShort: 'Faça uma pergunta...',
+    starterQuestions: [
+      'Que perguntas interessantes esta coleção poderia responder de forma única?',
+      'Quais são os temas mais comuns em toda a coleção?',
+    ],
+  },
+  Italiano: {
+    title: 'Fai domande sulle interviste',
+    placeholderLong: 'Fai una domanda sulle interviste...',
+    placeholderShort: 'Fai una domanda...',
+    starterQuestions: [
+      'Quali domande interessanti potrebbe rispondere in modo unico questa collezione?',
+      'Quali sono i temi comuni presenti nella collezione?',
+    ],
+  },
+  Nederlands: {
+    title: 'Stel vragen over de interviews',
+    placeholderLong: 'Stel een vraag over de interviews...',
+    placeholderShort: 'Stel een vraag...',
+    starterQuestions: [
+      'Welke interessante vragen kan deze collectie op een unieke manier beantwoorden?',
+      'Welke veelvoorkomende thema’s komen in de hele collectie terug?',
+    ],
+  },
+  Русский: {
+    title: 'Спросите об интервью',
+    placeholderLong: 'Задайте вопрос об интервью...',
+    placeholderShort: 'Задайте вопрос...',
+    starterQuestions: [
+      'На какие интересные вопросы эта коллекция может ответить особенно хорошо?',
+      'Какие общие темы встречаются во всей коллекции?',
+    ],
+  },
+};
+
+export function getChatCopy(language: string): ChatCopy {
+  return CHAT_COPY[language as ChatLanguage] ?? CHAT_COPY.English;
+}
 
 type QAPair = { userMsg: ChatMessageType; assistantMsg: ChatMessageType };
 
@@ -32,8 +115,10 @@ type ChatMessagesThreadProps = {
 type ChatComposerProps = {
   input: string;
   isStreaming: boolean;
+  selectedLanguage: string;
   inputRef?: MutableRefObject<HTMLInputElement | null>;
   onInputChange: (value: string) => void;
+  onLanguageChange: (language: ChatLanguage) => void;
   onSubmit: (e: React.FormEvent) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onStop?: () => void;
@@ -44,7 +129,9 @@ type ChatComposerProps = {
 
 type ChatStarterQuestionsProps = {
   onStarterClick: (question: string) => void;
+  selectedLanguage?: string;
   variant?: 'default' | 'compact';
+  showTitle?: boolean;
 };
 
 function buildQAPairs(messages: ChatMessageType[]): QAPair[] {
@@ -57,8 +144,14 @@ function buildQAPairs(messages: ChatMessageType[]): QAPair[] {
   return result;
 }
 
-export function ChatStarterQuestions({ onStarterClick, variant = 'default' }: ChatStarterQuestionsProps) {
+export function ChatStarterQuestions({
+  onStarterClick,
+  selectedLanguage = 'English',
+  variant = 'default',
+  showTitle = true,
+}: ChatStarterQuestionsProps) {
   const compact = variant === 'compact';
+  const copy = getChatCopy(selectedLanguage);
 
   return (
     <Box
@@ -81,15 +174,17 @@ export function ChatStarterQuestions({ onStarterClick, variant = 'default' }: Ch
           flexDirection: 'column',
           gap: compact ? 1 : 1.5,
         }}>
-        <Typography
-          variant={compact ? 'body1' : 'h4'}
-          fontWeight={600}
-          color={colors.text.primary}
-          sx={{ textAlign: 'center', mb: compact ? 2 : 1 }}>
-          Ask about the interviews
-        </Typography>
+        {showTitle && (
+          <Typography
+            variant={compact ? 'body1' : 'h4'}
+            fontWeight={600}
+            color={colors.text.primary}
+            sx={{ textAlign: 'center', mb: compact ? 2 : 1 }}>
+            {copy.title}
+          </Typography>
+        )}
 
-        {STARTER_QUESTIONS.map((q) => (
+        {copy.starterQuestions.map((q) => (
           <Button
             id={`chat-starter-question-${q
               .toLowerCase()
@@ -101,7 +196,7 @@ export function ChatStarterQuestions({ onStarterClick, variant = 'default' }: Ch
             onClick={() => onStarterClick(q)}
             sx={{
               textTransform: 'none',
-              borderRadius: 2,
+              borderRadius: 3,
               borderColor: colors.grey[300],
               color: colors.text.primary,
               fontSize: compact ? '0.8rem' : '0.875rem',
@@ -343,8 +438,10 @@ export function ChatMessagesThread({
 export function ChatComposer({
   input,
   isStreaming,
+  selectedLanguage,
   inputRef,
   onInputChange,
+  onLanguageChange,
   onSubmit,
   onKeyDown,
   onStop,
@@ -353,6 +450,27 @@ export function ChatComposer({
   fullHeight = false,
 }: ChatComposerProps) {
   const compact = variant === 'compact';
+  const voiceRecorder = useVoiceRecorder({
+    language: selectedLanguage,
+    inputValue: input,
+    onConfirmText: onInputChange,
+  });
+  const voiceInputTooltip = voiceRecorder.errorMessage
+    ? voiceRecorder.errorMessage
+    : isStreaming
+      ? 'Voice input is unavailable while the chat is responding'
+      : voiceRecorder.unavailableReason ?? undefined;
+
+  if (voiceRecorder.isRecording) {
+    return (
+      <VoiceRecordingComposer
+        audioLevels={voiceRecorder.audioLevels}
+        compact={compact}
+        onCancel={voiceRecorder.cancelRecording}
+        onConfirm={voiceRecorder.confirmRecording}
+      />
+    );
+  }
 
   return (
     <Box
@@ -362,7 +480,7 @@ export function ChatComposer({
       sx={{
         display: 'flex',
         gap: 1,
-        px: 0,
+        px: compact ? 1 : 0,
         py: compact ? 1 : 2,
         alignItems: compact ? 'center' : 'flex-end',
         flexShrink: 0,
@@ -386,22 +504,41 @@ export function ChatComposer({
             ? {
                 input: {
                   endAdornment: (
-                    <InputAdornment position="end" sx={{ alignSelf: 'center', mr: 0.5 }}>
-                      <IconButton
-                        type={isStreaming ? 'button' : 'submit'}
-                        onClick={isStreaming ? onStop : undefined}
-                        disabled={isStreaming ? !onStop : !input.trim()}
-                        sx={{
-                          bgcolor: isStreaming ? colors.error.main : colors.primary.main,
-                          color: colors.primary.contrastText,
-                          '&:hover': { bgcolor: isStreaming ? colors.error.main : colors.primary.dark },
-                          '&.Mui-disabled': { bgcolor: colors.grey[300] },
-                          borderRadius: 2,
-                          width: 36,
-                          height: 36,
-                        }}>
-                        {isStreaming ? <StopIcon sx={{ fontSize: 18 }} /> : <SendIcon sx={{ fontSize: 18 }} />}
-                      </IconButton>
+                    <InputAdornment
+                      position="end"
+                      sx={{
+                        alignSelf: 'flex-end',
+                        mr: 0.5,
+                        mb: 0.5,
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 2,
+                      }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pointerEvents: 'auto' }}>
+                        <LanguageSelector selectedLanguage={selectedLanguage} onLanguageChange={onLanguageChange} />
+                        <VoiceInputButton
+                          disabled={!voiceRecorder.isSupported || isStreaming}
+                          disabledReason={voiceInputTooltip}
+                          isRecording={voiceRecorder.isRecording}
+                          isSupported={voiceRecorder.isSupported}
+                          onClick={voiceRecorder.startRecording}
+                        />
+                        <IconButton
+                          type={isStreaming ? 'button' : 'submit'}
+                          onClick={isStreaming ? onStop : undefined}
+                          disabled={isStreaming ? !onStop : !input.trim()}
+                          sx={{
+                            bgcolor: isStreaming ? colors.error.main : colors.primary.main,
+                            color: colors.primary.contrastText,
+                            '&:hover': { bgcolor: isStreaming ? colors.error.main : colors.primary.dark },
+                            '&.Mui-disabled': { bgcolor: colors.grey[300] },
+                            borderRadius: '50%',
+                            width: 44,
+                            height: 44,
+                          }}>
+                          {isStreaming ? <StopIcon sx={{ fontSize: 18 }} /> : <SendIcon sx={{ fontSize: 18 }} />}
+                        </IconButton>
+                      </Box>
                     </InputAdornment>
                   ),
                 },
@@ -415,37 +552,56 @@ export function ChatComposer({
             fontSize: fullHeight ? '1rem' : undefined,
             boxShadow: compact ? `0 1px 2px ${colors.common.shadow}` : 'none',
             minHeight: compact ? 52 : undefined,
+            borderRadius: fullHeight ? 4 : compact ? 3 : undefined,
             '& fieldset': {
-              borderColor: compact ? colors.grey[300] : undefined,
+              borderColor: fullHeight || compact ? colors.grey[300] : undefined,
             },
             '&:hover fieldset': {
-              borderColor: compact ? colors.grey[400] : undefined,
+              borderColor: fullHeight || compact ? colors.grey[400] : undefined,
             },
             '&.Mui-focused fieldset': {
-              borderColor: compact ? colors.primary.light : undefined,
+              borderColor: fullHeight || compact ? colors.primary.light : undefined,
             },
+          },
+          '& .MuiInputAdornment-root': {
+            pointerEvents: 'auto',
           },
         }}
       />
       {!fullHeight && (
-        <IconButton
-          id={compact ? 'chat-composer-submit-compact' : 'chat-composer-submit'}
-          type={isStreaming ? 'button' : 'submit'}
-          onClick={isStreaming ? onStop : undefined}
-          disabled={isStreaming ? !onStop : !input.trim()}
-          sx={{
-            bgcolor: isStreaming ? colors.error.main : colors.primary.main,
-            color: colors.primary.contrastText,
-            '&:hover': { bgcolor: isStreaming ? colors.error.main : colors.primary.dark },
-            '&.Mui-disabled': { bgcolor: colors.grey[300] },
-            borderRadius: '50%',
-            alignSelf: 'center',
-            mt: compact ? -0.25 : 0,
-            width: compact ? 36 : 40,
-            height: compact ? 36 : 40,
-          }}>
-          {isStreaming ? <StopIcon fontSize="small" /> : <SendIcon fontSize="small" />}
-        </IconButton>
+        <>
+          <LanguageSelector
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={onLanguageChange}
+            compact={compact}
+          />
+          <VoiceInputButton
+            compact={compact}
+            disabled={!voiceRecorder.isSupported || isStreaming}
+            disabledReason={voiceInputTooltip}
+            isRecording={voiceRecorder.isRecording}
+            isSupported={voiceRecorder.isSupported}
+            onClick={voiceRecorder.startRecording}
+          />
+          <IconButton
+            id={compact ? 'chat-composer-submit-compact' : 'chat-composer-submit'}
+            type={isStreaming ? 'button' : 'submit'}
+            onClick={isStreaming ? onStop : undefined}
+            disabled={isStreaming ? !onStop : !input.trim()}
+            sx={{
+              bgcolor: isStreaming ? colors.error.main : colors.primary.main,
+              color: colors.primary.contrastText,
+              '&:hover': { bgcolor: isStreaming ? colors.error.main : colors.primary.dark },
+              '&.Mui-disabled': { bgcolor: colors.grey[300] },
+              borderRadius: '50%',
+              alignSelf: 'center',
+              mt: compact ? -0.25 : 0,
+              width: compact ? 36 : 40,
+              height: compact ? 36 : 40,
+            }}>
+            {isStreaming ? <StopIcon fontSize="small" /> : <SendIcon fontSize="small" />}
+          </IconButton>
+        </>
       )}
     </Box>
   );

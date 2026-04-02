@@ -42,3 +42,15 @@ export const formatTime = (seconds: number): string => {
 
   return `${hoursPrefix}${minutesPart}:${secondsPart}`;
 };
+
+export const formatStoryDate = (date?: string | null) => {
+  if (!date) return null;
+
+  const parsedDate = moment.utc(date);
+
+  if (!parsedDate.isValid()) {
+    return date;
+  }
+
+  return parsedDate.format('MMMM D, YYYY');
+};

@@ -5,26 +5,11 @@ import {
   Box,
   Drawer,
   IconButton,
-  TextField,
-  Typography,
   Tooltip,
-  Button,
-  ToggleButtonGroup,
-  ToggleButton,
-  InputAdornment,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SearchIcon from '@mui/icons-material/Search';
-import DescriptionIcon from '@mui/icons-material/Description';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import FolderIcon from '@mui/icons-material/Folder';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import MuxPlayer from '@mux/mux-player-react';
 import { usePathname } from 'next/navigation';
 import { useChatStore } from '@/app/stores/useChatStore';
 import { ChatInteractionProvider } from '@/app/discover/ChatInteractionContext';
@@ -32,58 +17,26 @@ import { SidePanelTranscriptView } from '@/app/discover/Components/SidePanelTran
 import { Citation } from '@/types/chat';
 import { colors } from '@/lib/theme';
 import { isChatEnabled } from '@/config/organizationConfig';
-import { getMuxPlaybackId } from '@/app/utils/converters';
-import { highlightSearchText } from '@/app/indexes/highlightSearch';
-import { ChatComposer, ChatMessagesThread, ChatStarterQuestions } from '@/app/discover/Components/SharedChatUI';
+import {
+  ChatComposer,
+  ChatMessagesThread,
+  ChatStarterQuestions,
+  getChatCopy,
+} from '@/app/discover/Components/SharedChatUI';
+import { FloatingChatDrawerHeader } from './floating-chat-drawer/FloatingChatDrawerHeader';
+import { FloatingChatRecordingView } from './floating-chat-drawer/FloatingChatRecordingView';
+import { FloatingChatSearchResultsView } from './floating-chat-drawer/FloatingChatSearchResultsView';
+import { FloatingChatSourcesView } from './floating-chat-drawer/FloatingChatSourcesView';
+import { SearchType } from './floating-chat-drawer/helpers';
 
 const DRAWER_WIDTH = 440;
 
 type DrawerView = 'chat' | 'recording' | 'search' | 'transcript' | 'sources';
-type SearchType = 'bm25' | 'vector' | 'hybrid';
-
-const SEARCH_TYPE_LABELS: Record<string, string> = {
-  bm25: 'Keyword',
-  vector: 'Thematic',
-  hybrid: 'Hybrid',
-};
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-type RecordingGroup = {
-  theirstoryId: string;
-  interviewTitle: string;
-  videoUrl: string;
-  isAudioFile: boolean;
-  results: Citation[];
-};
-
-function groupByRecording(citations: Citation[]): RecordingGroup[] {
-  const map = new Map<string, Citation[]>();
-  const order: string[] = [];
-  const meta = new Map<string, { interviewTitle: string; videoUrl: string; isAudioFile: boolean }>();
-
-  for (const c of citations) {
-    const id = c.theirstoryId;
-    if (!map.has(id)) {
-      map.set(id, []);
-      order.push(id);
-      meta.set(id, { interviewTitle: c.interviewTitle, videoUrl: c.videoUrl, isAudioFile: c.isAudioFile ?? false });
-    }
-    map.get(id)!.push(c);
-  }
-
-  return order.map((id) => ({
-    theirstoryId: id,
-    ...meta.get(id)!,
-    results: map.get(id)!.sort((a, b) => a.startTime - b.startTime),
-  }));
-}
 
 export const FloatingChatDrawer = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -105,7 +58,9 @@ export const FloatingChatDrawer = () => {
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
   const streamingStatus = useChatStore((s) => s.streamingStatus);
+  const selectedLanguage = useChatStore((s) => s.selectedLanguage);
   const sendMessage = useChatStore((s) => s.sendMessage);
+  const setSelectedLanguage = useChatStore((s) => s.setSelectedLanguage);
   const stopStreaming = useChatStore((s) => s.stopStreaming);
   const clearMessages = useChatStore((s) => s.clearMessages);
   const storeSetTranscriptCitation = useChatStore((s) => s.openTranscript);
@@ -231,30 +186,6 @@ export const FloatingChatDrawer = () => {
     });
   };
 
-  const filteredSearchResults = useMemo(() => {
-    const q = searchFilterTerm.trim().toLowerCase();
-    if (!q) return drawerSearchResults;
-    return drawerSearchResults.filter(
-      (c) =>
-        c.interviewTitle.toLowerCase().includes(q) ||
-        c.sectionTitle.toLowerCase().includes(q) ||
-        c.transcription.toLowerCase().includes(q) ||
-        c.speaker.toLowerCase().includes(q),
-    );
-  }, [drawerSearchResults, searchFilterTerm]);
-
-  const filteredSourcesCitations = useMemo(() => {
-    const q = sourcesFilterTerm.trim().toLowerCase();
-    if (!q) return sourcesCitations;
-    return sourcesCitations.filter(
-      (c) =>
-        c.interviewTitle.toLowerCase().includes(q) ||
-        c.sectionTitle.toLowerCase().includes(q) ||
-        c.transcription.toLowerCase().includes(q) ||
-        c.speaker.toLowerCase().includes(q),
-    );
-  }, [sourcesCitations, sourcesFilterTerm]);
-
   if (!shouldShow) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -279,14 +210,13 @@ export const FloatingChatDrawer = () => {
   };
 
   const shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
-  const searchHighlight = searchFilterTerm.trim() || searchQuery;
-  const groups = groupByRecording(filteredSearchResults);
+  const copy = getChatCopy(selectedLanguage);
 
   return (
     <ChatInteractionProvider value={chatContextValue}>
       {/* Floating AI button */}
       {!open && (
-        <Tooltip title={`Ask AI (${shortcutLabel})`} placement="left">
+        <Tooltip title={isDesktop ? `Ask AI (${shortcutLabel})` : 'Ask AI'} placement="left">
           <IconButton
             onClick={() => setOpen(true)}
             sx={{
@@ -323,666 +253,67 @@ export const FloatingChatDrawer = () => {
             border: 'none',
           },
         }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: colors.primary.main,
-              color: colors.primary.contrastText,
-              flexShrink: 0,
-            }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AutoAwesomeIcon sx={{ fontSize: 20 }} />
-              <Typography variant="subtitle2" fontWeight={700}>
-                Ask AI
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                {shortcutLabel}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {messages.length > 0 && (
-                <Tooltip title="Clear conversation">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      clearMessages();
-                      setViewStack(['chat']);
-                    }}
-                    sx={{ color: colors.primary.contrastText }}>
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Open full chat">
-                <IconButton
-                  size="small"
-                  onClick={() => window.open('/discover', '_blank')}
-                  sx={{ color: colors.primary.contrastText }}>
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <IconButton size="small" onClick={() => setOpen(false)} sx={{ color: colors.primary.contrastText }}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <FloatingChatDrawerHeader
+            isDesktop={isDesktop}
+            isMobile={isMobile}
+            shortcutLabel={shortcutLabel}
+            hasMessages={messages.length > 0}
+            onClear={() => {
+              clearMessages();
+              setViewStack(['chat']);
+            }}
+            onOpenFullChat={() => window.open('/discover', '_blank')}
+            onClose={() => setOpen(false)}
+          />
 
-          {/* ===== RECORDING VIEW ===== */}
           {currentView === 'recording' && activeCitation && (
-            <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              {/* Back button + open in new tab */}
-              <Box
-                sx={{
-                  px: 1,
-                  py: 0.5,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
-                <Button size="small" startIcon={<ArrowBackIcon />} onClick={popView} sx={{ textTransform: 'none' }}>
-                  Back
-                </Button>
-                <Tooltip title="Open recording in new tab">
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      window.open(`/story/${activeCitation.theirstoryId}?start=${activeCitation.startTime}`, '_blank')
-                    }>
-                    <OpenInNewIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              {/* Video player */}
-              <Box sx={{ flexShrink: 0, bgcolor: colors.common.black }}>
-                <MuxPlayer
-                  src={activeCitation.videoUrl}
-                  audio={activeCitation.isAudioFile}
-                  startTime={activeCitation.startTime}
-                  forwardSeekOffset={10}
-                  backwardSeekOffset={10}
-                  accentColor={colors.secondary.main}
-                  style={{ width: '100%', aspectRatio: activeCitation.isAudioFile ? 'auto' : '16/9' }}
-                />
-              </Box>
-
-              {/* Citation details */}
-              <Box sx={{ px: 2, py: 2, flex: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
-                  {activeCitation.interviewTitle}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  {activeCitation.isChapterSynopsis ? 'Chapter Summary' : activeCitation.speaker}
-                  {' · '}
-                  {activeCitation.sectionTitle}
-                  {' · '}
-                  {formatTime(activeCitation.startTime)}–{formatTime(activeCitation.endTime)}
-                </Typography>
-
-                {/* Quote block */}
-                <Box
-                  sx={{
-                    borderLeft: `3px solid ${activeCitation.isChapterSynopsis ? colors.success.main : colors.primary.main}`,
-                    pl: 2,
-                    py: 1,
-                    mb: 3,
-                  }}>
-                  <Typography variant="body2" sx={{ fontStyle: 'italic', lineHeight: 1.6 }}>
-                    &ldquo;{activeCitation.transcription}&rdquo;
-                  </Typography>
-                </Box>
-
-                {/* Open Full Transcript */}
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<DescriptionIcon />}
-                  onClick={() => handleOpenTranscript(activeCitation)}
-                  sx={{
-                    textTransform: 'none',
-                    borderRadius: 2,
-                    py: 1.25,
-                    mb: 1.5,
-                  }}>
-                  Open Full Transcript
-                </Button>
-              </Box>
-            </Box>
+            <FloatingChatRecordingView citation={activeCitation} onBack={popView} onOpenTranscript={handleOpenTranscript} />
           )}
 
-          {/* ===== TRANSCRIPT VIEW ===== */}
           {currentView === 'transcript' && (
             <Box sx={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
               <SidePanelTranscriptView />
             </Box>
           )}
 
-          {/* ===== SEARCH RESULTS VIEW ===== */}
           {currentView === 'search' && (
-            <Box sx={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              {/* Back button */}
-              <Box sx={{ px: 1, py: 0.5, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-                <Button size="small" startIcon={<ArrowBackIcon />} onClick={popView} sx={{ textTransform: 'none' }}>
-                  Back to chat
-                </Button>
-              </Box>
-
-              {/* Search query header */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 1.5,
-                  bgcolor: colors.primary.main,
-                  color: colors.primary.contrastText,
-                  flexShrink: 0,
-                }}>
-                <SearchIcon sx={{ fontSize: 18 }} />
-                <Typography variant="body2" fontWeight={500}>
-                  &ldquo;{searchQuery}&rdquo;
-                </Typography>
-                <Typography variant="caption" sx={{ ml: 'auto', opacity: 0.85 }}>
-                  {drawerSearchResults.length} result{drawerSearchResults.length !== 1 ? 's' : ''}
-                  {' · '}
-                  {SEARCH_TYPE_LABELS[searchType] || ''}
-                </Typography>
-              </Box>
-
-              {/* Filter input */}
-              <Box
-                sx={{
-                  px: 2,
-                  pt: 1.5,
-                  pb: 1,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                  bgcolor: colors.background.paper,
-                }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  placeholder="Filter results..."
-                  value={searchFilterTerm}
-                  onChange={(e) => setSearchFilterTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ bgcolor: colors.background.default, borderRadius: '8px' }}
-                />
-              </Box>
-
-              {/* Scrollable results */}
-              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-                {filteredSearchResults.length === 0 ? (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No results found
-                    </Typography>
-                  </Box>
-                ) : (
-                  groups.map((group) => {
-                    const playbackId = getMuxPlaybackId(group.videoUrl);
-                    const thumbnailUrl =
-                      playbackId && !group.isAudioFile
-                        ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=320&height=180&fit_mode=crop`
-                        : null;
-                    const isCollapsed = collapsed.has(group.theirstoryId);
-
-                    return (
-                      <Box key={group.theirstoryId} sx={{ borderBottom: '2px solid', borderColor: 'divider' }}>
-                        <Box
-                          onClick={() => toggleCollapse(group.theirstoryId)}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                            px: 2,
-                            py: 1.5,
-                            bgcolor: colors.grey[50],
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 2,
-                            cursor: 'pointer',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            '&:hover': { bgcolor: colors.grey[100] },
-                          }}>
-                          <ExpandMoreIcon
-                            sx={{
-                              fontSize: 20,
-                              transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                              flexShrink: 0,
-                            }}
-                          />
-                          {thumbnailUrl ? (
-                            <Box
-                              component="img"
-                              src={thumbnailUrl}
-                              alt={group.interviewTitle}
-                              sx={{
-                                width: 48,
-                                aspectRatio: '16/9',
-                                objectFit: 'cover',
-                                borderRadius: 1,
-                                bgcolor: colors.grey[200],
-                                flexShrink: 0,
-                              }}
-                            />
-                          ) : (
-                            <Box
-                              sx={{
-                                width: 48,
-                                aspectRatio: '16/9',
-                                bgcolor: colors.grey[200],
-                                borderRadius: 1,
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              variant="subtitle2"
-                              fontWeight={700}
-                              sx={{ lineHeight: 1.3, fontSize: '0.8rem' }}>
-                              {highlightSearchText(group.interviewTitle, searchHighlight)}
-                            </Typography>
-                            {isCollapsed && (
-                              <Typography variant="caption" color="text.secondary">
-                                {group.results.length} result{group.results.length !== 1 ? 's' : ''}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-
-                        {!isCollapsed &&
-                          group.results.map((citation, idx) => (
-                            <Box
-                              key={`${citation.startTime}-${idx}`}
-                              onClick={() => handleCitationClick(citation)}
-                              sx={{
-                                pl: 2,
-                                pr: 2,
-                                py: 1.25,
-                                cursor: 'pointer',
-                                borderLeft: `3px solid ${colors.primary.main}`,
-                                '&:hover': { bgcolor: colors.grey[50] },
-                                transition: 'background-color 0.15s',
-                              }}>
-                              <Typography variant="caption" color="text.secondary">
-                                {highlightSearchText(citation.speaker, searchHighlight)} &middot;{' '}
-                                {highlightSearchText(citation.sectionTitle, searchHighlight)} &middot;{' '}
-                                {formatTime(citation.startTime)}–{formatTime(citation.endTime)}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.primary"
-                                sx={{
-                                  mt: 0.5,
-                                  lineHeight: 1.5,
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                }}>
-                                {highlightSearchText(citation.transcription, searchHighlight)}
-                              </Typography>
-                            </Box>
-                          ))}
-                      </Box>
-                    );
-                  })
-                )}
-              </Box>
-            </Box>
+            <FloatingChatSearchResultsView
+              results={drawerSearchResults}
+              query={searchQuery}
+              searchType={searchType}
+              filterTerm={searchFilterTerm}
+              collapsed={collapsed}
+              onFilterChange={setSearchFilterTerm}
+              onToggleCollapse={toggleCollapse}
+              onBack={popView}
+              onSelectCitation={handleCitationClick}
+            />
           )}
 
-          {/* ===== SOURCES VIEW ===== */}
           {currentView === 'sources' && (
-            <Box sx={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              {/* Back button */}
-              <Box sx={{ px: 1, py: 0.5, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-                <Button size="small" startIcon={<ArrowBackIcon />} onClick={popView} sx={{ textTransform: 'none' }}>
-                  Back to chat
-                </Button>
-              </Box>
-
-              {/* Sources header with toggle */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 1.5,
-                  bgcolor: colors.grey[100],
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                }}>
-                <FormatListBulletedIcon sx={{ fontSize: 18, color: colors.text.secondary }} />
-                <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
-                  {sourcesCitations.length} source{sourcesCitations.length !== 1 ? 's' : ''}
-                </Typography>
-                <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={sourcesListMode}
-                  onChange={(_, val) => {
-                    if (val) setSourcesListMode(val);
-                  }}
-                  sx={{ height: 26 }}>
-                  <ToggleButton value="number" sx={{ px: 0.75, py: 0, textTransform: 'none' }}>
-                    <Tooltip title="Sort by citation number">
-                      <FormatListNumberedIcon sx={{ fontSize: 16 }} />
-                    </Tooltip>
-                  </ToggleButton>
-                  <ToggleButton value="recording" sx={{ px: 0.75, py: 0, textTransform: 'none' }}>
-                    <Tooltip title="Group by recording">
-                      <FolderIcon sx={{ fontSize: 16 }} />
-                    </Tooltip>
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-
-              {/* Filter input */}
-              <Box
-                sx={{
-                  px: 2,
-                  pt: 1.5,
-                  pb: 1,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                  bgcolor: colors.background.paper,
-                }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  placeholder="Filter sources..."
-                  value={sourcesFilterTerm}
-                  onChange={(e) => setSourcesFilterTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ bgcolor: colors.background.default, borderRadius: '8px' }}
-                />
-              </Box>
-
-              {/* Scrollable sources */}
-              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-                {sourcesListMode === 'number'
-                  ? // Numbered view — sorted by citation index with thumbnails
-                    [...filteredSourcesCitations]
-                      .sort((a, b) => a.index - b.index)
-                      .map((citation) => {
-                        const playbackId = getMuxPlaybackId(citation.videoUrl);
-                        const thumbnailUrl =
-                          playbackId && !citation.isAudioFile
-                            ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=320&height=180&fit_mode=crop&time=${Math.floor(citation.startTime)}`
-                            : null;
-                        return (
-                          <Box
-                            key={`num-${citation.index}`}
-                            onClick={() => handleCitationClick(citation)}
-                            sx={{
-                              display: 'flex',
-                              gap: 1.5,
-                              px: 2,
-                              py: 1.25,
-                              cursor: 'pointer',
-                              borderBottom: '1px solid',
-                              borderColor: 'divider',
-                              borderLeft: `3px solid ${citation.isChapterSynopsis ? colors.success.main : colors.primary.main}`,
-                              '&:hover': { bgcolor: colors.grey[50] },
-                              transition: 'background-color 0.15s',
-                            }}>
-                            {thumbnailUrl ? (
-                              <Box
-                                component="img"
-                                src={thumbnailUrl}
-                                alt={citation.interviewTitle}
-                                sx={{
-                                  width: 48,
-                                  aspectRatio: '16/9',
-                                  objectFit: 'cover',
-                                  borderRadius: 1,
-                                  bgcolor: colors.grey[200],
-                                  flexShrink: 0,
-                                  alignSelf: 'flex-start',
-                                  mt: 0.25,
-                                }}
-                              />
-                            ) : (
-                              <Box
-                                sx={{
-                                  width: 48,
-                                  aspectRatio: '16/9',
-                                  bgcolor: colors.grey[200],
-                                  borderRadius: 1,
-                                  flexShrink: 0,
-                                  alignSelf: 'flex-start',
-                                  mt: 0.25,
-                                }}
-                              />
-                            )}
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
-                                <Box
-                                  sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    bgcolor: citation.isChapterSynopsis ? colors.success.main : colors.primary.main,
-                                    color: colors.primary.contrastText,
-                                    fontSize: '0.65rem',
-                                    fontWeight: 700,
-                                    borderRadius: '4px',
-                                    px: 0.5,
-                                    minWidth: 18,
-                                    lineHeight: 1.4,
-                                  }}>
-                                  {citation.index}
-                                </Box>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ flex: 1, minWidth: 0 }}
-                                  noWrap>
-                                  {citation.isChapterSynopsis ? (
-                                    <>
-                                      {citation.interviewTitle} &middot; {citation.sectionTitle}
-                                    </>
-                                  ) : (
-                                    <>
-                                      {citation.speaker} &middot; {citation.sectionTitle}
-                                    </>
-                                  )}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-                                  {formatTime(citation.startTime)}–{formatTime(citation.endTime)}
-                                </Typography>
-                              </Box>
-                              <Typography
-                                variant="body2"
-                                color="text.primary"
-                                sx={{
-                                  mt: 0.5,
-                                  lineHeight: 1.5,
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                }}>
-                                &ldquo;{citation.transcription}&rdquo;
-                              </Typography>
-                            </Box>
-                          </Box>
-                        );
-                      })
-                  : // Recording-grouped view
-                    groupByRecording(filteredSourcesCitations).map((group) => {
-                      const playbackId = getMuxPlaybackId(group.videoUrl);
-                      const thumbnailUrl =
-                        playbackId && !group.isAudioFile
-                          ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=320&height=180&fit_mode=crop`
-                          : null;
-                      const isCollapsed = collapsed.has(group.theirstoryId);
-
-                      return (
-                        <Box key={group.theirstoryId} sx={{ borderBottom: '2px solid', borderColor: 'divider' }}>
-                          <Box
-                            onClick={() => toggleCollapse(group.theirstoryId)}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1.5,
-                              px: 2,
-                              py: 1.5,
-                              bgcolor: colors.grey[50],
-                              position: 'sticky',
-                              top: 0,
-                              zIndex: 2,
-                              cursor: 'pointer',
-                              borderBottom: '1px solid',
-                              borderColor: 'divider',
-                              '&:hover': { bgcolor: colors.grey[100] },
-                            }}>
-                            <ExpandMoreIcon
-                              sx={{
-                                fontSize: 20,
-                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s',
-                                flexShrink: 0,
-                              }}
-                            />
-                            {thumbnailUrl ? (
-                              <Box
-                                component="img"
-                                src={thumbnailUrl}
-                                alt={group.interviewTitle}
-                                sx={{
-                                  width: 48,
-                                  aspectRatio: '16/9',
-                                  objectFit: 'cover',
-                                  borderRadius: 1,
-                                  bgcolor: colors.grey[200],
-                                  flexShrink: 0,
-                                }}
-                              />
-                            ) : (
-                              <Box
-                                sx={{
-                                  width: 48,
-                                  aspectRatio: '16/9',
-                                  bgcolor: colors.grey[200],
-                                  borderRadius: 1,
-                                  flexShrink: 0,
-                                }}
-                              />
-                            )}
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography
-                                variant="subtitle2"
-                                fontWeight={700}
-                                sx={{ lineHeight: 1.3, fontSize: '0.8rem' }}>
-                                {highlightSearchText(group.interviewTitle, sourcesFilterTerm)}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {group.results.length} source{group.results.length !== 1 ? 's' : ''}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {!isCollapsed &&
-                            group.results.map((citation, idx) => (
-                              <Box
-                                key={`${citation.startTime}-${idx}`}
-                                onClick={() => handleCitationClick(citation)}
-                                sx={{
-                                  pl: 2,
-                                  pr: 2,
-                                  py: 1.25,
-                                  cursor: 'pointer',
-                                  borderLeft: `3px solid ${citation.isChapterSynopsis ? colors.success.main : colors.primary.main}`,
-                                  '&:hover': { bgcolor: colors.grey[50] },
-                                  transition: 'background-color 0.15s',
-                                }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                  <Box
-                                    sx={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      bgcolor: citation.isChapterSynopsis ? colors.success.main : colors.primary.main,
-                                      color: colors.primary.contrastText,
-                                      fontSize: '0.65rem',
-                                      fontWeight: 700,
-                                      borderRadius: '4px',
-                                      px: 0.5,
-                                      minWidth: 18,
-                                      lineHeight: 1.4,
-                                    }}>
-                                    {citation.index}
-                                  </Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {citation.isChapterSynopsis ? 'Chapter Summary' : citation.speaker}
-                                    {' · '}
-                                    {citation.sectionTitle}
-                                    {' · '}
-                                    {formatTime(citation.startTime)}–{formatTime(citation.endTime)}
-                                  </Typography>
-                                </Box>
-                                <Typography
-                                  variant="body2"
-                                  color="text.primary"
-                                  sx={{
-                                    mt: 0.5,
-                                    lineHeight: 1.5,
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                  }}>
-                                  &ldquo;{citation.transcription}&rdquo;
-                                </Typography>
-                              </Box>
-                            ))}
-                        </Box>
-                      );
-                    })}
-              </Box>
-            </Box>
+            <FloatingChatSourcesView
+              citations={sourcesCitations}
+              filterTerm={sourcesFilterTerm}
+              listMode={sourcesListMode}
+              collapsed={collapsed}
+              onBack={popView}
+              onFilterChange={setSourcesFilterTerm}
+              onListModeChange={setSourcesListMode}
+              onToggleCollapse={toggleCollapse}
+              onSelectCitation={handleCitationClick}
+            />
           )}
 
-          {/* ===== CHAT VIEW ===== */}
           {currentView === 'chat' && (
             <>
               {isEmpty ? (
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <ChatStarterQuestions onStarterClick={handleStarterClick} variant="compact" />
+                  <ChatStarterQuestions
+                    onStarterClick={handleStarterClick}
+                    selectedLanguage={selectedLanguage}
+                    variant="compact"
+                  />
                 </Box>
               ) : (
                 <ChatMessagesThread
@@ -1009,8 +340,10 @@ export const FloatingChatDrawer = () => {
                 onSubmit={handleSubmit}
                 onKeyDown={handleKeyDown}
                 onStop={stopStreaming}
-                placeholder="Ask a question..."
+                placeholder={copy.placeholderShort}
                 variant="compact"
+                selectedLanguage={selectedLanguage}
+                onLanguageChange={setSelectedLanguage}
               />
             </>
           )}

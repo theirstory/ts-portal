@@ -23,6 +23,7 @@ export type Citation = {
 export type ChatRequest = {
   messages: { role: 'user' | 'assistant'; content: string }[];
   query: string;
+  responseLanguage?: string;
 };
 
 export type ChatStreamChunk =
