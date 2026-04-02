@@ -8,7 +8,7 @@ This document describes all environment variables used across the portal service
 
 You only need environment files for:
 
-- Custom chunking parameters
+- Custom sentence chunking parameters
 - Cloud Weaviate deployment
 - Production settings
 
@@ -59,11 +59,11 @@ WEAVIATE_SECURE=false
 ### Chunking Configuration
 
 ```bash
-# Base chunk duration in seconds
-CHUNK_SECONDS=30
+# Number of sentences per chunk
+SENTENCE_CHUNK_SIZE=10
 
-# Overlap between chunks in seconds
-CHUNK_OVERLAP_SECONDS=8
+# Number of repeated sentences between adjacent chunks
+SENTENCE_OVERLAP=5
 
 # Minimum words per chunk (merges smaller chunks)
 MIN_WORDS_PER_CHUNK=10
@@ -73,16 +73,6 @@ MIN_CHARS_PER_CHUNK=50
 
 # Maximum words per chunk (prevents oversized chunks)
 MAX_WORDS_PER_CHUNK=200
-```
-
-### Hybrid Chunking (Sentence Boundaries)
-
-```bash
-# Enable sentence-aware chunking
-PREFER_SENTENCE_BREAKS=true
-
-# Additional seconds to look ahead for sentence endings
-LOOKAHEAD_SECONDS=3.0
 ```
 
 ### NER Configuration
@@ -159,7 +149,8 @@ Create `nlp-processor/.env.local`:
 
 ```bash
 # Minimal - only if you want different chunking
-CHUNK_SECONDS=60
+SENTENCE_CHUNK_SIZE=12
+SENTENCE_OVERLAP=4
 MAX_WORDS_PER_CHUNK=300
 ```
 
@@ -206,7 +197,7 @@ Response:
   "beacon_host": "localhost",
   "gliner_model": "urchade/gliner_multi-v2.1",
   "embedding_model": "sentence-transformers/LaBSE",
-  "embedding_dimension": 384,
+  "embedding_dimension": 768,
   "use_gpu": false,
   "labels_count": 6
 }
@@ -224,10 +215,9 @@ docker compose exec frontend sh -c 'env | grep WEAVIATE'
 
 ```bash
 # nlp-processor/.env.local
-CHUNK_SECONDS=60
-CHUNK_OVERLAP_SECONDS=10
+SENTENCE_CHUNK_SIZE=14
+SENTENCE_OVERLAP=3
 MAX_WORDS_PER_CHUNK=300
-PREFER_SENTENCE_BREAKS=false
 ```
 
 ### High Precision NER
@@ -242,8 +232,8 @@ MIN_TEXT_LENGTH_FOR_NER=100
 
 ```bash
 # nlp-processor/.env.local
-CHUNK_SECONDS=15
-CHUNK_OVERLAP_SECONDS=3
+SENTENCE_CHUNK_SIZE=5
+SENTENCE_OVERLAP=2
 MIN_WORDS_PER_CHUNK=5
 MAX_WORDS_PER_CHUNK=100
 ```

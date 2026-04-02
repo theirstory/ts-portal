@@ -130,6 +130,37 @@ Configure Named Entity Recognition (NER) labels and their colors:
 **fallbackColors:**
 Array of additional colors used when more colors are needed than defined labels.
 
+### 4. Chat Provider
+
+Configure the default LLM provider used by `/discover`:
+
+```json
+{
+  "features": {
+    "chat": {
+      "enabled": true,
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "baseUrl": ""
+    }
+  }
+}
+```
+
+**Fields:**
+
+- `enabled`: Enables or disables chat UI
+- `provider`: `anthropic`, `openai`, or `openai-compatible`
+- `model`: Default model name for the selected provider
+- `baseUrl`: Optional base URL for OpenAI-compatible providers
+
+**Important:**
+
+- Keep API keys in environment variables, not in `config.json`
+- Use `ANTHROPIC_API_KEY` for Anthropic
+- Use `OPENAI_API_KEY` for OpenAI
+- Use `OPENAI_API_KEY` or `AI_API_KEY` for OpenAI-compatible endpoints
+
 ## Customization Guide
 
 ### Step 1: Edit config.json

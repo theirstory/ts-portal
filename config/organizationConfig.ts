@@ -87,6 +87,15 @@ export interface ThemeColorsConfig {
   };
 }
 
+export interface FeaturesConfig {
+  chat?: {
+    enabled?: boolean;
+    provider?: 'anthropic' | 'openai' | 'openai-compatible';
+    model?: string;
+    baseUrl?: string;
+  };
+}
+
 export interface AppConfig {
   organization: OrganizationConfig;
   theme: {
@@ -96,11 +105,13 @@ export interface AppConfig {
     carouselTopBar?: {
       images?: string[];
       intervalMs?: number;
+      backgroundColor?: string;
     };
     portalHeaderOverlay?: {
       enabled?: boolean;
     };
   };
+  features?: FeaturesConfig;
   ner: {
     labels: NerLabelConfig[];
     fallbackColors: string[];
@@ -115,6 +126,7 @@ export const organizationConfig = config.organization;
 export const themeColors = config.theme.colors;
 export const nerLabels = config.ner.labels;
 export const nerFallbackColors = config.ner.fallbackColors;
+export const isChatEnabled = config.features?.chat?.enabled ?? false;
 
 const normalize = (value: string) => value?.trim()?.toLowerCase();
 

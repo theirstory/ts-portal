@@ -8,6 +8,7 @@ import usePlayerStore from '@/app/stores/usePlayerStore';
 import { Box, useMediaQuery } from '@mui/material';
 import { throttle } from 'lodash';
 import { colors, theme } from '@/lib/theme';
+import { muxPlayerThemeProps } from '@/lib/theme/muxPlayerTheme';
 import { AudioFileWave } from '@/app/assets/svg/AudioFileWave';
 
 export const StoryVideo = () => {
@@ -133,8 +134,8 @@ export const StoryVideo = () => {
           }}
           forwardSeekOffset={10}
           backwardSeekOffset={10}
-          accentColor={colors.secondary.main}
-          style={{ width: '100%', height: '100%' }}
+          accentColor={muxPlayerThemeProps.accentColor}
+          style={{ ...muxPlayerThemeProps.style, height: '100%' }}
           // Add HLS-specific configuration to handle streaming errors
           _hlsConfig={{
             maxBufferLength: 20, // Reduced buffer length

@@ -16,15 +16,13 @@ class Config:
     WEAVIATE_URL = f"{'https' if WEAVIATE_SECURE else 'http'}://{WEAVIATE_HOST_URL}:{WEAVIATE_PORT}"
     
     # Chunking Configuration
-    DEFAULT_CHUNK_SECONDS = float(os.getenv("CHUNK_SECONDS", "30"))
-    DEFAULT_CHUNK_OVERLAP_SECONDS = float(os.getenv("CHUNK_OVERLAP_SECONDS", "8"))
     MIN_WORDS_PER_CHUNK = int(os.getenv("MIN_WORDS_PER_CHUNK", "10"))
     MIN_CHARS_PER_CHUNK = int(os.getenv("MIN_CHARS_PER_CHUNK", "50"))
     MAX_WORDS_PER_CHUNK = int(os.getenv("MAX_WORDS_PER_CHUNK", "200"))
-    
-    # Hybrid Chunking Configuration (time + sentence boundaries)
-    PREFER_SENTENCE_BREAKS = os.getenv("PREFER_SENTENCE_BREAKS", "true").lower() == "true"
-    LOOKAHEAD_SECONDS = float(os.getenv("LOOKAHEAD_SECONDS", "3.0"))
+
+    # Sentence-based chunking configuration
+    DEFAULT_SENTENCE_CHUNK_SIZE = int(os.getenv("SENTENCE_CHUNK_SIZE", "10"))
+    DEFAULT_SENTENCE_OVERLAP = int(os.getenv("SENTENCE_OVERLAP", "5"))
     
     # NER Configuration
     CONFIG_PATH = os.getenv("CONFIG_PATH", "../config.json")

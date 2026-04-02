@@ -164,22 +164,21 @@ For each interview JSON file:
 
 #### 2. NLP Processing (via POST /process-story)
 
-**Hybrid Chunking:**
+**Sentence Chunking:**
 
-- Splits transcript into ~30-second time windows
-- Extends to sentence boundaries (up to 3s lookahead)
+- Splits transcript paragraphs into sentence-based chunks
+- Uses configurable sentence overlap
 - Merges small chunks (<10 words)
 - Caps maximum chunk size (200 words)
 
 **Embedding Generation:**
 
-- Generates 384-dim vectors using sentence-transformers
+- Generates vectors using `sentence-transformers/LaBSE`
 - One vector per chunk for semantic search
-- Uses `paraphrase-multilingual-MiniLM-L12-v2` model
 
 **Named Entity Recognition:**
 
-- Extracts entities using GLiNER zero-shot model
+- Extracts entities using GLiNER
 - Identifies: person, organization, location, date, event, technology
 - Maps entities to timestamps in transcript
 - Stores with confidence scores
@@ -195,8 +194,8 @@ For each interview JSON file:
 
 **Chunks Class:**
 
-- ~30s transcript segments
-- 384-dim embedding vector
+- Sentence-based transcript segments
+- Embedding vector generated from `sentence-transformers/LaBSE`
 - Word-level timestamps
 - NER entities within chunk
 - Cross-reference to parent Testimony
@@ -287,7 +286,7 @@ docker compose run --rm weaviate-init
 
 **Optimization tips:**
 
-- Increase `CHUNK_SECONDS` to create fewer, larger chunks
+- Increase `SENTENCE_CHUNK_SIZE` to create fewer, larger chunks
 - Lower `GLINER_THRESHOLD` to reduce NER processing
 - Process interviews in batches rather than all at once
 

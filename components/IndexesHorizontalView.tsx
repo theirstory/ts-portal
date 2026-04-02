@@ -3,6 +3,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
 import Link from 'next/link';
 import { VideoThumbnail } from './VideoThumbnail';
 import { durationFormatHandler, formatTime } from '@/app/utils/util';
@@ -12,7 +13,7 @@ import type { IndexesStory, IndexChapter } from '@/app/api/indexes/route';
 import type { WeaviateGenericObject } from 'weaviate-client';
 import type { Testimonies } from '@/types/weaviate';
 
-function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies> {
+function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies, any> {
   return {
     uuid: story.uuid,
     properties: {
@@ -36,7 +37,7 @@ function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testi
     metadata: {},
     references: {},
     vectors: {},
-  } as WeaviateGenericObject<Testimonies>;
+  } as WeaviateGenericObject<Testimonies, any>;
 }
 
 export function IndexesHorizontalView({
@@ -65,6 +66,7 @@ export function IndexesHorizontalView({
         return (
           <Box
             key={story.uuid}
+            id="indexes-story-card"
             sx={{
               flex: '0 0 360px',
               minWidth: 360,
@@ -76,9 +78,11 @@ export function IndexesHorizontalView({
             }}>
             <Link href={`/story/${story.uuid}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
               <Box
+                id="indexes-story-header"
+                minHeight={92}
                 sx={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   gap: 1.5,
                   p: 1.5,
                   width: '100%',
@@ -117,6 +121,7 @@ export function IndexesHorizontalView({
                   href={`/story/${story.uuid}?start=${ch.start_time}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}>
                   <Box
+                    id="indexes-chapter-card"
                     sx={{
                       py: 1,
                       px: 1.5,
@@ -149,6 +154,31 @@ export function IndexesHorizontalView({
                         }}>
                         {highlightSearchText(ch.synopsis, searchQuery)}
                       </Typography>
+                    )}
+                    {ch.keywords && ch.keywords.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 0.5 }}>
+                        {ch.keywords.slice(0, 6).map((kw) => (
+                          <Chip
+                            key={kw}
+                            label={kw}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              '& .MuiChip-label': { px: 0.5 },
+                            }}
+                          />
+                        ))}
+                        {ch.keywords.length > 6 && (
+                          <Chip
+                            label={`+${ch.keywords.length - 6}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: '0.7rem', '& .MuiChip-label': { px: 0.5 } }}
+                          />
+                        )}
+                      </Box>
                     )}
                   </Box>
                 </Link>

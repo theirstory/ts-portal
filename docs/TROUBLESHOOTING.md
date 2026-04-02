@@ -241,7 +241,7 @@ GLINER_THRESHOLD=0.5  # Higher = fewer entities = faster
 MIN_TEXT_LENGTH_FOR_NER=100  # Skip short texts
 
 # Increase chunk size (fewer chunks)
-CHUNK_SECONDS=60
+SENTENCE_CHUNK_SIZE=14
 MAX_WORDS_PER_CHUNK=300
 
 # Process in smaller batches

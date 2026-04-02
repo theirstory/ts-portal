@@ -15,6 +15,8 @@ import {
   Collapse,
   CircularProgress,
   Button,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -120,7 +122,9 @@ const ExpandableHighlightedText: React.FC<ExpandableHighlightedTextProps> = ({
       <Typography
         variant="body2"
         sx={{
-          lineHeight: 1.5,
+          lineHeight: 1.75,
+          color: colors.text.primary,
+          fontSize: { xs: '1rem', md: '0.9rem' },
           display: '-webkit-box',
           WebkitBoxOrient: 'vertical',
           WebkitLineClamp: expanded ? 'unset' : collapsedLines,
@@ -135,9 +139,9 @@ const ExpandableHighlightedText: React.FC<ExpandableHighlightedTextProps> = ({
               key={idx}
               style={{
                 backgroundColor: colors.warning.main,
-                fontWeight: 'bold',
-                padding: '1px 2px',
-                borderRadius: '2px',
+                fontWeight: 700,
+                padding: '1px 3px',
+                borderRadius: '4px',
               }}>
               {part.text}
             </span>
@@ -153,7 +157,15 @@ const ExpandableHighlightedText: React.FC<ExpandableHighlightedTextProps> = ({
             event.preventDefault();
             setExpanded((prev) => !prev);
           }}
-          sx={{ mt: 0.5, pl: 0, textTransform: 'none' }}>
+          sx={{
+            mt: 1,
+            pl: 0,
+            minWidth: 0,
+            textTransform: 'none',
+            fontWeight: 700,
+            color: colors.primary.main,
+            fontSize: { xs: '0.95rem', md: '0.82rem' },
+          }}>
           {expanded ? 'Expand less' : 'Expand more'}
         </Button>
       )}
@@ -163,8 +175,11 @@ const ExpandableHighlightedText: React.FC<ExpandableHighlightedTextProps> = ({
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const buildEntityRegex = (entityText: string) =>
+  new RegExp(`(?<![\\p{L}\\p{N}'’])${escapeRegExp(entityText)}(?![\\p{L}\\p{N}'’])`, 'giu');
+
 const createHighlightedParts = (text: string, entityText: string): HighlightPart[] => {
-  const entityRegex = new RegExp(`\\b${escapeRegExp(entityText)}\\b`, 'gi');
+  const entityRegex = buildEntityRegex(entityText);
   const matches = text.match(entityRegex);
   if (!matches?.length) return [text] as HighlightPart[];
 
@@ -246,9 +261,11 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
   entityLabel,
   currentStoryUuid,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [collectionOccurrences, setCollectionOccurrences] = useState<WeaviateGenericObject<Chunks>[]>([]);
+  const [collectionOccurrences, setCollectionOccurrences] = useState<WeaviateGenericObject<Chunks, any>[]>([]);
   const [projectMentionCount, setProjectMentionCount] = useState<number | null>(null);
   const [projectRecordingCount, setProjectRecordingCount] = useState<number | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -314,17 +331,17 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
     window: number = COLLAPSED_CHAR_WINDOW,
   ): { text: string; highlightedParts: HighlightPart[] } | null => {
     const source = transcription;
-    const sourceLower = source.toLowerCase();
-    const entityLower = entityText.toLowerCase();
-    const matchStart = sourceLower.indexOf(entityLower);
+    const entityRegex = buildEntityRegex(entityText);
+    const match = entityRegex.exec(source);
+    const matchStart = match?.index ?? -1;
 
     if (matchStart === -1) return null;
 
-    const matchEnd = matchStart + entityText.length;
+    const matchText = match?.[0] ?? entityText;
+    const matchEnd = matchStart + matchText.length;
     const start = Math.max(0, matchStart - window);
     const end = Math.min(source.length, matchEnd + window);
     const before = source.slice(start, matchStart);
-    const matchText = source.slice(matchStart, matchEnd);
     const after = source.slice(matchEnd, end);
     const hasLeadingText = start > 0;
     const hasTrailingText = end < source.length;
@@ -352,7 +369,7 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
     onClose();
   };
 
-  const handleCollectionClick = (occurrence: WeaviateGenericObject<Chunks>) => {
+  const handleCollectionClick = (occurrence: WeaviateGenericObject<Chunks, any>) => {
     if (occurrence.uuid) {
       const url = `/story/${occurrence.properties.theirstory_id}?start=${occurrence.properties.start_time}&end=${occurrence.properties.end_time}&nerLabel=${entityLabel}`;
       window.open(url, '_blank');
@@ -368,7 +385,7 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
   const occurrencesByRecording = useMemo(() => {
     const byId = new Map<
       string,
-      { interview_title: string; theirstory_id: string; occurrences: WeaviateGenericObject<Chunks>[] }
+      { interview_title: string; theirstory_id: string; occurrences: WeaviateGenericObject<Chunks, any>[] }
     >();
     for (const obj of collectionOccurrences) {
       const props = obj.properties as ChunkProps;
@@ -401,72 +418,190 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
   const recordingCount = projectRecordingCount ?? occurrencesByRecording.length;
   const mentionCount = projectMentionCount ?? collectionOccurrences.length;
   const mentionCountDisplay = mentionCount >= 10_000 ? '10,000+' : String(mentionCount);
+  const interviewTabLabel = isMobile
+    ? `Interview (${currentInterviewOccurrences.length})`
+    : `In the interview (${currentInterviewOccurrences.length})`;
   const projectTabLabel =
     mentionCount > 0 || collectionOccurrences.length > 0
-      ? `In the project (${mentionCountDisplay} mention${mentionCount !== 1 ? 's' : ''} in ${recordingCount} recording${recordingCount !== 1 ? 's' : ''})`
-      : 'In the project';
+      ? isMobile
+        ? `Project (${mentionCountDisplay})`
+        : `In the project (${mentionCountDisplay} mention${mentionCount !== 1 ? 's' : ''} in ${recordingCount} recording${recordingCount !== 1 ? 's' : ''})`
+      : isMobile
+        ? 'Project'
+        : 'In the project';
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
+      fullScreen={isMobile}
       maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 2,
-          maxHeight: '80vh',
+          borderRadius: isMobile ? 0 : 4,
+          maxHeight: isMobile ? '100dvh' : '88vh',
+          minHeight: isMobile ? '100dvh' : 'auto',
+          bgcolor: colors.grey[50],
+          overflow: 'hidden',
+          boxShadow: isMobile ? 'none' : '0 24px 80px rgba(0,0,0,0.28)',
+          width: isMobile ? '100%' : 'min(1000px, calc(100vw - 64px))',
         },
       }}>
       <DialogTitle
         sx={{
           m: 0,
-          p: 2,
+          px: { xs: 2, md: 3 },
+          py: { xs: 1.5, md: 1.75 },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          borderBottom: '1px solid',
+          borderColor: colors.grey[200],
+          bgcolor: colors.common.white,
+          position: 'sticky',
+          top: 0,
+          zIndex: 3,
         }}>
-        <Typography variant="h6" component="div">
-          <span
-            style={{
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, pr: 1 }}>
+          <Box
+            component="span"
+            sx={{
               backgroundColor: labelColor,
               color: colors.text.primary,
-              fontWeight: 'bold',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              marginRight: '8px',
+              fontWeight: 800,
+              fontSize: { xs: '1rem', md: '0.88rem' },
+              lineHeight: 1,
+              px: { xs: 1.25, md: 1.15 },
+              py: { xs: 0.85, md: 0.75 },
+              borderRadius: '8px',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45)',
+              flexShrink: 0,
             }}>
             {labelDisplayName}
-          </span>
-          {entityText}
-        </Typography>
+          </Box>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              fontWeight: 700,
+              color: colors.text.primary,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: { xs: '1.125rem', md: '1rem' },
+            }}>
+            {entityText}
+          </Typography>
+        </Box>
 
         <IconButton
           aria-label="close"
           onClick={onClose}
           sx={{
-            color: (theme) => theme.palette.grey[500],
+            color: colors.grey[500],
+            ml: 1,
+            flexShrink: 0,
           }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 0 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <DialogContent
+        dividers
+        sx={{
+          p: 0,
+          bgcolor: colors.grey[50],
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+        <Box
+          sx={{
+            borderBottom: '1px solid',
+            borderColor: colors.grey[200],
+            bgcolor: colors.common.white,
+            position: 'sticky',
+            top: 0,
+            zIndex: 2,
+          }}>
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
             aria-label="entity occurrences tabs"
-            sx={{ paddingLeft: 2 }}>
-            <Tab label={`In the interview (${currentInterviewOccurrences.length})`} sx={{ textTransform: 'none' }} />
-            <Tab label={projectTabLabel} sx={{ textTransform: 'none' }} />
+            variant={isMobile ? 'scrollable' : 'standard'}
+            scrollButtons={isMobile ? 'auto' : false}
+            allowScrollButtonsMobile
+            sx={{
+              px: { xs: 1, md: 2 },
+              minHeight: { xs: 56, md: 52 },
+              '& .MuiTabs-scroller': {
+                overflowX: isMobile ? 'auto !important' : 'hidden',
+              },
+              '& .MuiTabs-flexContainer': {
+                gap: { xs: 1, md: 2 },
+              },
+              '& .MuiTabs-scrollButtons': {
+                color: colors.primary.main,
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '999px 999px 0 0',
+                backgroundColor: colors.primary.main,
+              },
+            }}>
+            <Tab
+              label={interviewTabLabel}
+              sx={{
+                textTransform: 'none',
+                minHeight: { xs: 56, md: 52 },
+                minWidth: 'max-content',
+                px: { xs: 1, md: 1.5 },
+                fontSize: { xs: '0.95rem', md: '0.82rem' },
+                fontWeight: 600,
+                color: colors.text.secondary,
+                '&.Mui-selected': {
+                  color: colors.primary.main,
+                },
+              }}
+            />
+            <Tab
+              label={projectTabLabel}
+              sx={{
+                textTransform: 'none',
+                minHeight: { xs: 56, md: 52 },
+                minWidth: 'max-content',
+                px: { xs: 1, md: 1.5 },
+                fontSize: { xs: '0.95rem', md: '0.82rem' },
+                fontWeight: 600,
+                color: colors.text.secondary,
+                '&.Mui-selected': {
+                  color: colors.primary.main,
+                },
+              }}
+            />
           </Tabs>
         </Box>
 
         {tabValue === 0 && (
-          <Box sx={{ p: 2 }}>
+          <Box
+            sx={{
+              p: { xs: 1.25, md: 1.5 },
+              overflowY: 'auto',
+              flex: 1,
+            }}>
             {currentInterviewOccurrences.length === 0 ? (
-              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              <Typography
+                color="text.secondary"
+                sx={{
+                  textAlign: 'center',
+                  py: 6,
+                  px: 2,
+                  border: '1px dashed',
+                  borderColor: colors.grey[300],
+                  borderRadius: 3,
+                  bgcolor: colors.common.white,
+                }}>
                 No occurrences found in this interview
               </Typography>
             ) : (
@@ -477,15 +612,27 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
                     onClick={() => handleCurrentInterviewClick(occurrence)}
                     sx={{
                       cursor: 'pointer',
-                      borderRadius: 1,
+                      alignItems: 'stretch',
+                      borderRadius: 3,
                       mb: 1,
-                      '&:hover': { backgroundColor: 'action.hover' },
+                      px: { xs: 1.25, md: 1.5 },
+                      py: { xs: 1.25, md: 1.25 },
+                      bgcolor: colors.common.white,
+                      boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)',
+                      '&:hover': {
+                        backgroundColor: colors.common.white,
+                        borderColor: colors.primary.main,
+                        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+                      },
                       border: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: colors.grey[200],
                     }}>
                     <Box sx={{ width: '100%' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: { xs: '0.95rem', md: '0.84rem' }, fontWeight: 500 }}>
                           {formatTime(occurrence.start_time)}
                         </Typography>
                       </Box>
@@ -506,18 +653,36 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
         )}
 
         {tabValue === 1 && (
-          <Box sx={{ p: 2 }}>
+          <Box
+            sx={{
+              p: { xs: 1.25, md: 1.5 },
+              overflowY: 'auto',
+              flex: 1,
+            }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <CircularProgress />
               </Box>
             ) : collectionOccurrences.length === 0 ? (
-              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              <Typography
+                color="text.secondary"
+                sx={{
+                  textAlign: 'center',
+                  py: 6,
+                  px: 2,
+                  border: '1px dashed',
+                  borderColor: colors.grey[300],
+                  borderRadius: 3,
+                  bgcolor: colors.common.white,
+                }}>
                 No occurrences found in other interviews
               </Typography>
             ) : (
               <>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1.5, px: { xs: 0.5, md: 0.25 }, fontSize: { xs: '1rem', md: '0.86rem' } }}>
                   {mentionCountDisplay} mention{mentionCount !== 1 ? 's' : ''} across {recordingCount} recording
                   {recordingCount !== 1 ? 's' : ''}
                 </Typography>
@@ -532,90 +697,126 @@ export const NerEntityModal: React.FC<NerEntityModalProps> = ({
                           sx={{
                             width: '100%',
                             lineHeight: 1.5,
-                            py: 1.5,
-                            px: 0,
+                            py: { xs: 1.25, md: 1 },
+                            px: { xs: 1.25, md: 1.25 },
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             flexWrap: 'wrap',
                             gap: 1,
-                            backgroundColor: 'background.paper',
-                            border: 'none',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
+                            backgroundColor: colors.common.white,
+                            border: '1px solid',
+                            borderColor: colors.grey[200],
+                            borderRadius: isExpanded ? '14px 14px 0 0' : '14px',
                             cursor: 'pointer',
                             textAlign: 'left',
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 1,
-                            boxShadow: (theme) => theme.shadows[1],
-                            '&:hover': { backgroundColor: 'action.hover' },
+                            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
+                            '&:hover': {
+                              backgroundColor: colors.common.white,
+                              borderColor: colors.grey[300],
+                            },
                           }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, minWidth: 0 }}>
                             <Box
                               component="span"
-                              sx={{ p: 0.25, display: 'inline-flex', alignItems: 'center' }}
+                              sx={{
+                                p: 0.25,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                color: colors.text.primary,
+                              }}
                               aria-hidden="true">
                               {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                             </Box>
-                            <Typography variant="subtitle1" fontWeight="600" color="primary" noWrap>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="700"
+                              color="primary"
+                              noWrap
+                              sx={{ fontSize: { xs: '1rem', md: '0.88rem' } }}>
                               {group.interview_title}
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: { xs: '0.95rem', md: '0.82rem' } }}>
                             {group.occurrences.length} mention{group.occurrences.length !== 1 ? 's' : ''}
                           </Typography>
                         </Box>
                         <Collapse in={isExpanded} timeout="auto">
-                          {group.occurrences.map((occurrence, index) => {
-                            const transcription = occurrence.properties.transcription || '';
-                            const collapsedContext = createSimpleContext(
-                              transcription,
-                              entityText,
-                              COLLAPSED_CHAR_WINDOW,
-                            );
-                            const expandedContext = createSimpleContext(
-                              transcription,
-                              entityText,
-                              EXPANDED_CHAR_WINDOW,
-                            );
+                          <Box
+                            sx={{
+                              mt: 0.25,
+                              p: { xs: 0.75, md: 0.75 },
+                              border: '1px solid',
+                              borderTop: 'none',
+                              borderColor: colors.grey[200],
+                              borderRadius: '0 0 14px 14px',
+                              bgcolor: '#F8FAFC',
+                            }}>
+                            {group.occurrences.map((occurrence, index) => {
+                              const transcription = occurrence.properties.transcription || '';
+                              const collapsedContext = createSimpleContext(
+                                transcription,
+                                entityText,
+                                COLLAPSED_CHAR_WINDOW,
+                              );
+                              const expandedContext = createSimpleContext(
+                                transcription,
+                                entityText,
+                                EXPANDED_CHAR_WINDOW,
+                              );
 
-                            return (
-                              <ListItem
-                                key={`${occurrence.uuid ?? occurrence.properties.theirstory_id}-${occurrence.properties.start_time}-${index}`}
-                                onClick={() => handleCollectionClick(occurrence)}
-                                sx={{
-                                  cursor: 'pointer',
-                                  borderRadius: 1,
-                                  mb: 1,
-                                  '&:hover': { backgroundColor: 'action.hover' },
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                }}>
-                                <Box sx={{ width: '100%' }}>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'flex-end',
-                                      mb: 1,
-                                    }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                      {formatTime(occurrence.properties.start_time)}
-                                    </Typography>
+                              return (
+                                <ListItem
+                                  key={`${occurrence.uuid ?? occurrence.properties.theirstory_id}-${occurrence.properties.start_time}-${index}`}
+                                  onClick={() => handleCollectionClick(occurrence)}
+                                  sx={{
+                                    cursor: 'pointer',
+                                    alignItems: 'stretch',
+                                    borderRadius: 3,
+                                    mb: index === group.occurrences.length - 1 ? 0 : 1,
+                                    px: { xs: 1.25, md: 1.25 },
+                                    py: { xs: 1.25, md: 1.1 },
+                                    bgcolor: colors.common.white,
+                                    '&:hover': {
+                                      backgroundColor: colors.common.white,
+                                      borderColor: colors.primary.main,
+                                      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+                                    },
+                                    border: '1px solid',
+                                    borderColor: colors.grey[200],
+                                    boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)',
+                                  }}>
+                                  <Box sx={{ width: '100%' }}>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-end',
+                                        mb: 1,
+                                      }}>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ fontSize: { xs: '0.95rem', md: '0.84rem' }, fontWeight: 500 }}>
+                                        {formatTime(occurrence.properties.start_time)}
+                                      </Typography>
+                                    </Box>
+
+                                    <ExpandableHighlightedText
+                                      collapsedText={collapsedContext?.text || transcription}
+                                      expandedText={expandedContext?.text || transcription}
+                                      collapsedHighlightedParts={collapsedContext?.highlightedParts || null}
+                                      expandedHighlightedParts={expandedContext?.highlightedParts || null}
+                                      collapsedLines={3}
+                                    />
                                   </Box>
-
-                                  <ExpandableHighlightedText
-                                    collapsedText={collapsedContext?.text || transcription}
-                                    expandedText={expandedContext?.text || transcription}
-                                    collapsedHighlightedParts={collapsedContext?.highlightedParts || null}
-                                    expandedHighlightedParts={expandedContext?.highlightedParts || null}
-                                    collapsedLines={3}
-                                  />
-                                </Box>
-                              </ListItem>
-                            );
-                          })}
+                                </ListItem>
+                              );
+                            })}
+                          </Box>
                         </Collapse>
                       </Box>
                     );

@@ -118,6 +118,7 @@ def _create_indexed_sections(
             "timestamp": section_meta.get("timecode", "00:00:00"),
             "title": section_meta.get("title", f"Section {section_meta.get('index', 0)}"),
             "synopsis": section_meta.get("synopsis", ""),
+            "keywords": section_meta.get("keywords", ""),
             "speaker": "Unknown",
             "start": _section_start(section_meta),
             "end": section_meta.get("time", {}).get("end"),

@@ -4,9 +4,10 @@ import { Box, InputBase, IconButton, Paper, Divider, Tooltip, CircularProgress, 
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Close';
 import SubjectIcon from '@mui/icons-material/Subject';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { ChangeEvent, KeyboardEvent, useState, useEffect, useCallback, useRef } from 'react';
+import { ChangeEvent, KeyboardEvent, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { SearchMatch, useSearchStore } from '@/app/stores/useSearchStore';
 import { useThreshold } from '@/app/stores/useThreshold';
@@ -19,7 +20,9 @@ import { StoryTranscriptToolbarNerToggle } from './StoryTranscriptToolbarNerTogg
 import { StoryTranscriptToolbarFilterMenu } from './StoryTranscriptToolbarFilterMenu';
 import { getNerColor, getNerDisplayName } from '@/config/organizationConfig';
 import { StorySettings } from './StorySettings';
+import { StoryCitationModal } from './StoryCitationModal';
 import usePlayerStore from '@/app/stores/usePlayerStore';
+import { organizationConfig } from '@/config/organizationConfig';
 import { colors } from '@/lib/theme';
 import { StoryTranscriptToolbarMenuMobile } from './StoryTranscriptToolbarMenuMobile';
 import { MatchNavigation } from './StoryTranscriptToolbarMatchNavigation';
@@ -33,9 +36,11 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
   const [inputValue, setInputValue] = useState('');
   const [canScrollFiltersLeft, setCanScrollFiltersLeft] = useState(false);
   const [canScrollFiltersRight, setCanScrollFiltersRight] = useState(false);
+  const [citationModalOpen, setCitationModalOpen] = useState(false);
   const filtersScrollRef = useRef<HTMLDivElement | null>(null);
   const previousSemanticSearchingRef = useRef(false);
 
+  const storyHubPage = useSemanticSearchStore((state) => state.storyHubPage);
   const runHybridSearchForStoryId = useSemanticSearchStore((state) => state.runHybridSearchForStoryId);
   const runVectorSearchForStoryId = useSemanticSearchStore((state) => state.runVectorSearchForStoryId);
   const run25bmSearchForStoryId = useSemanticSearchStore((state) => state.run25bmSearchForStoryId);
@@ -250,6 +255,22 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
     setCanScrollFiltersRight(maxScrollLeft - element.scrollLeft > 1);
   }, []);
 
+  const citationParams = useMemo(() => {
+    if (!storyHubPage?.properties) return null;
+    const p = storyHubPage.properties;
+    const participants = Array.isArray(p.participants) ? p.participants : [];
+    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+    return {
+      interviewTitle: p.interview_title || 'Untitled',
+      participants: participants.length ? participants : undefined,
+      recordingDate: p.recording_date || '',
+      interviewDurationSeconds: typeof p.interview_duration === 'number' ? p.interview_duration : 0,
+      isAudio: Boolean(p.isAudioFile),
+      archiveName: organizationConfig?.displayName || organizationConfig?.name || '',
+      pageUrl,
+    };
+  }, [storyHubPage]);
+
   const scrollFilters = (direction: 'left' | 'right') => {
     const element = filtersScrollRef.current;
     if (!element) return;
@@ -343,7 +364,9 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
             sx={{
               flex: 1,
               minWidth: 0,
-              fontSize: isMobile ? '0.875rem' : '1rem',
+              '& .MuiInputBase-input': {
+                fontSize: isMobile ? '16px' : '1rem',
+              },
             }}
             inputProps={{ 'aria-label': 'search' }}
           />
@@ -359,7 +382,10 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
           {isMobile ? (
             <Box display="flex" alignItems="center" gap={0.25} flexShrink={0}>
               <MatchNavigation compact />
-              <StoryTranscriptToolbarMenuMobile toggleAllSections={toggleAllSections} />
+              <StoryTranscriptToolbarMenuMobile
+                toggleAllSections={toggleAllSections}
+                onCiteClick={() => setCitationModalOpen(true)}
+              />
             </Box>
           ) : (
             <>
@@ -381,6 +407,11 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
             <Tooltip title="Toggle Section View">
               <IconButton onClick={toggleAllSections}>
                 <SubjectIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Cite (Chicago style)">
+              <IconButton onClick={() => setCitationModalOpen(true)}>
+                <FormatQuoteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <StorySettings />
@@ -463,6 +494,11 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
           )}
         </Box>
       )}
+      <StoryCitationModal
+        open={citationModalOpen}
+        onClose={() => setCitationModalOpen(false)}
+        citationParams={citationParams}
+      />
     </Box>
   );
 };

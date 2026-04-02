@@ -29,6 +29,13 @@ services:
     container_name: lapl-weaviate-init
     env_file:
       - .env.local
+    environment:
+      WEAVIATE_HOST_URL: "weaviate"
+      WEAVIATE_PORT: "8080"
+      WEAVIATE_GRPC_HOST_URL: "weaviate"
+      WEAVIATE_GRPC_PORT: "50051"
+      NLP_HOST: "nlp-processor"
+      NLP_PORT: "7070"
     depends_on:
       weaviate:
         condition: service_healthy
@@ -50,6 +57,8 @@ services:
       - "7073:7070"
     env_file:
       - ./nlp-processor/.env
+    environment:
+      WEAVIATE_PORT: "8080"
     depends_on:
       weaviate:
         condition: service_healthy
@@ -76,15 +85,19 @@ services:
     environment:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-    # env_file:
-    #   - .env.local
+      WEAVIATE_HOST_URL: "weaviate"
+      WEAVIATE_PORT: "8080"
+      WEAVIATE_GRPC_HOST_URL: "weaviate"
+      WEAVIATE_GRPC_PORT: "50051"
+      NLP_PROCESSOR_URL: "http://nlp-processor:7070"
+    env_file:
+      - .env.local
     depends_on:
       weaviate:
         condition: service_healthy
-      weaviate-init:
-        condition: service_completed_successfully
       nlp-processor:
         condition: service_healthy
+      # weaviate-init runs separately: docker compose run --rm weaviate-init
     volumes:
       - .:/app
       - node_modules:/app/node_modules

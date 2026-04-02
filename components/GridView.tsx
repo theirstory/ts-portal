@@ -8,7 +8,7 @@ import { NerLabel } from '@/types/ner';
 
 export const GridView = () => {
   const { stories, nerFilters } = useSemanticSearchStore();
-  const storiesTestimonies = stories as WeaviateReturn<Testimonies> | null;
+  const storiesTestimonies = stories as WeaviateReturn<Testimonies, any> | null;
   const storiesFilteredByNer = storiesTestimonies?.objects.filter((story) =>
     nerFilters.length > 0 ? story.properties.ner_labels.some((label: NerLabel) => nerFilters.includes(label)) : true,
   );

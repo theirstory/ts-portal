@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllStoriesFromCollection, getChaptersGroupedByStory } from '@/lib/weaviate/search';
+import { getAllStoriesFromCollection } from '@/lib/weaviate/search';
 import { SchemaTypes } from '@/types/weaviate';
 
 const INDEXES_STORIES_LIMIT = 500;
@@ -35,6 +35,7 @@ export type IndexChapter = {
   start_time: number;
   end_time: number;
   synopsis?: string;
+  keywords?: string[];
 };
 
 export type IndexesApiResponse = {
@@ -44,10 +45,12 @@ export type IndexesApiResponse = {
 
 export async function GET() {
   try {
-    const [storiesResponse, chaptersByStoryId] = await Promise.all([
-      getAllStoriesFromCollection(SchemaTypes.Testimonies, [...STORIES_RETURN_PROPERTIES], INDEXES_STORIES_LIMIT, 0),
-      getChaptersGroupedByStory(),
-    ]);
+    const storiesResponse = await getAllStoriesFromCollection(
+      SchemaTypes.Testimonies,
+      [...STORIES_RETURN_PROPERTIES],
+      INDEXES_STORIES_LIMIT,
+      0,
+    );
 
     const stories: IndexesStory[] = (storiesResponse?.objects ?? []).map((obj) => {
       const p = obj.properties as Record<string, unknown>;
@@ -65,37 +68,59 @@ export async function GET() {
       };
     });
 
-    // Build section synopses from transcription JSON (sections[].synopsis) per story
-    const synopsisByStoryId: Record<string, string[]> = {};
+    // Build chapter summaries from the structured testimony transcript sections.
+    function parseKeywords(value: unknown): string[] {
+      if (Array.isArray(value)) {
+        return value
+          .map((keyword) => String(keyword ?? '').replace(/\*\*/g, '').trim())
+          .filter(Boolean);
+      }
+      if (typeof value !== 'string' || !value.trim()) return [];
+      const raw = value.replace(/\*\*/g, '').trim();
+      return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
+    const chaptersByStoryId: Record<string, IndexChapter[]> = {};
     for (const obj of storiesResponse?.objects ?? []) {
       const uuid = obj.uuid ?? '';
       const raw = (obj.properties as Record<string, unknown>)?.transcription;
       if (typeof raw !== 'string' || !raw) {
-        synopsisByStoryId[uuid] = [];
+        chaptersByStoryId[uuid] = [];
         continue;
       }
       try {
-        const parsed = JSON.parse(raw) as { sections?: Array<{ synopsis?: string }> };
+        const parsed = JSON.parse(raw) as {
+          sections?: Array<{
+            title?: string;
+            start?: number;
+            end?: number;
+            synopsis?: string;
+            keywords?: string | string[];
+          }>;
+        };
         const sections = parsed?.sections ?? [];
-        synopsisByStoryId[uuid] = sections.map((s) => String(s?.synopsis ?? '').trim());
+        chaptersByStoryId[uuid] = sections.map((section, section_id) => {
+          const keywords = parseKeywords(section?.keywords);
+          return {
+            section_id,
+            section_title: String(section?.title ?? '').trim() || 'Untitled section',
+            start_time: Number(section?.start ?? 0),
+            end_time: Number(section?.end ?? 0),
+            synopsis: String(section?.synopsis ?? '').trim() || undefined,
+            keywords: keywords.length ? keywords : undefined,
+          };
+        });
       } catch {
-        synopsisByStoryId[uuid] = [];
+        chaptersByStoryId[uuid] = [];
       }
-    }
-
-    // Enrich chapters with synopsis by section_id (index)
-    const enrichedChaptersByStoryId: Record<string, IndexChapter[]> = {};
-    for (const [storyId, chapters] of Object.entries(chaptersByStoryId)) {
-      const synopses = synopsisByStoryId[storyId] ?? [];
-      enrichedChaptersByStoryId[storyId] = chapters.map((ch) => ({
-        ...ch,
-        synopsis: synopses[ch.section_id] ?? undefined,
-      }));
     }
 
     return NextResponse.json({
       stories,
-      chaptersByStoryId: enrichedChaptersByStoryId,
+      chaptersByStoryId,
     } satisfies IndexesApiResponse);
   } catch (error) {
     console.error('Error fetching indexes:', error);

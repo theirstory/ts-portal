@@ -3,6 +3,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Link from 'next/link';
 import { VideoThumbnail } from './VideoThumbnail';
@@ -13,7 +14,7 @@ import type { IndexesStory, IndexChapter } from '@/app/api/indexes/route';
 import type { WeaviateGenericObject } from 'weaviate-client';
 import type { Testimonies } from '@/types/weaviate';
 
-function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies> {
+function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testimonies, any> {
   return {
     uuid: story.uuid,
     properties: {
@@ -37,7 +38,7 @@ function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testi
     metadata: {},
     references: {},
     vectors: {},
-  } as WeaviateGenericObject<Testimonies>;
+  } as WeaviateGenericObject<Testimonies, any>;
 }
 
 export function IndexesListView({
@@ -138,6 +139,23 @@ export function IndexesListView({
                             }}>
                             {highlightSearchText(ch.synopsis, searchQuery)}
                           </Typography>
+                        )}
+                        {ch.keywords && ch.keywords.length > 0 && (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.75 }}>
+                            {ch.keywords.map((kw) => (
+                              <Chip
+                                key={kw}
+                                label={kw}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '0.75rem',
+                                  '& .MuiChip-label': { px: 0.75 },
+                                }}
+                              />
+                            ))}
+                          </Box>
                         )}
                       </Box>
                     </Link>

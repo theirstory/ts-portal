@@ -1,45 +1,33 @@
-# Contributor License Agreement (CLA)
+# TheirStory Contributor License Agreement ("Agreement")
 
-This Contributor License Agreement ("Agreement") applies to any contribution submitted to this project.
+Thank you for your interest in the open source projects stewarded by TheirStory, Inc. ("TheirStory"). The form of license below is a document that clarifies the terms under which You, the person listed below, may contribute software code described below (the "Contribution") to the project. We appreciate your participation in our project, and your help in improving our products, so we want you to understand what will be done with the Contributions. This license is for your protection as well as the protection of TheirStory and its licensees; it does not change your rights to use your own Contributions for any other purpose.
 
-Project: ts-portal  
-License: GNU Affero General Public License v3.0 (AGPL-3.0-only)
+You hereby agree:
 
-By submitting a contribution (code, documentation, assets, or any other material), you agree to the following:
+## 1. You grant us the ability to use the Contributions in any way
 
-## 1. Definitions
+You hereby grant to TheirStory a non-exclusive, irrevocable, worldwide, royalty-free, sublicenseable, transferable license under all of Your relevant intellectual property rights (including copyright, patent, and any other rights), to use, copy, prepare derivative works of, distribute and publicly perform and display the Contributions on any licensing terms, including without limitation: (a) open source licenses like the GNU General Public License (GPL), the GNU Lesser General Public License (LGPL), the Common Public License, or the Berkeley Science Division license (BSD); and (b) binary, proprietary, or commercial licenses.
 
-- "You" means the individual contributor or the legal entity on whose behalf the contribution is submitted.
-- "Contribution" means any original work intentionally submitted to the project.
+## 2. Grant of Patent License
 
-## 2. Copyright Ownership
+You hereby grant to TheirStory a worldwide, non-exclusive, royalty-free, irrevocable, license, under any rights you may have, now or in the future, in any patents or patent applications, to make, have made, use, offer to sell, sell, and import products containing the Contribution or portions of the Contribution. This license extends to patent claims that are infringed by the Contribution alone or by combination of the Contribution with other inventions.
 
-You retain ownership of your Contribution.
+## 3. Limitations on Licenses
 
-## 3. License Grant to Project Maintainers
+The licenses granted in this Agreement will continue for the duration of the applicable patent or intellectual property right under which such license is granted. The licenses granted in this Agreement will include the right to grant and authorize sublicenses, so long as the sublicenses are within the scope of the licenses granted in this Agreement. Except for the licenses granted herein, You reserve all right, title, and interest in and to the Contribution.
 
-You grant the project maintainers and recipients of the project a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to use, reproduce, modify, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute your Contribution as part of this project under AGPL-3.0.
+## 4. You are able to grant us these rights
 
-## 4. Inbound = Outbound
+You represent that You are legally entitled to grant the above license. If Your employer has rights to intellectual property that You create, You represent that You are authorized to make the Contributions on behalf of that employer, or that Your employer has waived such rights for the Contributions.
 
-You agree that your Contribution is provided under the same license terms used by the project (AGPL-3.0), including any future versions explicitly adopted by the project maintainers.
+## 5. The Contributions are your original work
 
-## 5. Representations
+You represent that the Contributions are Your original works of authorship, and to Your knowledge, no other person claims, or has the right to claim, any right in any invention or patent related to the Contributions. You also represent that You are not legally obligated, whether by entering into an agreement or otherwise, in any way that conflicts with the terms of this license. For example, if you have signed an agreement requiring you to assign the intellectual property rights in the Contributions to an employer or customer, that would conflict with the terms of this license.
 
-You represent that:
+## 6. We determine the code that is in our products
 
-- You have the legal right to submit the Contribution.
-- The Contribution is your original work, or you have sufficient rights to submit it.
-- If your Contribution includes third-party material, you have identified it and ensured it is compatible with AGPL-3.0.
+You understand that the decision to include the Contribution in any product or source repository is entirely that of TheirStory, and this agreement does not guarantee that the Contributions will be included in any product.
 
-## 6. No Warranty
+## 7. No Implied Warranties
 
-Unless otherwise required by applicable law or agreed in writing, your Contribution is provided "AS IS", without warranties or conditions of any kind.
-
-## 7. Employer/Organization Consent
-
-If you submit on behalf of an employer or organization, you represent that you are authorized to do so and to grant the rights in this Agreement.
-
-## 8. Acceptance
-
-You agree to this Agreement by submitting a pull request to this repository and confirming acceptance via CLA Assistant.
+TheirStory acknowledges that, except as explicitly described in this Agreement, the Contribution is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.

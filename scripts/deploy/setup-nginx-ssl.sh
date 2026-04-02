@@ -4,7 +4,7 @@ set -euo pipefail
 # Usage:
 #   sudo bash scripts/deploy/setup-nginx-ssl.sh <domain> <email> [app_port]
 # Example:
-#   sudo bash scripts/deploy/setup-nginx-ssl.sh portal.example.com admin@example.com 3000
+#   sudo bash scripts/deploy/setup-nginx-ssl.sh portal.example.com admin@example.com 3003
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Run as root: sudo bash scripts/deploy/setup-nginx-ssl.sh <domain> <email> [app_port]"

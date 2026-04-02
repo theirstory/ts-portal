@@ -40,6 +40,11 @@ What this script does:
 
 ## 4) Start production stack (one command)
 
+Before the first deploy, create and edit `.env.production` if you plan to use Discover chat.
+
+When you run the deploy command, Docker Compose loads `.env.production` for the `frontend` and `weaviate-init` containers via `docker-compose.prod.yml`.
+If you change `.env.production` later, run the deploy command again so those containers are recreated with the new values.
+
 ```bash
 ./scripts/deploy/deploy-prod.sh
 ```
@@ -84,6 +89,7 @@ Inside local repo:
 ```
 
 This command exports Weaviate data and uploads to the Droplet:
+
 - `/tmp/weaviate-data.tar.gz`
 - `config.json`
 - `json/`

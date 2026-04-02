@@ -29,16 +29,24 @@ function filterStories(
   stories: IndexesStory[],
   searchQuery: string,
   selectedCollectionIds: string[],
-  chaptersByStoryId: Record<string, { section_title: string; synopsis?: string }[]>,
+  selectedKeywordIds: string[],
+  chaptersByStoryId: Record<string, IndexChapter[]>,
 ): IndexesStory[] {
   const q = searchQuery.trim().toLowerCase();
   return stories.filter((story) => {
     if (selectedCollectionIds.length > 0 && !selectedCollectionIds.includes(story.collection_id)) return false;
+    const chapters = chaptersByStoryId[story.uuid] ?? [];
+    if (selectedKeywordIds.length > 0) {
+      const hasKeyword = chapters.some((ch) => ch.keywords?.some((kw) => selectedKeywordIds.includes(kw)));
+      if (!hasKeyword) return false;
+    }
     if (!q) return true;
     if (story.interview_title.toLowerCase().includes(q)) return true;
-    const chapters = chaptersByStoryId[story.uuid] ?? [];
     return chapters.some(
-      (ch) => ch.section_title.toLowerCase().includes(q) || (ch.synopsis && ch.synopsis.toLowerCase().includes(q)),
+      (ch) =>
+        ch.section_title.toLowerCase().includes(q) ||
+        (ch.synopsis && ch.synopsis.toLowerCase().includes(q)) ||
+        (ch.keywords?.some((kw) => kw.toLowerCase().includes(q)) ?? false),
     );
   });
 }
@@ -50,9 +58,13 @@ export default function IndexesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>([]);
   const [collectionMenuAnchor, setCollectionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [keywordMenuAnchor, setKeywordMenuAnchor] = useState<null | HTMLElement>(null);
   const [collectionFilterTerm, setCollectionFilterTerm] = useState('');
+  const [keywordFilterTerm, setKeywordFilterTerm] = useState('');
   const collectionFilterInputRef = useRef<HTMLInputElement>(null);
+  const keywordFilterInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,24 +113,44 @@ export default function IndexesPage() {
     return m;
   }, [data?.stories]);
 
+  const allUniqueKeywords = useMemo(() => {
+    const set = new Set<string>();
+    for (const chapters of Object.values(data?.chaptersByStoryId ?? {})) {
+      for (const ch of chapters) {
+        for (const kw of ch.keywords ?? []) {
+          if (kw.trim()) set.add(kw.trim());
+        }
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [data?.chaptersByStoryId]);
+
   const filteredStories = useMemo(() => {
     if (!data) return [];
-    return filterStories(data.stories, searchQuery, selectedCollectionIds, data.chaptersByStoryId);
-  }, [data, searchQuery, selectedCollectionIds]);
+    return filterStories(data.stories, searchQuery, selectedCollectionIds, selectedKeywordIds, data.chaptersByStoryId);
+  }, [data, searchQuery, selectedCollectionIds, selectedKeywordIds]);
 
   const filteredChaptersByStoryId = useMemo((): Record<string, IndexChapter[]> => {
     if (!data?.chaptersByStoryId) return {};
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return data.chaptersByStoryId;
     const out: Record<string, IndexChapter[]> = {};
     for (const [storyId, chapters] of Object.entries(data.chaptersByStoryId)) {
-      out[storyId] = chapters.filter(
-        (ch) =>
-          ch.section_title.toLowerCase().includes(q) || (ch.synopsis != null && ch.synopsis.toLowerCase().includes(q)),
-      );
+      let list = chapters;
+      if (selectedKeywordIds.length > 0) {
+        list = list.filter((ch) => ch.keywords?.some((kw) => selectedKeywordIds.includes(kw)));
+      }
+      if (q) {
+        list = list.filter(
+          (ch) =>
+            ch.section_title.toLowerCase().includes(q) ||
+            (ch.synopsis != null && ch.synopsis.toLowerCase().includes(q)) ||
+            (ch.keywords?.some((kw) => kw.toLowerCase().includes(q)) ?? false),
+        );
+      }
+      out[storyId] = list;
     }
     return out;
-  }, [data?.chaptersByStoryId, searchQuery]);
+  }, [data?.chaptersByStoryId, searchQuery, selectedKeywordIds]);
 
   const handleCollectionToggle = (id: string) => {
     setSelectedCollectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -129,6 +161,7 @@ export default function IndexesPage() {
     if (!q) return collectionOptions;
     return collectionOptions.filter((c) => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
   }, [collectionOptions, collectionFilterTerm]);
+  const hasMultipleCollections = collectionOptions.length > 1;
 
   const collectionMenuOpen = Boolean(collectionMenuAnchor);
   useEffect(() => {
@@ -141,6 +174,25 @@ export default function IndexesPage() {
     setCollectionMenuAnchor(null);
     setCollectionFilterTerm('');
   };
+
+  const handleKeywordToggle = (keyword: string) => {
+    setSelectedKeywordIds((prev) => (prev.includes(keyword) ? prev.filter((x) => x !== keyword) : [...prev, keyword]));
+  };
+
+  const keywordMenuOpen = Boolean(keywordMenuAnchor);
+  useEffect(() => {
+    if (keywordMenuOpen) {
+      const t = setTimeout(() => keywordFilterInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [keywordMenuOpen]);
+
+  const filteredKeywordsForDropdown = useMemo(() => {
+    const q = keywordFilterTerm.trim().toLowerCase();
+    if (!q) return allUniqueKeywords;
+    return allUniqueKeywords.filter((k) => k.toLowerCase().includes(q));
+  }, [allUniqueKeywords, keywordFilterTerm]);
+  const hasKeywords = allUniqueKeywords.length > 0;
 
   const handleViewChange = (_event: React.MouseEvent<HTMLElement>, newView: 'list' | 'horizontal' | null) => {
     if (newView !== null) setViewMode(newView);
@@ -205,50 +257,145 @@ export default function IndexesPage() {
               }}
               sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: '8px' }}
             />
-            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
-              Collection
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: 'background.paper',
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-            </Button>
-            {selectedCollectionIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedCollectionIds.map((id) => {
-                  const c = collectionOptions.find((x) => x.id === id);
-                  return (
-                    <Chip
-                      key={id}
-                      label={c?.name ?? id}
-                      size="small"
-                      onDelete={() => handleCollectionToggle(id)}
-                      sx={{
-                        flexShrink: 0,
-                        backgroundColor: colors.primary.light,
-                        color: colors.primary.contrastText,
-                        fontWeight: 500,
-                      }}
-                    />
-                  );
-                })}
-              </Box>
+            {hasMultipleCollections && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
+                  Collection
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
+                </Button>
+                {selectedCollectionIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedCollectionIds.map((id) => {
+                      const c = collectionOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={c?.name ?? id}
+                          size="small"
+                          onDelete={() => handleCollectionToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.primary.light,
+                            color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </>
+            )}
+            {hasKeywords && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Keyword
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                </Button>
+                {selectedKeywordIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedKeywordIds.map((kw) => (
+                      <Chip
+                        key={kw}
+                        label={kw}
+                        size="small"
+                        onDelete={() => handleKeywordToggle(kw)}
+                        sx={{
+                          flexShrink: 0,
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.contrastText,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Box>
+      )}
+
+      {/* Keyword filter menu (shared for list and horizontal view) */}
+      {hasKeywords && (
+        <Menu
+          anchorEl={keywordMenuAnchor}
+          open={keywordMenuOpen}
+          onClose={() => {
+            setKeywordMenuAnchor(null);
+            setKeywordFilterTerm('');
+          }}
+          PaperProps={{ sx: { maxHeight: 320, width: 320 } }}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}>
+          <Box sx={{ px: 1.5, py: 1 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Filter keywords..."
+              value={keywordFilterTerm}
+              onChange={(e) => setKeywordFilterTerm(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              inputRef={keywordFilterInputRef}
+              InputProps={{ startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> }}
+            />
+          </Box>
+          {filteredKeywordsForDropdown.slice(0, 100).map((kw) => (
+            <MenuItem key={kw} onClick={() => handleKeywordToggle(kw)} dense>
+              <Checkbox size="small" checked={selectedKeywordIds.includes(kw)} sx={{ mr: 1 }} />
+              <Typography variant="body2" noWrap>
+                {kw}
+              </Typography>
+            </MenuItem>
+          ))}
+          {filteredKeywordsForDropdown.length > 100 && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1 }}>
+              Use search to narrow. Showing first 100.
+            </Typography>
+          )}
+        </Menu>
       )}
 
       {/* Main content */}
@@ -309,23 +456,45 @@ export default function IndexesPage() {
                     borderRadius: '8px',
                   }}
                 />
-                <Button
-                  size="small"
-                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-                  endIcon={<KeyboardArrowDownIcon />}
-                  sx={{
-                    textTransform: 'none',
-                    minHeight: 40,
-                    pl: 1.5,
-                    bgcolor: colors.background.default,
-                    borderRadius: '8px',
-                    border: `1px solid ${colors.common.border}`,
-                    color: 'text.primary',
-                    '&:hover': { bgcolor: colors.grey[100] },
-                  }}>
-                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-                </Button>
-                {selectedCollectionIds.length > 0 && (
+                {hasMultipleCollections && (
+                  <Button
+                    size="small"
+                    onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: 40,
+                      pl: 1.5,
+                      bgcolor: colors.background.default,
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.common.border}`,
+                      color: 'text.primary',
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    {selectedCollectionIds.length === 0
+                      ? 'All collections'
+                      : `${selectedCollectionIds.length} selected`}
+                  </Button>
+                )}
+                {hasKeywords && (
+                  <Button
+                    size="small"
+                    onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      minHeight: 40,
+                      pl: 1.5,
+                      bgcolor: colors.background.default,
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.common.border}`,
+                      color: 'text.primary',
+                      '&:hover': { bgcolor: colors.grey[100] },
+                    }}>
+                    {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                  </Button>
+                )}
+                {hasMultipleCollections && selectedCollectionIds.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
                     {selectedCollectionIds.map((id) => {
                       const c = collectionOptions.find((x) => x.id === id);
@@ -344,6 +513,24 @@ export default function IndexesPage() {
                         />
                       );
                     })}
+                  </Box>
+                )}
+                {hasKeywords && selectedKeywordIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                    {selectedKeywordIds.map((kw) => (
+                      <Chip
+                        key={kw}
+                        label={kw}
+                        size="small"
+                        onDelete={() => handleKeywordToggle(kw)}
+                        sx={{
+                          flexShrink: 0,
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.contrastText,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
                   </Box>
                 )}
               </Box>
@@ -392,47 +579,102 @@ export default function IndexesPage() {
               }}
               sx={{ mb: 1, bgcolor: colors.background.default, borderRadius: '8px' }}
             />
-            <Typography variant="subtitle2" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 0.5 }}>
-              Collection
-            </Typography>
-            <Button
-              fullWidth
-              size="small"
-              onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={{
-                textTransform: 'none',
-                justifyContent: 'space-between',
-                minHeight: 40,
-                pl: 1.5,
-                bgcolor: colors.background.default,
-                borderRadius: '8px',
-                border: `1px solid ${colors.common.border}`,
-                color: 'text.primary',
-                '&:hover': { bgcolor: colors.grey[100] },
-              }}>
-              {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
-            </Button>
-            {selectedCollectionIds.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                {selectedCollectionIds.map((id) => {
-                  const c = collectionOptions.find((x) => x.id === id);
-                  return (
-                    <Chip
-                      key={id}
-                      label={c?.name ?? id}
-                      size="small"
-                      onDelete={() => handleCollectionToggle(id)}
-                      sx={{
-                        flexShrink: 0,
-                        backgroundColor: colors.primary.light,
-                        color: colors.primary.contrastText,
-                        fontWeight: 500,
-                      }}
-                    />
-                  );
-                })}
-              </Box>
+            {hasMultipleCollections && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mb: 0.5 }}>
+                  Collection
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
+                </Button>
+                {selectedCollectionIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedCollectionIds.map((id) => {
+                      const c = collectionOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={c?.name ?? id}
+                          size="small"
+                          onDelete={() => handleCollectionToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.primary.light,
+                            color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </>
+            )}
+            {hasKeywords && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Keyword
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: colors.background.default,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                </Button>
+                {selectedKeywordIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {selectedKeywordIds.map((kw) => (
+                      <Chip
+                        key={kw}
+                        label={kw}
+                        size="small"
+                        onDelete={() => handleKeywordToggle(kw)}
+                        sx={{
+                          flexShrink: 0,
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.contrastText,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         )}
@@ -512,7 +754,7 @@ export default function IndexesPage() {
           </>
         )}
         {/* Shared collection dropdown menu (opened from sidebar, inline, or mobile button) */}
-        {!loading && data && data.stories.length > 0 && (
+        {!loading && data && data.stories.length > 0 && hasMultipleCollections && (
           <Menu
             anchorEl={collectionMenuAnchor}
             open={collectionMenuOpen}
@@ -533,6 +775,7 @@ export default function IndexesPage() {
                 value={collectionFilterTerm}
                 onChange={(e) => setCollectionFilterTerm(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
                 inputRef={collectionFilterInputRef}
                 autoFocus
               />
@@ -547,7 +790,13 @@ export default function IndexesPage() {
                       {c.name}
                       {count >= 0 && ` (${count} recording${count !== 1 ? 's' : ''})`}
                     </Typography>
-                    <Checkbox size="small" checked={checked} sx={{ p: 0.25 }} onClick={(e) => e.stopPropagation()} />
+                    <Checkbox
+                      size="small"
+                      checked={checked}
+                      sx={{ p: 0.25 }}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => handleCollectionToggle(c.id)}
+                    />
                   </MenuItem>
                 );
               })}

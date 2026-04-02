@@ -48,8 +48,8 @@ curl http://localhost:8083/v1/.well-known/ready
 
 **Responsibilities:**
 
-- **Hybrid Chunking**: Splits transcripts into ~30s segments with sentence boundary detection
-- **Embeddings**: Generates 384-dim vectors using sentence-transformers
+- **Sentence Chunking**: Splits transcript paragraphs into sentence-based chunks with overlap
+- **Embeddings**: Generates local vectors using `sentence-transformers/LaBSE`
 - **NER**: Extracts named entities using GLiNER (people, organizations, locations, etc.)
 - **Batch Processing**: Efficient insertion of chunks into Weaviate
 

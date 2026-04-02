@@ -1,13 +1,32 @@
 import type { Metadata } from 'next';
-import React from 'react';
+import React, { Suspense } from 'react';
 import './globals.css';
 import { AppTopBar } from '@/components/AppTopBar/AppTopBar';
 import { MainContainer } from './MainContainer';
+import { EmbedGuard } from './EmbedGuard';
 import MaterialUIThemeProvider from '@/components/ThemeProvider';
+import { FloatingChatDrawer } from '@/components/FloatingChatDrawer';
+import { organizationConfig } from '@/config/organizationConfig';
+
+const siteTitle =
+  organizationConfig.displayName && organizationConfig.name && organizationConfig.displayName !== organizationConfig.name
+    ? `${organizationConfig.displayName} - ${organizationConfig.name}`
+    : organizationConfig.displayName || organizationConfig.name;
+const siteDescription = organizationConfig.description;
 
 export const metadata: Metadata = {
-  title: 'Research Portal',
-  description: 'TheirStory Research Portal - Explore recorded interviews, lectures, and oral histories',
+  title: siteTitle,
+  description: siteDescription,
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: siteTitle,
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({
@@ -17,12 +36,17 @@ export default function RootLayout({
 }>) {
   return (
     <html className=" overflow-x-hidden" lang="en">
-      <body>
+      <body suppressHydrationWarning>
         <MaterialUIThemeProvider>
-          <MainContainer>
-            <AppTopBar />
-            {children}
-          </MainContainer>
+          <Suspense>
+            <MainContainer>
+              <EmbedGuard>
+                <AppTopBar />
+              </EmbedGuard>
+              {children}
+              <FloatingChatDrawer />
+            </MainContainer>
+          </Suspense>
         </MaterialUIThemeProvider>
       </body>
     </html>

@@ -5,12 +5,13 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { StoryTranscriptToolbar } from './StoryTranscriptToolbar';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { StoryTranscriptParagraph } from './StoryTranscriptParagraph';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
 import { useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/theme';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
 
 interface StoryTranscriptPanelProps {
   isMobile?: boolean;
@@ -45,14 +46,31 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
    * state
    */
   const [urlHighlightRange, setUrlHighlightRange] = useState<{ start: number; end: number } | null>(null);
+  const targetScrollTime = useTranscriptPanelStore((state) => state.targetScrollTime);
+  const setTargetScrollTime = useTranscriptPanelStore((state) => state.setTargetScrollTime);
 
   /**
    * variables
    */
-  const sections = transcript?.sections ?? [];
+  const sections = useMemo(() => transcript?.sections ?? [], [transcript?.sections]);
   const areAccordionsInitialized = Object.keys(expandedSections).length === sections.length;
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
+
+  /**
+   * Expand the accordion section that contains the target scroll time so the paragraph can mount and scroll.
+   * Without this, the paragraph at e.g. 1:10:53 is inside a collapsed section and never runs its scroll effect.
+   */
+  useEffect(() => {
+    if (targetScrollTime === null || sections.length === 0) return;
+    const section = sections.find((sec) => {
+      const paragraphs = sec.paragraphs ?? [];
+      return paragraphs.some((p) => targetScrollTime >= p.start && targetScrollTime < p.end);
+    });
+    if (section && !expandedSections[section.start]) {
+      toggleSection(section.start);
+    }
+  }, [targetScrollTime, sections, expandedSections, toggleSection]);
 
   /**
    * effects
@@ -99,6 +117,26 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
   }, [isPlaying, isCurrentTimeOutOfView, setIsCurrentTimeOutOfView, isProgrammaticScrollRef]);
+
+  // When targetScrollTime matches a section start, scroll to the section heading instead of the paragraph
+  useEffect(() => {
+    if (targetScrollTime === null) return;
+    const matchingSection = sections.find((s) => s.start === targetScrollTime);
+    if (!matchingSection) return;
+
+    const scrollContainer = document.getElementById('transcript-panel-content');
+    const sectionEl = scrollContainer?.querySelector(
+      `[data-section-start="${matchingSection.start}"]`,
+    ) as HTMLElement | null;
+    if (!sectionEl || !scrollContainer) return;
+
+    setTargetScrollTime(null);
+    isProgrammaticScrollRef.current = true;
+    scrollElementIntoContainer(sectionEl, scrollContainer, -8);
+    setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 120);
+  }, [targetScrollTime, sections, setTargetScrollTime]);
 
   useEffect(() => {
     if (!areAccordionsInitialized) return;
@@ -174,7 +212,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
                     {section.title}
                   </Typography>
 
-                  {!isExpanded && (
+                  {section.synopsis && (
                     <Typography fontSize="12px" color={colors.common.white}>
                       {section.synopsis}
                     </Typography>
@@ -211,8 +249,14 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
           }}>
           <Button
             size="small"
-            color="info"
-            sx={{ textTransform: 'none' }}
+            sx={{
+              textTransform: 'none',
+              bgcolor: colors.primary.dark,
+              color: colors.primary.contrastText,
+              '&:hover': {
+                bgcolor: colors.primary.light,
+              },
+            }}
             variant="contained"
             onClick={() => {
               scrollToTime(currentTime);

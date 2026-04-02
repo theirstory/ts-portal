@@ -1,4 +1,5 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import { Menu, MenuItem, ListItemText, IconButton } from '@mui/material';
 import { useState } from 'react';
 import { SearchTypeSelector } from './StoryTranscriptToolbarSearchTypeSelector';
@@ -7,7 +8,12 @@ import { StorySettings } from './StorySettings';
 import { StoryTranscriptToolbarNerToggle } from './StoryTranscriptToolbarNerToggle';
 import SubjectIcon from '@mui/icons-material/Subject';
 
-export const StoryTranscriptToolbarMenuMobile = ({ toggleAllSections }: { toggleAllSections: () => void }) => {
+interface StoryTranscriptToolbarMenuMobileProps {
+  toggleAllSections: () => void;
+  onCiteClick?: () => void;
+}
+
+export const StoryTranscriptToolbarMenuMobile = ({ toggleAllSections, onCiteClick }: StoryTranscriptToolbarMenuMobileProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -53,6 +59,20 @@ export const StoryTranscriptToolbarMenuMobile = ({ toggleAllSections }: { toggle
           </IconButton>
         </MenuItem>
 
+        {onCiteClick && (
+          <MenuItem
+            disableRipple
+            onClick={() => {
+              onCiteClick();
+              setAnchorEl(null);
+            }}
+            sx={{ display: 'flex', alignItems: 'center' }}>
+            <ListItemText primary="Cite (Chicago style)" />
+            <IconButton size="small" disableRipple sx={{ ml: 'auto', p: 0.5 }}>
+              <FormatQuoteIcon fontSize="small" />
+            </IconButton>
+          </MenuItem>
+        )}
         <MenuItem disableRipple sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ListItemText primary="Search settings" />
           <StorySettings />

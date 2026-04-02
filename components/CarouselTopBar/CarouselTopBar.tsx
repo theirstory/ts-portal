@@ -5,14 +5,17 @@ import { config } from '@/config/organizationConfig';
 
 export const CarouselTopBar = ({ children, isCollapsed }: { children: React.ReactNode; isCollapsed: boolean }) => {
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const collapsedHeight = { xs: 72, md: 88 };
+  const expandedHeight = { xs: '25vh', md: '30vh' };
 
-  const { images: configImages = [], intervalMs = 5000 } = config?.ui?.carouselTopBar ?? {};
+  const { images: configImages = [], intervalMs = 5000, backgroundColor } = config?.ui?.carouselTopBar ?? {};
 
   const carouselImages = useMemo(() => {
     return configImages.length > 0 ? configImages : [];
   }, [configImages]);
 
   useEffect(() => {
+    if (isCollapsed) return;
     if (carouselImages.length <= 1) return;
 
     const interval = setInterval(() => {
@@ -20,7 +23,7 @@ export const CarouselTopBar = ({ children, isCollapsed }: { children: React.Reac
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [carouselImages, intervalMs]);
+  }, [carouselImages, intervalMs, isCollapsed]);
 
   useEffect(() => {
     if (carouselIndex >= carouselImages.length) setCarouselIndex(0);
@@ -32,18 +35,19 @@ export const CarouselTopBar = ({ children, isCollapsed }: { children: React.Reac
       display="flex"
       flexDirection="column"
       gap={2}
-      py={isCollapsed ? { xs: 1, md: 2 } : 3}
+      py={isCollapsed ? { xs: 1, md: 1.5 } : 3}
       px={{ xs: 2, md: 3 }}
       borderRadius="0px 0px 8px 8px"
       width="100%"
       position="relative"
-      height={isCollapsed ? '100%' : { xs: '25vh', md: '30vh' }}
+      height={isCollapsed ? collapsedHeight : expandedHeight}
       sx={{
-        backgroundColor: colors.common.black,
-        backgroundImage: `url("${carouselImages[carouselIndex]}")`,
+        backgroundColor: backgroundColor || colors.common.black,
+        backgroundImage: carouselImages.length > 0 ? `url("${carouselImages[carouselIndex]}")` : 'none',
         backgroundSize: '100%',
         backgroundRepeat: 'no-repeat',
-        transition: 'background 0.8s ease-in-out, height 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition:
+          `${isCollapsed ? 'background 0s linear,' : 'background 0.8s ease-in-out,'} height 0.65s cubic-bezier(0.22, 1, 0.36, 1), padding 0.65s cubic-bezier(0.22, 1, 0.36, 1)`,
         backgroundPosition: '50% 20%',
         overflow: 'hidden',
         '&::after': {
@@ -57,6 +61,7 @@ export const CarouselTopBar = ({ children, isCollapsed }: { children: React.Reac
           background: colors.gradients.overlay,
           backdropFilter: 'blur(2px)',
           zIndex: 1,
+          transition: 'height 0.65s cubic-bezier(0.22, 1, 0.36, 1)',
         },
       }}>
       <Box

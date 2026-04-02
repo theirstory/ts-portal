@@ -10,7 +10,7 @@ A complete system to archive, process, and search video/audio interviews with th
 
 - **Semantic Search**: Vector search with local embeddings (no external APIs)
 - **Automatic NER**: Entity extraction with GLiNER (zero-shot, multilingual)
-- **Hybrid Chunking**: Intelligent time-based + sentence boundary segmentation
+- **Sentence Chunking**: Sentence-based chunking with configurable overlap
 - **Multi-format**: Video and audio with synchronized transcriptions
 - **Live Highlighting**: Entities highlighted with clickable timestamps
 - **Multi-organization**: Centralized configuration system
@@ -23,7 +23,7 @@ A complete system to archive, process, and search video/audio interviews with th
 - Weaviate (vector database)
 - FastAPI (Python 3.11)
 - GLiNER multi-v2.1 (NER)
-- Sentence Transformers (embeddings 384-dim)
+- Sentence Transformers LaBSE (local embeddings)
 
 **Frontend:**
 
@@ -39,18 +39,19 @@ A complete system to archive, process, and search video/audio interviews with th
 
 ## 🚀 Quick Start
 
+### Get started in 4 easy steps
+
 ```bash
-# 1. Clone and configure
-git clone git@github.com:theirstory/portals.git
-cd portals
+# 1. Clone the repository
+git clone https://github.com/theirstory/ts-portal.git
+cd ts-portal
 
-cp config.example.json config.json
-# Edit config.json with your organization details
-
+# 2. Copy config and env files from example
+cp config.example.json config.json # Edit config.json with your organization details
 cp .env.example .env.local
 cp nlp-processor/.env.example nlp-processor/.env
 
-# 2. Start services
+# 3. Start services
 docker compose --profile local up
 
 # 3. Open in browser
@@ -59,11 +60,44 @@ open http://localhost:3003
 
 **Important:** Edit `config.json` to customize your portal with organization name, branding colors, logos, and NER entity labels. See [CONFIGURATION.md](./CONFIGURATION.md) for all configuration options.
 
-**First time:** ~2 minutes (downloads models ~400MB). Subsequent: ~30 seconds.
+### Chat provider configuration
+
+The `/discover` RAG chat now supports multiple LLM providers through a shared provider abstraction.
+
+- Set the default non-secret chat settings in `config.json` under `features.chat`:
+  - `provider`: `anthropic`, `openai`, or `openai-compatible`
+  - `model`: provider-specific model name
+  - `baseUrl`: optional for OpenAI-compatible endpoints
+- Store API keys in environment variables, not in `config.json`
+
+Example:
+
+```json
+{
+  "features": {
+    "chat": {
+      "enabled": true,
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "baseUrl": ""
+    }
+  }
+}
+```
+
+Environment variables:
+
+```bash
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+AI_API_KEY=
+```
+
+**First time:** may take several minutes while GLiNER / embedding / spaCy models download. Subsequent runs are much faster thanks to cache reuse.
 
 ## NLP Environment Notes
 
-Default embedding model is `sentence-transformers/LaBSE` (multilingual). If model loading fails or is too heavy, use `sentence-transformers/all-MiniLM-L6-v2` as a lighter fallback.
+Default embedding model is `sentence-transformers/LaBSE`. NER uses `urchade/gliner_multi-v2.1`. Chunking is sentence-based with configurable sentence overlap.
 
 **Services:**
 
@@ -77,23 +111,15 @@ Default embedding model is `sentence-transformers/LaBSE` (multilingual). If mode
 
 If you have interviews already uploaded to TheirStory, you can easily obtain the JSON files:
 
-1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v022/
+1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v028/
 2. Log in with your TheirStory username and password
 3. Download the JSON files for your interviews
 
 ### Importing the Data
 
-```bash
-# 1. Add your collection subfolders and interview JSON files under:
-json/interviews/
+Recommended approach: create one subfolder per collection with a `collection.json` file and place interview JSON files inside each folder.
 
-# 2. Manual import
-docker compose run --rm weaviate-init
-```
-
-Recommended approach: create one subfolder per collection and place interview JSON files inside each folder.
-
-If you place JSON files directly under `json/interviews/` (without subfolder), they are imported into the `default` collection.
+You can use `json/interviews/example-collection/collection.json` as a copy-paste template for new collections.
 
 Example:
 
@@ -107,11 +133,21 @@ json/interviews/
     └── interview-2.json
 ```
 
-See `json/interviews/README.md` and `docs/IMPORTING_INTERVIEWS.md` for full details.
+Note: If needed, you can skip subfolders: JSON files placed directly under `json/interviews/` are imported into the `default` collection.
+
+```bash
+# 1. Add your collection subfolders and interview JSON files under:
+json/interviews/
+
+# 2. Open a new terminal in the ts-portal root folder and run the manual import
+docker compose run --rm weaviate-init
+```
+
+See [docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md) for full details.
 
 **Process:**
 
-1. Hybrid chunking (~30s + sentence boundaries)
+1. Sentence-based chunking
 2. Embedding generation
 3. NER extraction (people, places, organizations, etc.)
 4. Storage in Weaviate with vectors
@@ -140,11 +176,16 @@ On the server terminal (remote host):
 ```bash
 # Install git and clone repo (one time)
 sudo apt update && sudo apt install -y git
-git clone git@github.com:theirstory/ts-portal.git
+git clone https://github.com/theirstory/ts-portal.git
 cd ts-portal
 
 # Install Docker once (Ubuntu)
 sudo bash scripts/deploy/setup-docker-ubuntu.sh
+# If prompted about /etc/ssh/sshd_config, choose: keep the local version currently installed
+
+# If you want to use Discover (RAG chat) create and edit the .env.production file with you api keys
+cp -n .env.production.example .env.production
+nano .env.production
 
 # Deploy/update
 ./scripts/deploy/deploy-prod.sh
@@ -229,7 +270,7 @@ See [docs/COMMANDS.md](./docs/COMMANDS.md) for the complete list.
 ## 📁 Project Structure
 
 ```
-portals/
+ts-portal/
 ├── app/                    # Next.js application
 │   ├── story/[storyUuid]/  # Interview detail pages
 │   ├── stores/             # Zustand state management
@@ -247,8 +288,9 @@ portals/
 ├── lib/                    # Libraries (Weaviate, theme)
 ├── nlp-processor/          # Python NLP service
 │   ├── main.py             # FastAPI application
-│   ├── chunker.py          # Hybrid chunking algorithm
+│   ├── sentence_chunker.py # Sentence-based chunking algorithm
 │   ├── ner_processor.py    # GLiNER NER extraction
+│   ├── embedding_service.py# Local SentenceTransformer embeddings
 │   └── weaviate_client.py  # Weaviate batch operations
 ├── scripts/                # Import and schema scripts
 ├── types/                  # TypeScript type definitions

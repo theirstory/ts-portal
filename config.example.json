@@ -6,7 +6,7 @@
     "displayName": "Your Portal Title",
     "description": "Description of your portal and collection. This appears on the main page.",
     "logo": {
-      "_comment": "Optional custom logo path from /public (example: /images/logo.png). If empty, default LogoArchive is used.",
+      "_comment": "Optional custom logo path from /public (example: /images/logo.png or /images/logo.svg). If empty, default LogoArchive is used.",
       "path": "",
       "alt": "Organization logo"
     }
@@ -80,12 +80,36 @@
   "ui": {
     "carouselTopBar": {
       "intervalMs": 5000,
-      "_comment": "Paths can be absolute (from /public) or full URLs.",
+      "_comment": "Paths can be absolute (from /public) or full URLs. Leave images empty to use a solid backgroundColor.",
+      "backgroundColor": "",
       "images": ["/images/carousel1.jpg", "/images/carousel2.jpg", "/images/carousel3.jpg"]
     },
     "portalHeaderOverlay": {
       "_comment": "Enable or disable overlay behind portal title/description.",
       "enabled": true
+    }
+  },
+
+  "features": {
+    "chat": {
+      "_comment": "Enable or disable the /discover page. When false, the Discover link is hidden from navigation.",
+      "_commentProvider": "Choose the LLM provider here: anthropic | openai | openai-compatible",
+      "_commentModel": "Set the model name for the selected provider. Example: claude-sonnet-4-20250514 or gpt-4.1-mini",
+      "_commentBaseUrl": "Only needed for openai-compatible providers. Leave empty for Anthropic. For OpenAI, you can also leave it empty to use the default https://api.openai.com/v1",
+      "_exampleOpenAI": {
+        "provider": "openai",
+        "model": "gpt-4.1-mini",
+        "baseUrl": ""
+      },
+      "_exampleOpenAICompatible": {
+        "provider": "openai-compatible",
+        "model": "your-model-name",
+        "baseUrl": "http://localhost:11434/v1"
+      },
+      "enabled": false,
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "baseUrl": ""
     }
   },
 

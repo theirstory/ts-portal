@@ -69,8 +69,8 @@ class LocalEmbedding:
                 message = (
                     "[LocalEmbedding] Timeout loading embedding model "
                     f"'{model_name}' after {timeout}s. "
-                    "Verify internet/cache and try a lighter model, e.g. "
-                    "'sentence-transformers/all-MiniLM-L6-v2'."
+                    "Verify internet/cache for the configured EMBEDDING_MODEL "
+                    f"('{model_name}') or switch EMBEDDING_MODEL to another model."
                 )
                 logger.error(message)
                 raise RuntimeError(message) from exc
@@ -146,25 +146,3 @@ class LocalEmbedding:
     def get_embedding_dimension(cls) -> int:
         """Return the embedding vector dimension produced by the configured model."""
         return cls.get_model().get_sentence_embedding_dimension()
-
-
-# Debug / smoke test
-if __name__ == "__main__":
-    print("Testing LocalEmbedding service...")
-
-    test_texts = [
-        "Hola, ¿cómo estás?",
-        "Este es un testimonio de prueba.",
-        "Natural language processing is fascinating.",
-    ]
-
-    dim = LocalEmbedding.get_embedding_dimension()
-    print(f"\nEmbedding dimension: {dim}")
-
-    print(f"\nGenerating embeddings for {len(test_texts)} texts...")
-    embeddings = LocalEmbedding.encode(test_texts)
-
-    print(f"Shape: {embeddings.shape}")
-    print(f"First embedding (first 10 values): {embeddings[0][:10]}")
-
-    print("\nTest completed successfully!")

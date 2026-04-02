@@ -21,7 +21,7 @@ If a variable is missing in `.env`, the service falls back to `config.py` defaul
 
 ### Embedding model options
 
-Default (multilingual):
+Default:
 
 ```env
 EMBEDDING_MODEL=sentence-transformers/LaBSE
@@ -30,7 +30,10 @@ EMBEDDING_MODEL=sentence-transformers/LaBSE
 Alternatives:
 
 ```env
-# Lighter and faster fallback if LaBSE fails
+# English semantic search optimized, 768-dim
+EMBEDDING_MODEL=sentence-transformers/multi-qa-mpnet-base-dot-v1
+
+# Lighter and faster fallback
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 # Higher quality multilingual, heavier

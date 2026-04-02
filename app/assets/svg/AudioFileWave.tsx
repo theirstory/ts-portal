@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '@/lib/theme';
 
 interface AudioFileWaveProps extends React.SVGProps<SVGSVGElement> {
   width?: string;
@@ -9,7 +10,7 @@ interface AudioFileWaveProps extends React.SVGProps<SVGSVGElement> {
 export const AudioFileWave: React.FC<AudioFileWaveProps> = ({
   width = '119',
   height = '56',
-  color = '#8E979F',
+  color = colors.grey[600],
   ...props
 }) => (
   <svg width={width} height={height} viewBox="0 0 119 56" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>

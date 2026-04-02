@@ -2,7 +2,7 @@
 
 ## Overview
 
-This service processes testimonies with NER (Named Entity Recognition) and text chunking capabilities, storing results in Weaviate.
+This service processes testimonies with NER (Named Entity Recognition) and sentence-based chunking, storing results in Weaviate.
 
 ## Module Structure
 
@@ -34,11 +34,17 @@ Named Entity Recognition processing with GLiNER and spaCy.
 - `build_word_char_spans()`: Character span building for words
 - `map_entity_to_time()`: Map entities to time ranges
 
-### `chunker.py`
+### `sentence_chunker.py`
 
-Text chunking utilities for time-based segmentation.
+Text chunking utilities for sentence-based segmentation.
 
-- `chunk_words_by_time()`: Create time-based chunks with configurable overlap
+- `chunk_doc_sections()`: Create sentence-based chunks with configurable overlap
+
+### `pipeline.py`
+
+Transcript parsing pipeline.
+
+- `TheirStoryTranscriptParser`: Builds a structured spaCy `Doc` with sections, paragraphs, and token timing metadata
 
 ### `transformers.py`
 
@@ -63,6 +69,7 @@ Weaviate database operations.
 FastAPI application with endpoints.
 
 - `POST /process-story`: Main processing endpoint
+- `POST /embed`: Generate a local embedding with the configured SentenceTransformer model
 - `GET /health`: Health check endpoint
 
 ## Environment Variables
@@ -70,18 +77,20 @@ FastAPI application with endpoints.
 See `.env.example` for all available configuration options:
 
 - **Weaviate**: `WEAVIATE_HOST_URL`, `WEAVIATE_PORT`, `WEAVIATE_SECURE`
-- **Chunking**: `CHUNK_SECONDS`, `CHUNK_OVERLAP_SECONDS`
+- **Chunking**: `SENTENCE_CHUNK_SIZE`, `SENTENCE_OVERLAP`
 - **NER**: `NER_LABELS`, `GLINER_MODEL`, `GLINER_THRESHOLD`, `MIN_TEXT_LENGTH_FOR_NER`
+- **Embeddings**: `EMBEDDING_MODEL`, `EMBEDDING_LOAD_TIMEOUT_SECONDS`, `USE_GPU`
 - **Config**: `CONFIG_PATH`
 
 ## Processing Flow
 
 1. **API Request** → Receives story payload
 2. **Transform** → Convert API format to sections structure
-3. **Chunk** → Split text into time-based chunks with overlap
-4. **NER** → Extract named entities from each chunk
-5. **Consolidate** → Aggregate NER data into testimony object
-6. **Store** → Write to Weaviate (optional)
+3. **Parse** → Build a structured transcript document with sections and paragraphs
+4. **Chunk** → Split paragraphs into sentence-based chunks with overlap
+5. **NER** → Extract named entities from transcript batches
+6. **Consolidate** → Attach entity overlap data to chunks and testimony
+7. **Store** → Write to Weaviate (optional)
 
 ## Development
 
