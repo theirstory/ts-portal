@@ -127,9 +127,9 @@ export const AppTopBar = () => {
                     '&:hover': { opacity: 1 },
                   },
                 }}>
-                <Link href="/">RECORDINGS</Link>
+                <Link href="/recordings">RECORDINGS</Link>
                 <Link href="/indexes">INDEXES</Link>
-                {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
+                {shouldShowCollectionsLink && <Link href="/">COLLECTIONS</Link>}
                 {!isFullScreenPage && (
                   <Tooltip title={isTopBarCollapsed ? 'Expand' : 'Collapse'}>
                     <IconButton
@@ -169,9 +169,9 @@ export const AppTopBar = () => {
                     '&:hover': { opacity: 1 },
                   },
                 }}>
-                <Link href="/">RECORDINGS</Link>
+                <Link href="/recordings">RECORDINGS</Link>
                 <Link href="/indexes">INDEXES</Link>
-                {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
+                {shouldShowCollectionsLink && <Link href="/">COLLECTIONS</Link>}
                 {isChatEnabled && (
                   <Box
                     component={Link}

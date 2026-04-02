@@ -1,5 +1,5 @@
-import { RecordingsPage } from '@/components/RecordingsPage';
+import { CollectionsPage } from '@/components/CollectionsPage';
 
 export default function Home() {
-  return <RecordingsPage />;
+  return <CollectionsPage />;
 }

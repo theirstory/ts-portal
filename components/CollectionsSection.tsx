@@ -12,7 +12,7 @@ export const CollectionsSection = () => {
   const router = useRouter();
 
   const handleViewCollection = (collectionId: string) => {
-    router.push(`/?collection=${encodeURIComponent(collectionId)}`);
+    router.push(`/recordings?collection=${encodeURIComponent(collectionId)}`);
   };
 
   if (!collections.length) {
