@@ -13,6 +13,7 @@
     "dev:cloud": "dotenv -e .env.cloud -- next dev -p 3000 --webpack",
     "dev:local": "dotenv -e .env.local -- next dev -p 3000 --webpack",
     "start": "next start",
+    "theirstory:import-stories": "tsx scripts/import-theirstory-stories.ts",
     "weaviate:generate-schemas": "tsx scripts/init-schema.ts",
     "weaviate:import": "tsx scripts/import-interviews-weaviate.ts",
     "gen:weaviate-types": "tsx scripts/generateWeaviateTypes",

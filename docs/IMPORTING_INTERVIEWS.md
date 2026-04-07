@@ -15,6 +15,83 @@ docker compose run --rm weaviate-init
 curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
 ```
 
+## Importing From TheirStory API
+
+If you already have `storyIds` and need to generate importable JSONs directly from TheirStory, use:
+
+```bash
+export THEIRSTORY_AUTH_TOKEN='YOUR_TOKEN'
+yarn theirstory:import-stories --ids '6998c9f5af83ef7a86a3a5a7,6998c6643f9d2efc9a710d42'
+```
+
+You can also pass a file:
+
+```bash
+yarn theirstory:import-stories --ids-file ./story-ids.txt
+```
+
+Or import every story from a project:
+
+```bash
+yarn theirstory:import-stories --project-id 654a840f91a6dbedb12d8631
+```
+
+Or import every story from a folder:
+
+```bash
+yarn theirstory:import-stories --folder-id 64f7be18ac45f390f20066fa
+```
+
+To unpublish media instead of generating JSON files:
+
+```bash
+yarn theirstory:import-stories --ids '6998c9f5af83ef7a86a3a5a7' --unpublish
+```
+
+To validate stories without publishing, unpublishing, or writing files:
+
+```bash
+yarn theirstory:import-stories --project-id 654a840f91a6dbedb12d8631 --validate
+```
+
+To validate and trigger generation for missing indexes/summaries before re-checking:
+
+```bash
+yarn theirstory:import-stories --project-id 654a840f91a6dbedb12d8631 --validate --generate-missing
+```
+
+Behavior:
+
+- Calls `GET /transcripts/:storyId`
+- Reads `story.custom_archive_media_type`
+- Validates `transcript.transcript`, `story.indexes`, and `story.description` before importing
+- Calls `GET /stories/:storyId/published_media_status?format=video|audio`
+- Calls `POST /stories/:storyId/publish_media` with `{"format":"video"}` when the media type contains `video`
+- Calls `POST /stories/:storyId/publish_media` with `{"format":"audio"}` otherwise
+- Can fetch story IDs from `GET /projects/:projectId/stories?pageSize=15&page=N`
+- Can fetch story IDs from `GET /folders/:folderId/stories?pageSize=15&page=N`
+- Skips re-publishing when media is already published, but still exports the JSON using the existing published URL
+- Replaces the `videoURL` from the transcript payload with the published media URL
+- Adds `mux_playback_id` extracted from the Mux URL
+- Saves one JSON per story under `json/interviews/imported/`
+- Import stops by default when a story is missing required fields
+- With `--unpublish`, skips stories that are already unpublished, calls `POST /stories/:storyId/unpublish_media` for the rest, and does not write files
+- With `--validate`, only checks whether `transcript.transcript`, `story.indexes`, and `story.description` are present, then reports missing fields
+- With `--validate --generate-missing`, triggers autochaptering when `story.indexes` is missing and summary generation when `story.description` is missing, then re-checks validation because the remote process can take a few minutes
+
+Useful flags:
+
+- `--out-dir json/interviews/my-batch`
+- `--force` to overwrite existing files
+- `--token` if you prefer not to use `THEIRSTORY_AUTH_TOKEN`
+- `--page-size 30` to control project/folder pagination
+- `--concurrency 5` to process multiple stories in parallel. Default: `3`
+- `--format video` or `--format audio` to override automatic detection
+- `--generate-missing` to generate missing indexes/summaries during validation and then validate again
+- `--skip-invalid` to skip stories missing required fields during import
+- `--unpublish` to unpublish the generated media instead of exporting JSON
+- `--validate` to inspect required fields without processing stories
+
 ## Collections By Folder
 
 You can organize interviews using folders under `json/interviews/`.
@@ -119,14 +196,6 @@ Interviews must follow this structure:
 - `story.duration` - Length in seconds
 - `transcript.sections` - Array of transcript sections
 - `transcript.sections[].paragraphs[].words` - Word-level timing data
-
-### Optional Fields
-
-- `story.description` - Interview description
-- `story.record_date` - Recording date (YYYY-MM-DD)
-- `story.thumbnail_url` - Video thumbnail
-- `videoURL` - Streaming video URL (Mux, YouTube, etc.)
-- `story.custom_archive_media_type` - "audio/\*" for audio-only interviews
 
 ## Import Process
 
