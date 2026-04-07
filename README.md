@@ -109,7 +109,13 @@ Default embedding model is `sentence-transformers/LaBSE`. NER uses `urchade/glin
 
 ### Getting Interview JSONs from TheirStory
 
-If you have interviews already uploaded to TheirStory, you can easily obtain the JSON files:
+You can obtain interview JSONs from TheirStory in two ways.
+
+Option 1: use the TheirStory import script to generate import-ready JSON files directly from story IDs, projects, or folders.
+
+See [docs/IMPORTING_FROM_THEIRSTORY.md](./docs/IMPORTING_FROM_THEIRSTORY.md) for the full workflow.
+
+Option 2: download the JSON files manually.
 
 1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v028/
 2. Log in with your TheirStory username and password
