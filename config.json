@@ -1,8 +1,8 @@
 {
   "organization": {
     "name": "Idaho State Historical Society",
-    "displayName": "Idaho State Historical Society Portal",
-    "description": "Discover Idaho’s history through stories, archives, and collections that bring the past to life.",
+    "displayName": "Idaho State Historical Society",
+    "description": "Preserving and sharing Idaho history through accessible, engaging services.",
     "logo": {
       "path": "/images/ISHS-Logo.jpg",
       "alt": "Idaho State Historical Society logo"
@@ -76,9 +76,9 @@
 
   "ui": {
     "carouselTopBar": {
-      "intervalMs": 5000,
+      "intervalMs": 0,
       "backgroundColor": "#458A94",
-      "images": []
+      "images": ["/images/ishs.jpg"]
     },
     "portalHeaderOverlay": {
       "enabled": true

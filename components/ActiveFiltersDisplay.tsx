@@ -96,6 +96,19 @@ export const ActiveFiltersDisplay: React.FC = () => {
     refreshCollectionQueries();
   };
 
+  const handleRemoveCollection = (collectionId: string) => {
+    const remainingFolderIds = selectedFolderIds.filter((folderId) => {
+      const folder = selectedFolderMap.get(folderId);
+      return folder?.collectionId !== collectionId;
+    });
+
+    const remainingCollectionIds = selectedCollectionIds.filter((selectedId) => selectedId !== collectionId);
+
+    setSelectedFolderIds(remainingFolderIds);
+    setSelectedCollectionIds(remainingCollectionIds);
+    refreshCollectionQueries();
+  };
+
   const updateFilterScrollButtons = useCallback(() => {
     const element = filtersScrollRef.current;
     if (!element) {
@@ -237,10 +250,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
               key={collectionId}
               label={selectedCollectionMap.get(collectionId) ?? collectionId}
               size="small"
-              onDelete={() => {
-                setSelectedCollectionIds(selectedCollectionIds.filter((selectedId) => selectedId !== collectionId));
-                refreshCollectionQueries();
-              }}
+              onDelete={() => handleRemoveCollection(collectionId)}
               sx={{
                 flexShrink: 0,
                 backgroundColor: colors.primary.light,
@@ -252,7 +262,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
 
           {selectedFolderIds.map((folderId) => {
             const folder = selectedFolderMap.get(folderId);
-            const label = folder ? `${folder.collectionName} / ${folder.name}` : folderId;
+            const label = folder?.name ?? folderId;
 
             return (
               <Chip

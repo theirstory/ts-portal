@@ -208,7 +208,21 @@ export default function IndexesPage() {
   }, [data?.chaptersByStoryId, searchQuery, selectedKeywordIds]);
 
   const handleCollectionToggle = (id: string) => {
-    setSelectedCollectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedCollectionIds((prev) => {
+      const isRemoving = prev.includes(id);
+      if (!isRemoving) {
+        return [...prev, id];
+      }
+
+      setSelectedFolderIds((currentFolders) =>
+        currentFolders.filter((folderId) => {
+          const folder = folderOptions.find((option) => option.id === folderId);
+          return folder?.collectionId !== id;
+        }),
+      );
+
+      return prev.filter((x) => x !== id);
+    });
   };
 
   const handleFolderToggle = (id: string) => {
