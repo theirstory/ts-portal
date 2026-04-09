@@ -74,8 +74,7 @@ const SUMMARY_PROMPTS = {
 
 const INDEX_PROMPTS = {
   system: 'You are a writer that creates indexes',
-  user:
-    'Please create an index for this interview.\nEach chapter of the index should contain:\n1) a timecode signifying the start of the chapter. The timecode should have hours, minutes and seconds, not milliseconds.;\n2) a title for the chapter;\n3) a summary of the chapter;\n4) keywords separated by commas.\nI want a JSON object with an array of chapter with the attributes',
+  user: 'Please create an index for this interview.\nEach chapter of the index should contain:\n1) a timecode signifying the start of the chapter. The timecode should have hours, minutes and seconds, not milliseconds.;\n2) a title for the chapter;\n3) a summary of the chapter;\n4) keywords separated by commas.\nI want a JSON object with an array of chapter with the attributes',
 };
 
 const VALIDATION_RECHECK_DELAY_MS = 15_000;
@@ -760,13 +759,7 @@ async function processStory(storyId: string, options: CliOptions): Promise<Proce
       flag: options.force ? 'w' : 'wx',
     });
   } catch (error) {
-    if (
-      !options.force &&
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'EEXIST'
-    ) {
+    if (!options.force && typeof error === 'object' && error !== null && 'code' in error && error.code === 'EEXIST') {
       console.log(
         `[theirstory-import] ${storyId}: output file already exists at ${outPath}. Skipping write. Use --force to overwrite.`,
       );

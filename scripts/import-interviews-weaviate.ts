@@ -1,5 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 function buildWeaviateUrl(): string {
   const host = process.env.WEAVIATE_HOST_URL ?? 'weaviate';
@@ -33,9 +33,22 @@ type CollectionMetadata = {
   folderPath: string;
 };
 
+type FolderMetadata = {
+  id: string;
+  name: string;
+  path: string;
+};
+
 type InterviewImportJob = {
   filePath: string;
   collection: CollectionMetadata;
+  folder: FolderMetadata;
+};
+
+type DirectoryEntryLike = {
+  name: string;
+  isFile: () => boolean;
+  isDirectory: () => boolean;
 };
 
 function normalizeCollectionId(input: string): string {
@@ -55,6 +68,35 @@ function humanizeCollectionName(id: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeFolderPath(input: string): string {
+  return input
+    .split(/[\\/]+/g)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/');
+}
+
+function buildFolderMetadata(collectionId: string, relativeFolderPath: string): FolderMetadata {
+  const normalizedPath = normalizeFolderPath(relativeFolderPath);
+
+  if (!normalizedPath) {
+    return {
+      id: '',
+      name: '',
+      path: '',
+    };
+  }
+
+  const segments = normalizedPath.split('/');
+  const folderName = segments[segments.length - 1] ?? normalizedPath;
+
+  return {
+    id: normalizeCollectionId(`${collectionId}-${normalizedPath.split('/').join('-')}`),
+    name: humanizeCollectionName(folderName),
+    path: normalizedPath,
+  };
 }
 
 async function waitForReady(): Promise<void> {
@@ -216,20 +258,46 @@ function isInterviewJsonFile(fileName: string): boolean {
   return true;
 }
 
-async function listInterviewJsonFiles(dir: string): Promise<string[]> {
+async function discoverCollectionInterviewJobs(
+  collectionDir: string,
+  collection: CollectionMetadata,
+  currentDir = collectionDir,
+): Promise<InterviewImportJob[]> {
+  let entries: DirectoryEntryLike[] = [];
   try {
-    const entries = await readdir(dir, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isFile() && isInterviewJsonFile(entry.name))
-      .map((entry) => join(dir, entry.name))
-      .sort((a, b) => a.localeCompare(b));
+    entries = await readdir(currentDir, { withFileTypes: true });
   } catch {
     return [];
   }
+
+  const relativeFolderPath = normalizeFolderPath(relative(collectionDir, currentDir).split(sep).join('/'));
+  const folder = buildFolderMetadata(collection.id, relativeFolderPath);
+
+  const files = entries
+    .filter((entry: DirectoryEntryLike) => entry.isFile() && isInterviewJsonFile(entry.name))
+    .map((entry: DirectoryEntryLike) => join(currentDir, entry.name))
+    .sort((a: string, b: string) => a.localeCompare(b));
+
+  const jobs: InterviewImportJob[] = files.map((filePath: string) => ({
+    filePath,
+    collection,
+    folder,
+  }));
+
+  const childDirectories = entries
+    .filter((entry: DirectoryEntryLike) => entry.isDirectory())
+    .sort((a: DirectoryEntryLike, b: DirectoryEntryLike) => a.name.localeCompare(b.name));
+
+  for (const directory of childDirectories) {
+    const childJobs = await discoverCollectionInterviewJobs(collectionDir, collection, join(currentDir, directory.name));
+    jobs.push(...childJobs);
+  }
+
+  return jobs;
 }
 
 async function discoverInterviewJobs(rootDir: string): Promise<InterviewImportJob[]> {
-  let entries: Awaited<ReturnType<typeof readdir>> = [];
+  let entries: DirectoryEntryLike[] = [];
   try {
     entries = await readdir(rootDir, { withFileTypes: true });
   } catch {
@@ -240,9 +308,9 @@ async function discoverInterviewJobs(rootDir: string): Promise<InterviewImportJo
 
   // Backward-compatible behavior: JSON files directly under root belong to "default" collection.
   const rootFiles = entries
-    .filter((entry) => entry.isFile() && isInterviewJsonFile(entry.name))
-    .map((entry) => join(rootDir, entry.name))
-    .sort((a, b) => a.localeCompare(b));
+    .filter((entry: DirectoryEntryLike) => entry.isFile() && isInterviewJsonFile(entry.name))
+    .map((entry: DirectoryEntryLike) => join(rootDir, entry.name))
+    .sort((a: string, b: string) => a.localeCompare(b));
 
   if (rootFiles.length > 0) {
     const defaultCollection = await loadCollectionMetadata(rootDir, 'default');
@@ -251,12 +319,14 @@ async function discoverInterviewJobs(rootDir: string): Promise<InterviewImportJo
       defaultCollection.name = 'Default';
     }
     for (const filePath of rootFiles) {
-      jobs.push({ filePath, collection: defaultCollection });
+      jobs.push({ filePath, collection: defaultCollection, folder: buildFolderMetadata(defaultCollection.id, '') });
     }
   }
 
-  // New behavior: each subfolder acts as a collection.
-  const collectionFolders = entries.filter((entry) => entry.isDirectory()).sort((a, b) => a.name.localeCompare(b.name));
+  // Each top-level subfolder acts as a collection, and nested subfolders become folder metadata.
+  const collectionFolders = entries
+    .filter((entry: DirectoryEntryLike) => entry.isDirectory())
+    .sort((a: DirectoryEntryLike, b: DirectoryEntryLike) => a.name.localeCompare(b.name));
   for (const folder of collectionFolders) {
     if (IGNORED_COLLECTION_FOLDERS.has(folder.name.toLowerCase())) {
       console.log(`[weaviate-import] Skipping sample collection folder: ${folder.name}`);
@@ -264,13 +334,9 @@ async function discoverInterviewJobs(rootDir: string): Promise<InterviewImportJo
     }
 
     const folderPath = join(rootDir, folder.name);
-    const files = await listInterviewJsonFiles(folderPath);
-    if (files.length === 0) continue;
-
     const collection = await loadCollectionMetadata(folderPath, folder.name);
-    for (const filePath of files) {
-      jobs.push({ filePath, collection });
-    }
+    const collectionJobs = await discoverCollectionInterviewJobs(folderPath, collection);
+    jobs.push(...collectionJobs);
   }
 
   return jobs.sort((a, b) => a.filePath.localeCompare(b.filePath));
@@ -283,24 +349,30 @@ type ProcessStoryRequest = {
     name: string;
     description: string;
   };
+  folder: {
+    id: string;
+    name: string;
+    path: string;
+  };
 };
 
-function wrapAsProcessRequest(raw: any, collection: CollectionMetadata): ProcessStoryRequest {
+function wrapAsProcessRequest(raw: any, job: InterviewImportJob): ProcessStoryRequest {
   const payload = raw && typeof raw === 'object' && raw.payload && typeof raw.payload === 'object' ? raw.payload : raw;
 
   return {
     payload,
     collection: {
-      id: collection.id,
-      name: collection.name,
-      description: collection.description,
+      id: job.collection.id,
+      name: job.collection.name,
+      description: job.collection.description,
     },
+    folder: job.folder,
   };
 }
 
 async function processInterviewFileThroughNlp(job: InterviewImportJob): Promise<void> {
   const raw = await loadJson<any>(job.filePath);
-  const body = wrapAsProcessRequest(raw, job.collection);
+  const body = wrapAsProcessRequest(raw, job);
 
   const url = `${NLP_URL}/process-story?write_to_weaviate=true&run_ner=true`;
 

@@ -6,6 +6,7 @@ import {
   bm25SearchForStoryId,
   fetchStoryTranscriptByUuid,
   getAvailableCollections,
+  getAvailableFolders,
   getAllStoriesFromCollection,
   getStoryByUuid,
   hybridSearch,
@@ -13,6 +14,7 @@ import {
   vectorSearch,
   vectorSearchForStoryId,
   type CollectionFilterOption,
+  type FolderFilterOption,
 } from '@/lib/weaviate/search';
 import { Chunks, Testimonies, SchemaMap, SchemaTypes } from '@/types/weaviate';
 import { NerLabel } from '@/types/ner';
@@ -40,11 +42,17 @@ type SemanticSearchStore = {
   hasNextStoriesPage: boolean;
   nerFilters: string[];
   collections: CollectionFilterOption[];
+  folders: FolderFilterOption[];
   selectedCollectionIds: string[];
+  selectedFolderIds: string[];
   setCollections: (collections: CollectionFilterOption[]) => void;
+  setFolders: (folders: FolderFilterOption[]) => void;
   setSelectedCollectionIds: (collectionIds: string[]) => void;
+  setSelectedFolderIds: (folderIds: string[]) => void;
   clearCollectionFilters: () => void;
+  clearFolderFilters: () => void;
   loadCollections: () => Promise<void>;
+  loadFolders: () => Promise<void>;
   setNerFilters: (filters: string[]) => void;
   setHasSearched: (searched: boolean) => void;
   setSearchTerm: (term: string) => void;
@@ -119,6 +127,32 @@ type SemanticSearchStore = {
   clearStore: () => void;
 };
 
+function syncFilterSelections(
+  folders: FolderFilterOption[],
+  collectionIds: string[],
+  folderIds: string[],
+) {
+  const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
+  const normalizedCollectionIds = Array.from(new Set(collectionIds));
+  const normalizedFolderIds = Array.from(new Set(folderIds));
+
+  const selectedFolderCollectionIds = normalizedFolderIds
+    .map((id) => foldersById.get(id)?.collectionId)
+    .filter((id): id is string => Boolean(id));
+
+  const nextCollectionIds = Array.from(new Set([...normalizedCollectionIds, ...selectedFolderCollectionIds]));
+
+  const nextFolderIds =
+    nextCollectionIds.length > 0
+      ? normalizedFolderIds.filter((id) => {
+          const folder = foldersById.get(id);
+          return folder ? nextCollectionIds.includes(folder.collectionId) : false;
+        })
+      : normalizedFolderIds;
+
+  return { nextCollectionIds, nextFolderIds };
+}
+
 export const useSemanticSearchStore = create<SemanticSearchStore>()(
   devtools(
     (set, get) => ({
@@ -139,31 +173,92 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
       hasNextStoriesPage: false,
       nerFilters: [],
       collections: [],
+      folders: [],
       selectedCollectionIds: [],
+      selectedFolderIds: [],
       hasSearched: false,
 
       setCollections: (collections: CollectionFilterOption[]) => set({ collections }, false, 'setCollections'),
 
-      setSelectedCollectionIds: (selectedCollectionIds: string[]) =>
-        set({ selectedCollectionIds }, false, 'setSelectedCollectionIds'),
+      setFolders: (folders: FolderFilterOption[]) => set({ folders }, false, 'setFolders'),
 
-      clearCollectionFilters: () => set({ selectedCollectionIds: [] }, false, 'clearCollectionFilters'),
+      setSelectedCollectionIds: (selectedCollectionIds: string[]) => {
+        const { nextCollectionIds, nextFolderIds } = syncFilterSelections(
+          get().folders,
+          selectedCollectionIds,
+          get().selectedFolderIds,
+        );
+        set(
+          { selectedCollectionIds: nextCollectionIds, selectedFolderIds: nextFolderIds },
+          false,
+          'setSelectedCollectionIds',
+        );
+      },
+
+      setSelectedFolderIds: (selectedFolderIds: string[]) => {
+        const { nextCollectionIds, nextFolderIds } = syncFilterSelections(
+          get().folders,
+          get().selectedCollectionIds,
+          selectedFolderIds,
+        );
+        set(
+          { selectedCollectionIds: nextCollectionIds, selectedFolderIds: nextFolderIds },
+          false,
+          'setSelectedFolderIds',
+        );
+      },
+
+      clearCollectionFilters: () =>
+        set({ selectedCollectionIds: [], selectedFolderIds: [] }, false, 'clearCollectionFilters'),
+
+      clearFolderFilters: () => set({ selectedFolderIds: [] }, false, 'clearFolderFilters'),
 
       loadCollections: async () => {
         try {
           const collections = await getAvailableCollections();
           const collectionIds = new Set(collections.map((collection) => collection.id));
           const currentSelection = get().selectedCollectionIds.filter((id) => collectionIds.has(id));
+          const { nextCollectionIds, nextFolderIds } = syncFilterSelections(
+            get().folders,
+            collections.length > 1 ? currentSelection : [],
+            get().selectedFolderIds,
+          );
           set(
             {
               collections,
-              selectedCollectionIds: collections.length > 1 ? currentSelection : [],
+              selectedCollectionIds: nextCollectionIds,
+              selectedFolderIds: nextFolderIds,
             },
             false,
             'loadCollections:success',
           );
         } catch (error) {
           console.error('Error loading collections:', error);
+        }
+      },
+
+      loadFolders: async () => {
+        try {
+          const folders = await getAvailableFolders();
+          const folderIds = new Set(folders.map((folder) => folder.id));
+          const currentSelection = get().selectedFolderIds.filter((id) => folderIds.has(id));
+          const { nextCollectionIds, nextFolderIds } = syncFilterSelections(
+            folders,
+            get().selectedCollectionIds,
+            currentSelection,
+          );
+
+          set(
+            {
+              folders,
+              selectedCollectionIds: nextCollectionIds,
+              selectedFolderIds: nextFolderIds,
+            },
+            false,
+            'loadFolders:success',
+          );
+        } catch (error) {
+          console.error('Error loading folders:', error);
         }
       },
 
@@ -177,7 +272,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
         limit = 100,
         offset = 0,
       ) => {
-        const { selectedCollectionIds } = get();
+        const { selectedCollectionIds, selectedFolderIds } = get();
         set({ loading: true }, false, 'getAllStories:start');
         try {
           const stories = await getAllStoriesFromCollection(
@@ -186,6 +281,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             limit,
             offset,
             selectedCollectionIds,
+            selectedFolderIds,
           );
           let hasNextStoriesPage = false;
           if ((stories?.objects?.length ?? 0) === limit) {
@@ -195,6 +291,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
               1,
               offset + limit,
               selectedCollectionIds,
+              selectedFolderIds,
             );
             hasNextStoriesPage = (nextPageProbe?.objects?.length ?? 0) > 0;
           }
@@ -286,7 +383,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
         minValue?: number,
         maxValue?: number,
       ) => {
-        const { searchTerm, selectedCollectionIds } = get();
+        const { searchTerm, selectedCollectionIds, selectedFolderIds } = get();
         if (!searchTerm) {
           return;
         }
@@ -298,6 +395,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
           offset,
           filter,
           selectedCollectionIds,
+          selectedFolderIds,
           returnProperties,
           minValue,
           maxValue,
@@ -314,7 +412,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
         minValue?: number,
         maxValue?: number,
       ) => {
-        const { searchTerm, selectedCollectionIds } = get();
+        const { searchTerm, selectedCollectionIds, selectedFolderIds } = get();
         if (!searchTerm) {
           return;
         }
@@ -326,6 +424,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
           offset,
           filter,
           selectedCollectionIds,
+          selectedFolderIds,
           returnProperties,
           minValue,
           maxValue,
@@ -343,7 +442,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
         minValue?: number,
         maxValue?: number,
       ) => {
-        const { searchTerm, selectedCollectionIds } = get();
+        const { searchTerm, selectedCollectionIds, selectedFolderIds } = get();
         if (!searchTerm) {
           return;
         }
@@ -355,6 +454,7 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
           offset,
           filter,
           selectedCollectionIds,
+          selectedFolderIds,
           returnProperties,
           minValue,
           maxValue,
@@ -573,7 +673,9 @@ export const useSemanticSearchStore = create<SemanticSearchStore>()(
             hasNextStoriesPage: false,
             nerFilters: [],
             collections: [],
+            folders: [],
             selectedCollectionIds: [],
+            selectedFolderIds: [],
             searchType: SearchType.bm25,
           },
           false,

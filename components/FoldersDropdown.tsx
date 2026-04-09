@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import SourceOutlinedIcon from '@mui/icons-material/SourceOutlined';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { SchemaTypes } from '@/types/weaviate';
 import { returnedFields } from './SearchBox';
@@ -23,27 +23,12 @@ import { useThreshold } from '@/app/stores/useThreshold';
 import { PAGINATION_ITEMS_PER_PAGE } from '@/app/constants';
 import { SearchType } from '@/types/searchType';
 
-export type CollectionsDropdownOption = { id: string; name: string; description?: string };
-
-type CollectionsDropdownProps = {
-  compact?: boolean;
-  /** Controlled mode: pass collections and onSelectionChange to use local state instead of the search store */
-  collections?: CollectionsDropdownOption[];
-  selectedCollectionIds?: string[];
-  onSelectionChange?: (ids: string[]) => void;
-};
-
-export const CollectionsDropdown = ({
-  compact = false,
-  collections: collectionsProp,
-  selectedCollectionIds: selectedIdsProp,
-  onSelectionChange,
-}: CollectionsDropdownProps) => {
+export const FoldersDropdown = ({ compact = false }: { compact?: boolean }) => {
   const store = useSemanticSearchStore();
   const {
-    collections: storeCollections,
-    selectedCollectionIds: storeSelectedIds,
-    setSelectedCollectionIds,
+    folders,
+    selectedFolderIds,
+    setSelectedFolderIds,
     getAllStories,
     searchType,
     hasSearched,
@@ -55,28 +40,24 @@ export const CollectionsDropdown = ({
   } = store;
   const { minValue, maxValue } = useThreshold();
 
-  const isControlled = collectionsProp != null && onSelectionChange != null;
-  const collections = isControlled ? collectionsProp : storeCollections;
-  const selectedCollectionIds = isControlled ? (selectedIdsProp ?? []) : storeSelectedIds;
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [pendingIds, setPendingIds] = useState<string[]>(selectedCollectionIds);
+  const [pendingIds, setPendingIds] = useState<string[]>(selectedFolderIds);
 
   const open = Boolean(anchorEl);
-  const activeCount = selectedCollectionIds.length;
+  const activeCount = selectedFolderIds.length;
 
-  const filteredCollections = useMemo(() => {
+  const filteredFolders = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    if (!query) return collections;
-    return collections.filter((collection) => {
-      const haystack = `${collection.name} ${collection.description ?? ''} ${collection.id}`.toLowerCase();
+    if (!query) return folders;
+    return folders.filter((folder) => {
+      const haystack = `${folder.name} ${folder.path} ${folder.collectionName} ${folder.id}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [collections, searchTerm]);
+  }, [folders, searchTerm]);
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setPendingIds(selectedCollectionIds);
+    setPendingIds(selectedFolderIds);
     setAnchorEl(event.currentTarget);
   };
 
@@ -85,12 +66,8 @@ export const CollectionsDropdown = ({
     setSearchTerm('');
   };
 
-  const applyFilters = (collectionIds: string[]) => {
-    if (isControlled) {
-      onSelectionChange!(collectionIds);
-      return;
-    }
-    setSelectedCollectionIds(collectionIds);
+  const applyFilters = (folderIds: string[]) => {
+    setSelectedFolderIds(folderIds);
     setCurrentPage(1);
 
     if (!hasSearched) {
@@ -106,6 +83,9 @@ export const CollectionsDropdown = ({
           'collection_id',
           'collection_name',
           'collection_description',
+          'folder_id',
+          'folder_name',
+          'folder_path',
         ],
         PAGINATION_ITEMS_PER_PAGE,
         0,
@@ -127,10 +107,8 @@ export const CollectionsDropdown = ({
     }
   };
 
-  const handleToggle = (collectionId: string) => {
-    setPendingIds((prev) =>
-      prev.includes(collectionId) ? prev.filter((id) => id !== collectionId) : [...prev, collectionId],
-    );
+  const handleToggle = (folderId: string) => {
+    setPendingIds((prev) => (prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId]));
   };
 
   const handleApply = () => {
@@ -147,10 +125,10 @@ export const CollectionsDropdown = ({
   return (
     <>
       {compact ? (
-        <Tooltip title="Collections">
-          <IconButton onClick={handleOpen} aria-label="open collections filters" size="small">
+        <Tooltip title="Folders">
+          <IconButton onClick={handleOpen} aria-label="open folder filters" size="small">
             <Badge color="primary" badgeContent={activeCount} invisible={activeCount === 0}>
-              <FolderOutlinedIcon fontSize="small" />
+              <SourceOutlinedIcon fontSize="small" />
             </Badge>
           </IconButton>
         </Tooltip>
@@ -158,14 +136,14 @@ export const CollectionsDropdown = ({
         <Button
           size="small"
           onClick={handleOpen}
-          aria-label="open collections filters"
+          aria-label="open folder filters"
           endIcon={<KeyboardArrowDownIcon />}
           sx={{
             textTransform: 'none',
-            minWidth: '150px',
+            minWidth: '130px',
             px: 1.5,
           }}>
-          {`Collections ${activeCount > 0 ? `(${activeCount})` : ''}`}
+          {`Folders ${activeCount > 0 ? `(${activeCount})` : ''}`}
         </Button>
       )}
 
@@ -180,18 +158,18 @@ export const CollectionsDropdown = ({
         sx={{
           mt: 1,
           '& .MuiPaper-root': {
-            width: { xs: '95vw', md: '400px' },
+            width: { xs: '95vw', md: '420px' },
             maxWidth: '95vw',
           },
         }}>
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" fontSize="1.1rem" fontWeight={700} mb={1.5}>
-            Filter by Collection
+            Filter by Folder
           </Typography>
           <TextField
             fullWidth
             size="small"
-            placeholder="Search collections..."
+            placeholder="Search folders..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -200,44 +178,51 @@ export const CollectionsDropdown = ({
         <Divider />
 
         <Box sx={{ maxHeight: '330px', overflowY: 'auto', p: 1 }}>
-          {filteredCollections.map((collection) => {
-            const checked = pendingIds.includes(collection.id);
+          {filteredFolders.map((folder) => {
+            const checked = pendingIds.includes(folder.id);
             return (
               <MenuItem
-                key={collection.id}
-                onClick={() => handleToggle(collection.id)}
-                sx={{ alignItems: 'flex-start', py: 1.2 }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} sx={{ wordBreak: 'break-word' }}>
-                    {collection.name}
+                key={folder.id}
+                onClick={() => handleToggle(folder.id)}
+                sx={{ alignItems: 'flex-start', py: 1.2, gap: 1.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      lineHeight: 1.35,
+                      wordBreak: 'break-word',
+                      whiteSpace: 'normal',
+                    }}>
+                    {folder.collectionName}
                   </Typography>
-                  {collection.description != null && collection.description !== '' ? (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                      {collection.description}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption" color="text.disabled">
-                      No description
-                    </Typography>
-                  )}
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{
+                      mt: 0.15,
+                      lineHeight: 1.35,
+                      wordBreak: 'break-word',
+                      whiteSpace: 'normal',
+                    }}>
+                    {folder.name}
+                  </Typography>
                 </Box>
                 <Checkbox
                   checked={checked}
+                  sx={{ mt: 0.25, flexShrink: 0 }}
                   onClick={(event) => {
                     event.stopPropagation();
                   }}
-                  onChange={() => handleToggle(collection.id)}
+                  onChange={() => handleToggle(folder.id)}
                 />
               </MenuItem>
             );
           })}
 
-          {filteredCollections.length === 0 && (
+          {filteredFolders.length === 0 && (
             <Box sx={{ p: 2 }}>
-              <Typography color="text.secondary">No collections found.</Typography>
+              <Typography color="text.secondary">No folders found.</Typography>
             </Box>
           )}
         </Box>

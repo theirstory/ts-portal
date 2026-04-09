@@ -133,13 +133,17 @@ Example:
 json/interviews/
 ├── oral-history/
 │   ├── collection.json
-│   └── interview-1.json
+│   ├── interview-1.json
+│   └── argentina/
+│       └── interview-2.json
 └── veterans/
     ├── collection.json
-    └── interview-2.json
+    └── interview-3.json
 ```
 
 Note: If needed, you can skip subfolders: JSON files placed directly under `json/interviews/` are imported into the `default` collection.
+
+Nested folders inside a collection are also supported. The top-level folder still defines the collection, and any deeper subfolders are stored as folder metadata (`folder_id`, `folder_name`, `folder_path`) on the imported interviews and chunks.
 
 ```bash
 # 1. Add your collection subfolders and interview JSON files under:

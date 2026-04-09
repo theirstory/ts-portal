@@ -55,6 +55,7 @@ class ProcessRequest(BaseModel):
     """Request model for story processing endpoint."""
     payload: Dict[str, Any]
     collection: Optional[Dict[str, str]] = None
+    folder: Optional[Dict[str, str]] = None
 
 
 app = FastAPI(title="NLP Processor (Chunks + NER)")
@@ -95,6 +96,30 @@ def _resolve_collection_metadata(
     }
 
 
+def _resolve_folder_metadata(
+    payload: Dict[str, Any],
+    req_folder: Optional[Dict[str, str]],
+) -> Dict[str, str]:
+    folder = req_folder or {}
+    folder_id = (
+        (folder.get("id") or "").strip()
+        or str(safe_get(payload, ["story", "folder_id"], "")).strip()
+    )
+    folder_name = (
+        (folder.get("name") or "").strip()
+        or str(safe_get(payload, ["story", "folder_name"], "")).strip()
+    )
+    folder_path = (
+        (folder.get("path") or "").strip()
+        or str(safe_get(payload, ["story", "folder_path"], "")).strip()
+    )
+    return {
+        "id": folder_id,
+        "name": folder_name,
+        "path": folder_path,
+    }
+
+
 def _extract_story_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
     story_id = safe_get(payload, ["story", "_id"], None) or safe_get(payload, ["transcript", "storyId"], None)
     custom_archive_media_type = safe_get(payload, ["story", "custom_archive_media_type"], None)
@@ -122,6 +147,7 @@ def _build_testimony_data(
     testimony_uuid: str,
     story_meta: Dict[str, Any],
     collection_meta: Dict[str, str],
+    folder_meta: Dict[str, str],
 ) -> Dict[str, Any]:
     return {
         "id": str(story_meta["story_id"]),
@@ -142,6 +168,9 @@ def _build_testimony_data(
         "collection_id": collection_meta["id"],
         "collection_name": collection_meta["name"],
         "collection_description": collection_meta["description"],
+        "folder_id": folder_meta["id"],
+        "folder_name": folder_meta["name"],
+        "folder_path": folder_meta["path"],
     }
 
 
@@ -162,6 +191,7 @@ def _build_testimony_object(
     testimony_data: Dict[str, Any],
     story_meta: Dict[str, Any],
     collection_meta: Dict[str, str],
+    folder_meta: Dict[str, str],
     speakers: List[str],
 ) -> Dict[str, Any]:
     return {
@@ -183,6 +213,9 @@ def _build_testimony_object(
             "collection_id": collection_meta["id"],
             "collection_name": collection_meta["name"],
             "collection_description": collection_meta["description"],
+            "folder_id": folder_meta["id"],
+            "folder_name": folder_meta["name"],
+            "folder_path": folder_meta["path"],
         },
     }
 
@@ -338,6 +371,7 @@ def _build_chunk_objects(
     testimony_uuid: str,
     story_meta: Dict[str, Any],
     collection_meta: Dict[str, str],
+    folder_meta: Dict[str, str],
 ) -> List[Dict[str, Any]]:
     chunks_objects: List[Dict[str, Any]] = []
     for chunk_data, chunk_vector in zip(chunk_data_items, chunk_vectors):
@@ -376,6 +410,9 @@ def _build_chunk_objects(
                     "collection_id": collection_meta["id"],
                     "collection_name": collection_meta["name"],
                     "collection_description": collection_meta["description"],
+                    "folder_id": folder_meta["id"],
+                    "folder_name": folder_meta["name"],
+                    "folder_path": folder_meta["path"],
                 },
                 "vectors": {
                     "transcription_vector": chunk_vector.tolist() if hasattr(chunk_vector, "tolist") else list(chunk_vector)
@@ -415,6 +452,7 @@ async def process_story(
         payload = req.payload
 
         collection_meta = _resolve_collection_metadata(payload, req.collection)
+        folder_meta = _resolve_folder_metadata(payload, req.folder)
         story_meta = _extract_story_metadata(payload)
         story_id = story_meta["story_id"]
         
@@ -431,11 +469,13 @@ async def process_story(
         print(f"📝 Title: {story_meta['title'] or 'No title'}")
         print(f"📅 Date: {story_meta['record_date'] or 'No date'}")
         print(f"🗂️ Collection: {collection_meta['id']} ({collection_meta['name']})")
+        if folder_meta["path"]:
+            print(f"📁 Folder: {folder_meta['path']}")
         
         # Convert API format to sections
         sections = convert_api_format_to_sections(payload)
         testimony_uuid = convert_to_uuid(f"{collection_meta['uuid_prefix']}:{story_id}")
-        testimony_data = _build_testimony_data(sections, testimony_uuid, story_meta, collection_meta)
+        testimony_data = _build_testimony_data(sections, testimony_uuid, story_meta, collection_meta, folder_meta)
         speakers = _extract_speakers(sections)
         
         # Parse transcript JSON into the structured spaCy document used by chunking.
@@ -452,6 +492,7 @@ async def process_story(
             testimony_data,
             story_meta,
             collection_meta,
+            folder_meta,
             speakers,
         )
         all_entities, ner_stats = _run_dynamic_ner(sections, run_ner)
@@ -494,6 +535,7 @@ async def process_story(
                 testimony_uuid,
                 story_meta,
                 collection_meta,
+                folder_meta,
             )
         else:
             chunks_objects = []

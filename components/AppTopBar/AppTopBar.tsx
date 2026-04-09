@@ -34,6 +34,8 @@ export const AppTopBar = () => {
   const isStoryPage = pathname.startsWith('/story/');
   const isChatPage = pathname.startsWith('/discover');
   const isIndexPage = pathname.startsWith('/indexes');
+  const isCollectionsPage = pathname.startsWith('/collections');
+  const isHomePage = pathname === '/';
   const isFullScreenPage = isStoryPage || isChatPage;
   const isAutoCollapsePage = isStoryPage || isChatPage || isIndexPage;
   const isHeaderOverlayEnabled = config?.ui?.portalHeaderOverlay?.enabled ?? true;
@@ -158,20 +160,27 @@ export const AppTopBar = () => {
                   display: { xs: 'none', md: 'flex' },
                   alignItems: 'center',
                   gap: 3,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.22)',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
                   '& a': {
                     color: config.theme.colors.primary.contrastText,
                     textDecoration: 'none',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    opacity: 0.85,
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    opacity: 1,
+                    textShadow: '0 1px 8px rgba(0,0,0,0.45)',
                     transition: 'opacity 0.15s',
                     '&:hover': { opacity: 1 },
                   },
                 }}>
-                <Link href="/">RECORDINGS</Link>
-                <Link href="/indexes">INDEXES</Link>
-                {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
+                {!isHomePage && <Link href="/">RECORDINGS</Link>}
+                {!isIndexPage && <Link href="/indexes">INDEXES</Link>}
+                {shouldShowCollectionsLink && !isCollectionsPage && <Link href="/collections">COLLECTIONS</Link>}
                 {isChatEnabled && (
                   <Box
                     component={Link}
@@ -197,6 +206,7 @@ export const AppTopBar = () => {
                 sx={{
                   fontWeight: 500,
                   display: { xs: 'none', md: 'block' },
+                  textShadow: '0 1px 8px rgba(0,0,0,0.45)',
                 }}>
                 Powered by{' '}
                 <a

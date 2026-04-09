@@ -13,6 +13,15 @@ export type CollectionFilterOption = {
   image?: string;
 };
 
+export type FolderFilterOption = {
+  id: string;
+  name: string;
+  path: string;
+  collectionId: string;
+  collectionName: string;
+  itemCount: number;
+};
+
 type EmbeddingResponse = {
   vector: number[];
   dim: number;
@@ -35,6 +44,14 @@ const TESTIMONIES_COLLECTION_PROPS: QueryProperty<Testimonies>[] = [
   'collection_id',
   'collection_name',
   'collection_description',
+];
+
+const TESTIMONIES_FOLDER_PROPS: QueryProperty<Testimonies>[] = [
+  'folder_id',
+  'folder_name',
+  'folder_path',
+  'collection_id',
+  'collection_name',
 ];
 
 const NER_SEARCH_RETURN_PROPS: QueryProperty<Chunks>[] = [
@@ -87,6 +104,7 @@ function buildCombinedFilters(
   myCollection: { filter: { byProperty: unknown } },
   nerFilters?: string[],
   collectionFilters?: string[],
+  folderFilters?: string[],
 ): FilterValue | undefined {
   const filtersArray: FilterValue[] = [];
   const byProperty = getByPropertyFilter(myCollection);
@@ -97,6 +115,10 @@ function buildCombinedFilters(
 
   if (collectionFilters?.length) {
     filtersArray.push(byProperty('collection_id').containsAny(collectionFilters));
+  }
+
+  if (folderFilters?.length) {
+    filtersArray.push(byProperty('folder_id').containsAny(folderFilters));
   }
 
   if (!filtersArray.length) return undefined;
@@ -150,10 +172,11 @@ export async function getAllStoriesFromCollection<T extends SchemaTypes>(
   limit = 1000,
   offset = 0,
   collectionFilters?: string[],
+  folderFilters?: string[],
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
-  const combinedFilter = buildCombinedFilters(myCollection, undefined, collectionFilters);
+  const combinedFilter = buildCombinedFilters(myCollection, undefined, collectionFilters, folderFilters);
 
   const response = await myCollection.query.fetchObjects({
     limit,
@@ -205,6 +228,52 @@ export async function getAvailableCollections(limit = 5000): Promise<CollectionF
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export async function getAvailableFolders(limit = 5000): Promise<FolderFilterOption[]> {
+  const client = await initWeaviateClient();
+  const myCollection = client.collections.get<Testimonies>('Testimonies');
+
+  const response = await myCollection.query.fetchObjects({
+    limit,
+    returnProperties: TESTIMONIES_FOLDER_PROPS,
+  });
+
+  const map = new Map<string, FolderFilterOption>();
+
+  for (const item of response.objects) {
+    const props = (item.properties ?? {}) as Partial<Testimonies>;
+    const id = String(props.folder_id || '').trim();
+    if (!id) continue;
+
+    const name = String(props.folder_name || props.folder_path || id).trim() || id;
+    const folderPath = String(props.folder_path || props.folder_name || '').trim();
+    const collectionId = String(props.collection_id || '').trim();
+    const collectionName = String(props.collection_name || collectionId).trim() || collectionId;
+    const existing = map.get(id);
+
+    if (!existing) {
+      map.set(id, {
+        id,
+        name,
+        path: folderPath,
+        collectionId,
+        collectionName,
+        itemCount: 1,
+      });
+    } else {
+      map.set(id, {
+        ...existing,
+        itemCount: existing.itemCount + 1,
+      });
+    }
+  }
+
+  return [...map.values()].sort((a, b) => {
+    const collectionCompare = a.collectionName.localeCompare(b.collectionName);
+    if (collectionCompare !== 0) return collectionCompare;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 export async function vectorSearch<T extends SchemaTypes>(
   collection: T,
   searchTerm: string,
@@ -212,6 +281,7 @@ export async function vectorSearch<T extends SchemaTypes>(
   offset = 0,
   filters?: string[],
   collectionFilters?: string[],
+  folderFilters?: string[],
   returnProperties?: QueryProperty<SchemaMap[T]>[] | undefined,
   minValue?: number,
   maxValue?: number,
@@ -219,7 +289,7 @@ export async function vectorSearch<T extends SchemaTypes>(
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
 
-  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters);
+  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters, folderFilters);
 
   const vector = await getLocalEmbedding(searchTerm);
 
@@ -260,13 +330,14 @@ export async function hybridSearch<T extends SchemaTypes>(
   offset = 0,
   filters?: string[],
   collectionFilters?: string[],
+  folderFilters?: string[],
   returnProperties?: QueryProperty<SchemaMap[T]>[] | undefined,
   minValue?: number,
   maxValue?: number,
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
-  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters);
+  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters, folderFilters);
 
   const vector = await getLocalEmbedding(searchTerm);
   const response = await myCollection.query.hybrid(searchTerm, {
@@ -307,13 +378,14 @@ export async function bm25Search<T extends SchemaTypes>(
   offset = 0,
   filters?: string[],
   collectionFilters?: string[],
+  folderFilters?: string[],
   returnProperties?: QueryProperty<SchemaMap[T]>[] | undefined,
   minValue?: number,
   maxValue?: number,
 ) {
   const client = await initWeaviateClient();
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
-  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters);
+  const combinedFilter = buildCombinedFilters(myCollection, filters, collectionFilters, folderFilters);
 
   const response = await myCollection.query.bm25(searchTerm, {
     limit: limit,

@@ -30,7 +30,8 @@ json/interviews/
 ├── oral-history/
 │   ├── collection.json                # optional metadata
 │   ├── interview-1.json
-│   └── interview-2.json
+│   └── argentina/
+│       └── interview-2.json
 └── veterans/
     ├── collection.json
     └── interview-3.json
@@ -40,9 +41,16 @@ Rules:
 
 - JSON files directly inside `json/interviews/` are imported into `collection_id=default`
 - Each subfolder name becomes `collection_id` (sanitized) unless overridden in `collection.json`
+- Nested subfolders inside a collection are supported; they do not create new collections
 - Collection metadata is loaded from `collection.json` (or `COLLECTION.md` / `README.md` fallback)
 - `collection_id`, `collection_name`, `collection_description` are stored in both `Testimonies` and `Chunks`
 - Interview identity in Weaviate is scoped by collection (`collection_id + story._id`), so the same `story._id` can exist in different collections
+
+Example:
+
+- `json/interviews/oral-history/argentina/interview-2.json` stays in collection `oral-history`
+- Its folder metadata is stored as:
+  `folder_name=Argentina`, `folder_path=argentina`, and a generated `folder_id`
 
 ### `collection.json` format
 
