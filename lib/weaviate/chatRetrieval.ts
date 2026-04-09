@@ -116,13 +116,23 @@ export async function retrieveChunksForSearch(
   let response;
 
   if (searchType === 'bm25') {
-    response = await bm25Search(SchemaTypes.Chunks, query, limit * 2, 0, undefined, undefined, CHAT_RETURN_PROPS);
+    response = await bm25Search(
+      SchemaTypes.Chunks,
+      query,
+      limit * 2,
+      0,
+      undefined,
+      undefined,
+      undefined,
+      CHAT_RETURN_PROPS,
+    );
   } else if (searchType === 'vector') {
     response = await vectorSearch(
       SchemaTypes.Chunks,
       query,
       limit * 2,
       0,
+      undefined,
       undefined,
       undefined,
       CHAT_RETURN_PROPS,
@@ -135,6 +145,7 @@ export async function retrieveChunksForSearch(
       query,
       limit * 2,
       0,
+      undefined,
       undefined,
       undefined,
       CHAT_RETURN_PROPS,

@@ -20,8 +20,8 @@ sudo apt install -y git
 ## 2) Clone repository on the Droplet
 
 ```bash
-git clone git@github.com:theirstory/ts-portal.git
-cd ts-portal
+git clone git@github.com:theirstory/ts-portal-ishs.git
+cd ts-portal-ishs
 ```
 
 ## 3) Install Docker on the Droplet (one command)
@@ -85,7 +85,7 @@ Use this if you want to avoid re-running GLiNER/embedding import in production.
 Inside local repo:
 
 ```bash
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_DROPLET_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal-ishs_weaviate_data root@YOUR_DROPLET_IP /root/ts-portal-ishs
 ```
 
 This command exports Weaviate data and uploads to the Droplet:

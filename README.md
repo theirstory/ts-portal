@@ -43,8 +43,8 @@ A complete system to archive, process, and search video/audio interviews with th
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/theirstory/ts-portal.git
-cd ts-portal
+git clone https://github.com/theirstory/ts-portal-ishs.git
+cd ts-portal-ishs
 
 # 2. Copy config and env files from example
 cp config.example.json config.json # Edit config.json with your organization details
@@ -145,7 +145,7 @@ Note: If needed, you can skip subfolders: JSON files placed directly under `json
 # 1. Add your collection subfolders and interview JSON files under:
 json/interviews/
 
-# 2. Open a new terminal in the ts-portal root folder and run the manual import
+# 2. Open a new terminal in the ts-portal-ishs root folder and run the manual import
 docker compose run --rm weaviate-init
 ```
 
@@ -175,15 +175,15 @@ This production flow works on any Linux host with Docker.
 Before running deployment commands:
 
 - Create a Linux server in your hosting provider (DigitalOcean, AWS, Hetzner, etc.).
-- Connect to that server via SSH (example: `ssh root@YOUR_SERVER_IP`).
+- Connect to that server via SSH (example: `ssh root@204.48.22.156`).
 
 On the server terminal (remote host):
 
 ```bash
 # Install git and clone repo (one time)
 sudo apt update && sudo apt install -y git
-git clone https://github.com/theirstory/ts-portal.git
-cd ts-portal
+git clone https://github.com/theirstory/ts-portal-ishs.git
+cd ts-portal-ishs
 
 # Install Docker once (Ubuntu)
 sudo bash scripts/deploy/setup-docker-ubuntu.sh
@@ -197,7 +197,7 @@ nano .env.production
 ./scripts/deploy/deploy-prod.sh
 
 # Site URL after deploy
-# http://YOUR_SERVER_IP:3000
+# http://204.48.22.156:3000
 
 # Optional but recommended: domain + HTTPS + firewall
 # sudo bash scripts/deploy/setup-nginx-ssl.sh YOUR_DOMAIN YOUR_EMAIL 3000
@@ -211,13 +211,13 @@ On your local terminal:
 
 ```bash
 # One command: export backup + sync config/json/public + upload backup
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_SERVER_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal-ishs_weaviate_data root@204.48.22.156 /root/ts-portal-ishs
 ```
 
 On the server terminal:
 
 ```bash
-cd /root/ts-portal
+cd /root/ts-portal-ishs
 ./scripts/deploy/restore-weaviate-data.sh /tmp/weaviate-data.tar.gz
 ./scripts/deploy/deploy-prod.sh
 ```
@@ -276,7 +276,7 @@ See [docs/COMMANDS.md](./docs/COMMANDS.md) for the complete list.
 ## 📁 Project Structure
 
 ```
-ts-portal/
+ts-portal-ishs/
 ├── app/                    # Next.js application
 │   ├── story/[storyUuid]/  # Interview detail pages
 │   ├── stores/             # Zustand state management
