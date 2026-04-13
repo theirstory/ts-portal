@@ -16,8 +16,6 @@ type CliOptions = {
   format: string;
   force: boolean;
   apiBaseUrl: string;
-  origin: string;
-  referer: string;
 };
 
 type PublishMediaResponse = {
@@ -150,8 +148,6 @@ Options:
 Environment variables:
   THEIRSTORY_AUTH_TOKEN
   THEIRSTORY_API_BASE_URL   Default: https://node.theirstory.io
-  THEIRSTORY_ORIGIN         Default: https://lab.theirstory.io
-  THEIRSTORY_REFERER        Default: https://lab.theirstory.io/
 `);
 }
 
@@ -198,8 +194,6 @@ function parseArgs(argv: string[]): Promise<CliOptions> | CliOptions {
     format: '',
     force: false,
     apiBaseUrl: process.env.THEIRSTORY_API_BASE_URL ?? 'https://node.theirstory.io',
-    origin: process.env.THEIRSTORY_ORIGIN ?? 'https://lab.theirstory.io',
-    referer: process.env.THEIRSTORY_REFERER ?? 'https://lab.theirstory.io/',
   };
 
   let idsFilePath = '';
@@ -283,14 +277,6 @@ function parseArgs(argv: string[]): Promise<CliOptions> | CliOptions {
         options.apiBaseUrl = value;
         i++;
         break;
-      case '--origin':
-        options.origin = value;
-        i++;
-        break;
-      case '--referer':
-        options.referer = value;
-        i++;
-        break;
       default:
         throw new Error(`Unknown argument: ${arg}`);
     }
@@ -316,20 +302,8 @@ type ProjectStoriesResponse = {
 function buildHeaders(options: CliOptions): HeadersInit {
   return {
     accept: 'application/json',
-    'accept-language': 'es-419,es;q=0.9',
     authorization: options.token,
     'content-type': 'application/json',
-    origin: options.origin,
-    priority: 'u=1, i',
-    referer: options.referer,
-    'sec-ch-ua': '"Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-site',
-    'user-agent':
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
   };
 }
 

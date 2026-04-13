@@ -205,6 +205,7 @@ nano .env.production
 
 # Optional but recommended: domain + HTTPS + firewall
 # sudo bash scripts/deploy/setup-nginx-ssl.sh YOUR_DOMAIN YOUR_EMAIL 3000
+# For strict public lock-down after HTTPS works, bind frontend to 127.0.0.1 in docker-compose.prod.yml.
 ```
 
 First production build can take **15-20 minutes** on small servers.
