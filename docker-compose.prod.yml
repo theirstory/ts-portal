@@ -47,6 +47,10 @@ services:
     container_name: weaviate-init-prod
     env_file:
       - ./.env.production
+    environment:
+      WEAVIATE_RESET_SCHEMA: "${WEAVIATE_RESET_SCHEMA:-false}"
+      RESET_WEAVIATE_DATA: "${RESET_WEAVIATE_DATA:-false}"
+      SKIP_IMPORTED_INTERVIEWS: "${SKIP_IMPORTED_INTERVIEWS:-true}"
     depends_on:
       weaviate:
         condition: service_healthy

@@ -85,7 +85,7 @@ Use this if you want to avoid re-running GLiNER/embedding import in production.
 Inside local repo:
 
 ```bash
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_DROPLET_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" root@YOUR_DROPLET_IP /root/ts-portal
 ```
 
 This command exports Weaviate data and uploads to the Droplet:
