@@ -197,7 +197,7 @@ function parseArgs(argv: string[]): Promise<CliOptions> | CliOptions {
     token: process.env.THEIRSTORY_AUTH_TOKEN ?? '',
     format: '',
     force: false,
-    apiBaseUrl: process.env.THEIRSTORY_API_BASE_URL ?? 'https://stagingnode.theirstory.io',
+    apiBaseUrl: process.env.THEIRSTORY_API_BASE_URL ?? 'https://node.theirstory.io',
     origin: process.env.THEIRSTORY_ORIGIN ?? 'https://lab.theirstory.io',
     referer: process.env.THEIRSTORY_REFERER ?? 'https://lab.theirstory.io/',
   };
