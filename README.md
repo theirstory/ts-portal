@@ -215,13 +215,13 @@ On your local terminal:
 
 ```bash
 # One command: export backup + sync config/json/public + upload backup
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_SERVER_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" root@YOUR_SERVER_IP
 ```
 
 On the server terminal:
 
 ```bash
-cd /root/ts-portal
+cd /root/ts-portal-ushmm2
 ./scripts/deploy/restore-weaviate-data.sh /tmp/weaviate-data.tar.gz
 ./scripts/deploy/deploy-prod.sh
 ```
@@ -258,7 +258,7 @@ docker compose logs -f nlp-processor  # Follow logs
 docker compose ps                     # Service status
 
 # Data
-docker compose run --rm weaviate-init # Reimport interviews
+docker compose run --rm weaviate-init # Incremental schema + interview import
 docker volume rm portals_weaviate_data # Clear DB
 
 # Verify data

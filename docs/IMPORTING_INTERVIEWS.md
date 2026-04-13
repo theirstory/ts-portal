@@ -139,8 +139,8 @@ Interviews must follow this structure:
 When you run `docker compose up`, the `weaviate-init` container automatically:
 
 1. Waits for Weaviate and NLP processor to be healthy
-2. Generates Weaviate schema (Testimonies + Chunks classes)
-3. Imports all JSON files from `/json/interviews/`
+2. Ensures Weaviate schema exists (Testimonies + Chunks classes)
+3. Imports missing or partially imported JSON files from `/json/interviews/`
 4. Exits when complete
 
 ### Manual Import
@@ -253,6 +253,25 @@ curl -s "http://localhost:8080/v1/graphql" \
 
 ## Re-importing Data
 
+By default, the import process is incremental:
+
+- Existing Weaviate data is kept
+- Interviews that already have a `Testimonies` object and at least one `Chunks` object are skipped
+- Missing or partially imported interviews are processed
+- When an interview is processed, the NLP service deletes that interview's previous chunks before writing fresh chunks
+
+### Rebuild everything from scratch:
+
+```bash
+docker compose run --rm -e WEAVIATE_RESET_SCHEMA=true -e RESET_WEAVIATE_DATA=true weaviate-init
+```
+
+### Force reprocess without clearing:
+
+```bash
+docker compose run --rm -e SKIP_IMPORTED_INTERVIEWS=false weaviate-init yarn weaviate:import
+```
+
 ### Clear and reimport everything:
 
 ```bash
@@ -269,7 +288,7 @@ docker compose --profile local up
 ### Reimport without clearing:
 
 ```bash
-# This will delete existing data for interviews being processed
+# This keeps existing data and skips interviews already present in Weaviate
 docker compose run --rm weaviate-init
 ```
 
