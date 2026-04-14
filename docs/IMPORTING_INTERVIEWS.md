@@ -15,6 +15,10 @@ docker compose run --rm weaviate-init
 curl -s "http://localhost:8080/v1/objects?class=Testimonies" | jq '.objects | length'
 ```
 
+## Importing From TheirStory API
+
+If your source data lives in TheirStory, see [IMPORTING_FROM_THEIRSTORY.md](./IMPORTING_FROM_THEIRSTORY.md) for the full script guide.
+
 ## Collections By Folder
 
 You can organize interviews using folders under `json/interviews/`.
@@ -26,7 +30,8 @@ json/interviews/
 ├── oral-history/
 │   ├── collection.json                # optional metadata
 │   ├── interview-1.json
-│   └── interview-2.json
+│   └── argentina/
+│       └── interview-2.json
 └── veterans/
     ├── collection.json
     └── interview-3.json
@@ -36,9 +41,16 @@ Rules:
 
 - JSON files directly inside `json/interviews/` are imported into `collection_id=default`
 - Each subfolder name becomes `collection_id` (sanitized) unless overridden in `collection.json`
+- Nested subfolders inside a collection are supported; they do not create new collections
 - Collection metadata is loaded from `collection.json` (or `COLLECTION.md` / `README.md` fallback)
 - `collection_id`, `collection_name`, `collection_description` are stored in both `Testimonies` and `Chunks`
 - Interview identity in Weaviate is scoped by collection (`collection_id + story._id`), so the same `story._id` can exist in different collections
+
+Example:
+
+- `json/interviews/oral-history/argentina/interview-2.json` stays in collection `oral-history`
+- Its folder metadata is stored as:
+  `folder_name=Argentina`, `folder_path=argentina`, and a generated `folder_id`
 
 ### `collection.json` format
 
@@ -120,14 +132,6 @@ Interviews must follow this structure:
 - `transcript.sections` - Array of transcript sections
 - `transcript.sections[].paragraphs[].words` - Word-level timing data
 
-### Optional Fields
-
-- `story.description` - Interview description
-- `story.record_date` - Recording date (YYYY-MM-DD)
-- `story.thumbnail_url` - Video thumbnail
-- `videoURL` - Streaming video URL (Mux, YouTube, etc.)
-- `story.custom_archive_media_type` - "audio/\*" for audio-only interviews
-
 ## Import Process
 
 ### Automatic Import (on startup)
@@ -135,8 +139,8 @@ Interviews must follow this structure:
 When you run `docker compose up`, the `weaviate-init` container automatically:
 
 1. Waits for Weaviate and NLP processor to be healthy
-2. Generates Weaviate schema (Testimonies + Chunks classes)
-3. Imports all JSON files from `/json/interviews/`
+2. Ensures Weaviate schema exists (Testimonies + Chunks classes)
+3. Imports missing or partially imported JSON files from `/json/interviews/`
 4. Exits when complete
 
 ### Manual Import
@@ -249,6 +253,25 @@ curl -s "http://localhost:8080/v1/graphql" \
 
 ## Re-importing Data
 
+By default, the import process is incremental:
+
+- Existing Weaviate data is kept
+- Interviews that already have a `Testimonies` object and at least one `Chunks` object are skipped
+- Missing or partially imported interviews are processed
+- When an interview is processed, the NLP service deletes that interview's previous chunks before writing fresh chunks
+
+### Rebuild everything from scratch:
+
+```bash
+docker compose run --rm -e WEAVIATE_RESET_SCHEMA=true -e RESET_WEAVIATE_DATA=true weaviate-init
+```
+
+### Force reprocess without clearing:
+
+```bash
+docker compose run --rm -e SKIP_IMPORTED_INTERVIEWS=false weaviate-init yarn weaviate:import
+```
+
 ### Clear and reimport everything:
 
 ```bash
@@ -265,7 +288,7 @@ docker compose --profile local up
 ### Reimport without clearing:
 
 ```bash
-# This will delete existing data for interviews being processed
+# This keeps existing data and skips interviews already present in Weaviate
 docker compose run --rm weaviate-init
 ```
 

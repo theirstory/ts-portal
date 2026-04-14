@@ -112,7 +112,7 @@ export const CollectionsSection = () => {
                   </Box>
                 </Box>
                 <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
-                  <Typography color="text.secondary" sx={{ minHeight: 72, maxHeight: 170, overflow: 'scroll' }}>
+                  <Typography color="text.secondary" sx={{ minHeight: 72, maxHeight: 170, overflow: 'auto' }}>
                     {collection.description || 'No description available for this collection.'}
                   </Typography>
                   <Typography sx={{ mt: 'auto', pt: 1, color: colors.primary.main, fontWeight: 600 }}>

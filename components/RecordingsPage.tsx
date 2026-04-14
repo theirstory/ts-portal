@@ -26,7 +26,9 @@ export const RecordingsPage = () => {
   const {
     getAllStories,
     loadCollections,
+    loadFolders,
     setSelectedCollectionIds,
+    setSelectedFolderIds,
     setCurrentPage,
     clearSearch,
     setHasSearched,
@@ -35,16 +37,27 @@ export const RecordingsPage = () => {
 
   useEffect(() => {
     loadCollections();
-  }, [loadCollections]);
+    loadFolders();
+  }, [loadCollections, loadFolders]);
 
   useEffect(() => {
     clearSearch();
     setHasSearched(false);
     setSearchTerm('');
     setCurrentPage(1);
+    setSelectedFolderIds([]);
     setSelectedCollectionIds(collectionId ? [collectionId] : []);
     getAllStories(SchemaTypes.Testimonies, [...STORIES_RETURN_PROPERTIES], PAGINATION_ITEMS_PER_PAGE, 0);
-  }, [collectionId, clearSearch, getAllStories, setCurrentPage, setHasSearched, setSearchTerm, setSelectedCollectionIds]);
+  }, [
+    collectionId,
+    clearSearch,
+    getAllStories,
+    setCurrentPage,
+    setHasSearched,
+    setSearchTerm,
+    setSelectedCollectionIds,
+    setSelectedFolderIds,
+  ]);
 
   return <CollectionLayout />;
 };

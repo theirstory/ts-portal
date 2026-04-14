@@ -27,6 +27,7 @@ import { useThreshold } from '@/app/stores/useThreshold';
 import { NerFilters } from './NerFilters';
 import useLayoutState from '@/app/stores/useLayout';
 import { CollectionsDropdown } from './CollectionsDropdown';
+import { FoldersDropdown } from './FoldersDropdown';
 
 export const returnedFields: QueryProperty<SchemaMap[SchemaTypes]>[] | undefined = [
   'interview_title',
@@ -68,10 +69,12 @@ export const SearchBox = ({
     hasSearched,
     stories,
     collections,
+    folders,
   } = useSemanticSearchStore();
   const { minValue, maxValue } = useThreshold();
   const { isTopBarCollapsed, setTopBarCollapsedAuto } = useLayoutState();
   const hasMultipleCollections = collections.length > 1;
+  const hasFolders = folders.length > 0;
   const mobilePrimaryFlex = hasMultipleCollections ? 5.5 : 7.5;
   const mobileSecondaryFlex = hasMultipleCollections ? 1.5 : 1.25;
 
@@ -206,6 +209,14 @@ export const SearchBox = ({
                 </Box>
               </>
             )}
+            {hasFolders && (
+              <>
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.25 }} />
+                <Box sx={{ flex: mobileSecondaryFlex, minWidth: 0, display: 'flex', justifyContent: 'center' }}>
+                  <FoldersDropdown compact />
+                </Box>
+              </>
+            )}
           </Box>
         </Box>
       ) : (
@@ -279,6 +290,12 @@ export const SearchBox = ({
                   <>
                     <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
                     <CollectionsDropdown />
+                  </>
+                )}
+                {hasFolders && (
+                  <>
+                    <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                    <FoldersDropdown />
                   </>
                 )}
               </Box>

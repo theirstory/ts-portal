@@ -13,6 +13,9 @@ const STORIES_RETURN_PROPERTIES = [
   'collection_id',
   'collection_name',
   'collection_description',
+  'folder_id',
+  'folder_name',
+  'folder_path',
   'transcription',
 ] as const;
 
@@ -27,6 +30,9 @@ export type IndexesStory = {
   collection_id: string;
   collection_name: string;
   collection_description: string;
+  folder_id: string;
+  folder_name: string;
+  folder_path: string;
 };
 
 export type IndexChapter = {
@@ -52,7 +58,7 @@ export async function GET() {
       0,
     );
 
-    const stories: IndexesStory[] = (storiesResponse?.objects ?? []).map((obj) => {
+    const stories: IndexesStory[] = (storiesResponse?.objects ?? []).map((obj: any) => {
       const p = obj.properties as Record<string, unknown>;
       return {
         uuid: obj.uuid ?? '',
@@ -65,6 +71,9 @@ export async function GET() {
         collection_id: String(p?.collection_id ?? ''),
         collection_name: String(p?.collection_name ?? ''),
         collection_description: String(p?.collection_description ?? ''),
+        folder_id: String(p?.folder_id ?? ''),
+        folder_name: String(p?.folder_name ?? ''),
+        folder_path: String(p?.folder_path ?? ''),
       };
     });
 

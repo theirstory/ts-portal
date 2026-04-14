@@ -141,7 +141,7 @@ export const StoryProgressBar = () => {
         id="progress-bar-container"
         sx={{
           width: '100%',
-          padding: '8px 0px',
+          padding: '4px 0px',
           backgroundColor: colors.grey[100],
           borderBottom: `1px solid ${colors.common.border}`,
           position: 'relative',

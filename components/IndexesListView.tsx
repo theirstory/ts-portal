@@ -27,6 +27,9 @@ function storyToThumbnailStory(story: IndexesStory): WeaviateGenericObject<Testi
       collection_id: story.collection_id,
       collection_name: story.collection_name,
       collection_description: story.collection_description,
+      folder_id: story.folder_id,
+      folder_name: story.folder_name,
+      folder_path: story.folder_path,
       recording_date: '',
       transcoded: '',
       transcription: '',
@@ -88,6 +91,11 @@ export function IndexesListView({
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5 }} component="span">
                       {highlightSearchText(story.interview_title, searchQuery)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {story.folder_name
+                        ? `${story.collection_name || story.collection_id} / ${story.folder_name}`
+                        : story.collection_name || story.collection_id}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {durationFormatHandler(story.interview_duration)} — {chapters.length} chapter

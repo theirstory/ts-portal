@@ -39,7 +39,7 @@ config.json
 
 # collection-specific data and assets
 json/interviews/
-public/images/
+
 
 # TypeScript build cache
 tsconfig.tsbuildinfo

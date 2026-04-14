@@ -181,7 +181,7 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
             sx={{
               flex: 1,
               overflow: 'auto',
-              pb: '70px', // Space for progress bar
+              pb: '68px', // Space for progress bar
             }}>
             {/* Transcription Tab */}
             {mobileTabValue === 0 && (
@@ -214,8 +214,8 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
             flexDirection: 'row',
             justifyContent: 'center',
             gap: 2,
-            height: `calc(100dvh - 100px - 50px)`,
-            paddingTop: '12px',
+            height: `calc(100dvh - 100px - 54px)`,
+            paddingTop: '6px',
             paddingBottom: '12px',
             paddingX: 2,
             position: 'relative',

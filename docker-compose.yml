@@ -2,7 +2,7 @@ services:
   weaviate:
     profiles: ["local"]
     image: semitechnologies/weaviate:1.35.0
-    container_name: weaviate
+    # container_name: weaviate
     ports:
       - "8081:8080"
       - "50051:50051"
@@ -26,7 +26,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: weaviate-init
+    # container_name: weaviate-init
     env_file:
       - .env.local
     environment:
@@ -34,6 +34,9 @@ services:
       WEAVIATE_PORT: "8080"
       WEAVIATE_GRPC_HOST_URL: "weaviate"
       WEAVIATE_GRPC_PORT: "50051"
+      WEAVIATE_RESET_SCHEMA: "${WEAVIATE_RESET_SCHEMA:-false}"
+      RESET_WEAVIATE_DATA: "${RESET_WEAVIATE_DATA:-false}"
+      SKIP_IMPORTED_INTERVIEWS: "${SKIP_IMPORTED_INTERVIEWS:-true}"
       NLP_HOST: "nlp-processor"
       NLP_PORT: "7070"
     depends_on:
@@ -52,7 +55,7 @@ services:
     build:
       context: ./nlp-processor
       dockerfile: Dockerfile
-    container_name: nlp-processor
+    # container_name: nlp-processor
     ports:
       - "7070:7070"
     env_file:
@@ -79,7 +82,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: next-frontend
+    # container_name: next-frontend
     ports:
       - "3000:3000"
     environment:
@@ -110,7 +113,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: next-frontend
+    # container_name: next-frontend
     ports:
       - "3000:3000"
     environment:

@@ -208,18 +208,18 @@ export const CollectionsDropdown = ({
                 onClick={() => handleToggle(collection.id)}
                 sx={{ alignItems: 'flex-start', py: 1.2 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography fontWeight={600} fontSize="1rem" sx={{ wordBreak: 'break-word' }}>
+                  <Typography variant="body2" fontWeight={600} sx={{ wordBreak: 'break-word' }}>
                     {collection.name}
                   </Typography>
                   {collection.description != null && collection.description !== '' ? (
                     <Typography
+                      variant="caption"
                       color="text.secondary"
-                      fontSize="0.95rem"
                       sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {collection.description}
                     </Typography>
                   ) : (
-                    <Typography color="text.disabled" fontSize="0.9rem">
+                    <Typography variant="caption" color="text.disabled">
                       No description
                     </Typography>
                   )}

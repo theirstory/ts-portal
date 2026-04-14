@@ -74,7 +74,9 @@ What this script does:
 - Configures reverse proxy to `127.0.0.1:3000`
 - Requests and configures Let's Encrypt certificate
 - Enables HTTPS redirect
-- Opens firewall for `22`, `80`, `443` and closes `3000` public access
+- Opens firewall for `22`, `80`, `443` and removes any direct UFW allow rule for `3000`
+
+Note: Docker-published ports can bypass UFW on some hosts. For strict public lock-down, bind the `frontend` port in `docker-compose.prod.yml` to `127.0.0.1:3000:3000` after HTTPS is working.
 
 ## 6) Optional: move your already-indexed local Weaviate data to prod
 
@@ -85,7 +87,7 @@ Use this if you want to avoid re-running GLiNER/embedding import in production.
 Inside local repo:
 
 ```bash
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_DROPLET_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" root@YOUR_DROPLET_IP /root/ts-portal
 ```
 
 This command exports Weaviate data and uploads to the Droplet:

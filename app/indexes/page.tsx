@@ -19,6 +19,8 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import CircularProgress from '@mui/material/CircularProgress';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { colors } from '@/lib/theme';
 import type { IndexesApiResponse, IndexesStory, IndexChapter } from '@/app/api/indexes/route';
@@ -29,12 +31,14 @@ function filterStories(
   stories: IndexesStory[],
   searchQuery: string,
   selectedCollectionIds: string[],
+  selectedFolderIds: string[],
   selectedKeywordIds: string[],
   chaptersByStoryId: Record<string, IndexChapter[]>,
 ): IndexesStory[] {
   const q = searchQuery.trim().toLowerCase();
   return stories.filter((story) => {
     if (selectedCollectionIds.length > 0 && !selectedCollectionIds.includes(story.collection_id)) return false;
+    if (selectedFolderIds.length > 0 && !selectedFolderIds.includes(story.folder_id)) return false;
     const chapters = chaptersByStoryId[story.uuid] ?? [];
     if (selectedKeywordIds.length > 0) {
       const hasKeyword = chapters.some((ch) => ch.keywords?.some((kw) => selectedKeywordIds.includes(kw)));
@@ -58,13 +62,20 @@ export default function IndexesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>([]);
   const [collectionMenuAnchor, setCollectionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [folderMenuAnchor, setFolderMenuAnchor] = useState<null | HTMLElement>(null);
   const [keywordMenuAnchor, setKeywordMenuAnchor] = useState<null | HTMLElement>(null);
   const [collectionFilterTerm, setCollectionFilterTerm] = useState('');
+  const [folderFilterTerm, setFolderFilterTerm] = useState('');
   const [keywordFilterTerm, setKeywordFilterTerm] = useState('');
   const collectionFilterInputRef = useRef<HTMLInputElement>(null);
+  const folderFilterInputRef = useRef<HTMLInputElement>(null);
   const keywordFilterInputRef = useRef<HTMLInputElement>(null);
+  const desktopFiltersScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollDesktopFiltersLeft, setCanScrollDesktopFiltersLeft] = useState(false);
+  const [canScrollDesktopFiltersRight, setCanScrollDesktopFiltersRight] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +124,43 @@ export default function IndexesPage() {
     return m;
   }, [data?.stories]);
 
+  const folderOptions = useMemo(() => {
+    if (!data?.stories.length) return [];
+
+    const storiesForFolders =
+      selectedCollectionIds.length > 0
+        ? data.stories.filter((story) => selectedCollectionIds.includes(story.collection_id))
+        : data.stories;
+
+    const seen = new Map<string, { id: string; name: string; path: string; collectionId: string; collectionName: string }>();
+    for (const story of storiesForFolders) {
+      if (!story.folder_id || seen.has(story.folder_id)) continue;
+      seen.set(story.folder_id, {
+        id: story.folder_id,
+        name: story.folder_name || story.folder_path || story.folder_id,
+        path: story.folder_path || story.folder_name || '',
+        collectionId: story.collection_id,
+        collectionName: story.collection_name || story.collection_id,
+      });
+    }
+
+    return Array.from(seen.values()).sort((a, b) => {
+      const collectionCompare = a.collectionName.localeCompare(b.collectionName);
+      if (collectionCompare !== 0) return collectionCompare;
+      return a.name.localeCompare(b.name);
+    });
+  }, [data?.stories, selectedCollectionIds]);
+
+  const recordingsPerFolderId = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of data?.stories ?? []) {
+      const id = s.folder_id || '';
+      if (!id) continue;
+      m[id] = (m[id] ?? 0) + 1;
+    }
+    return m;
+  }, [data?.stories]);
+
   const allUniqueKeywords = useMemo(() => {
     const set = new Set<string>();
     for (const chapters of Object.values(data?.chaptersByStoryId ?? {})) {
@@ -127,8 +175,15 @@ export default function IndexesPage() {
 
   const filteredStories = useMemo(() => {
     if (!data) return [];
-    return filterStories(data.stories, searchQuery, selectedCollectionIds, selectedKeywordIds, data.chaptersByStoryId);
-  }, [data, searchQuery, selectedCollectionIds, selectedKeywordIds]);
+    return filterStories(
+      data.stories,
+      searchQuery,
+      selectedCollectionIds,
+      selectedFolderIds,
+      selectedKeywordIds,
+      data.chaptersByStoryId,
+    );
+  }, [data, searchQuery, selectedCollectionIds, selectedFolderIds, selectedKeywordIds]);
 
   const filteredChaptersByStoryId = useMemo((): Record<string, IndexChapter[]> => {
     if (!data?.chaptersByStoryId) return {};
@@ -153,7 +208,33 @@ export default function IndexesPage() {
   }, [data?.chaptersByStoryId, searchQuery, selectedKeywordIds]);
 
   const handleCollectionToggle = (id: string) => {
-    setSelectedCollectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedCollectionIds((prev) => {
+      const isRemoving = prev.includes(id);
+      if (!isRemoving) {
+        return [...prev, id];
+      }
+
+      setSelectedFolderIds((currentFolders) =>
+        currentFolders.filter((folderId) => {
+          const folder = folderOptions.find((option) => option.id === folderId);
+          return folder?.collectionId !== id;
+        }),
+      );
+
+      return prev.filter((x) => x !== id);
+    });
+  };
+
+  const handleFolderToggle = (id: string) => {
+    const folder = folderOptions.find((option) => option.id === id);
+
+    setSelectedFolderIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+    if (folder?.collectionId) {
+      setSelectedCollectionIds((prev) =>
+        prev.includes(folder.collectionId) ? prev : [...prev, folder.collectionId],
+      );
+    }
   };
 
   const filteredCollectionsForDropdown = useMemo(() => {
@@ -162,6 +243,77 @@ export default function IndexesPage() {
     return collectionOptions.filter((c) => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
   }, [collectionOptions, collectionFilterTerm]);
   const hasMultipleCollections = collectionOptions.length > 1;
+
+  const filteredFoldersForDropdown = useMemo(() => {
+    const q = folderFilterTerm.trim().toLowerCase();
+    if (!q) return folderOptions;
+    return folderOptions.filter(
+      (folder) =>
+        folder.name.toLowerCase().includes(q) ||
+        folder.path.toLowerCase().includes(q) ||
+        folder.collectionName.toLowerCase().includes(q),
+    );
+  }, [folderOptions, folderFilterTerm]);
+  const hasFolders = folderOptions.length > 0;
+  const hasDesktopActiveFilters =
+    selectedCollectionIds.length > 0 || selectedFolderIds.length > 0 || selectedKeywordIds.length > 0;
+
+  useEffect(() => {
+    const element = desktopFiltersScrollRef.current;
+    if (!element) {
+      setCanScrollDesktopFiltersLeft(false);
+      setCanScrollDesktopFiltersRight(false);
+      return;
+    }
+
+    const updateScrollButtons = () => {
+      const maxScrollLeft = element.scrollWidth - element.clientWidth;
+      setCanScrollDesktopFiltersLeft(element.scrollLeft > 0);
+      setCanScrollDesktopFiltersRight(maxScrollLeft - element.scrollLeft > 1);
+    };
+
+    updateScrollButtons();
+
+    element.addEventListener('scroll', updateScrollButtons, { passive: true });
+
+    const resizeObserver = new ResizeObserver(() => updateScrollButtons());
+    resizeObserver.observe(element);
+
+    return () => {
+      element.removeEventListener('scroll', updateScrollButtons);
+      resizeObserver.disconnect();
+    };
+  }, [hasDesktopActiveFilters, selectedCollectionIds.length, selectedFolderIds.length, selectedKeywordIds.length]);
+
+  const scrollDesktopFilters = (direction: 'left' | 'right') => {
+    const element = desktopFiltersScrollRef.current;
+    if (!element) return;
+
+    element.scrollBy({
+      left: direction === 'left' ? -260 : 260,
+      behavior: 'smooth',
+    });
+  };
+
+  const clearAllDesktopFilters = () => {
+    setSelectedCollectionIds([]);
+    setSelectedFolderIds([]);
+    setSelectedKeywordIds([]);
+  };
+
+  const mobileActiveFiltersRowSx = {
+    display: 'flex',
+    flexWrap: 'nowrap',
+    gap: 0.5,
+    mt: 0.75,
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    pb: 0.25,
+    scrollbarWidth: 'none' as const,
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
+  };
 
   const collectionMenuOpen = Boolean(collectionMenuAnchor);
   useEffect(() => {
@@ -174,6 +326,23 @@ export default function IndexesPage() {
     setCollectionMenuAnchor(null);
     setCollectionFilterTerm('');
   };
+
+  const folderMenuOpen = Boolean(folderMenuAnchor);
+  useEffect(() => {
+    if (folderMenuOpen) {
+      const t = setTimeout(() => folderFilterInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [folderMenuOpen]);
+  const closeFolderMenu = () => {
+    setFolderMenuAnchor(null);
+    setFolderFilterTerm('');
+  };
+
+  useEffect(() => {
+    const folderIds = new Set(folderOptions.map((folder) => folder.id));
+    setSelectedFolderIds((prev) => prev.filter((id) => folderIds.has(id)));
+  }, [folderOptions]);
 
   const handleKeywordToggle = (keyword: string) => {
     setSelectedKeywordIds((prev) => (prev.includes(keyword) ? prev.filter((x) => x !== keyword) : [...prev, keyword]));
@@ -285,7 +454,7 @@ export default function IndexesPage() {
                   {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
                 </Button>
                 {selectedCollectionIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                  <Box sx={mobileActiveFiltersRowSx}>
                     {selectedCollectionIds.map((id) => {
                       const c = collectionOptions.find((x) => x.id === id);
                       return (
@@ -298,6 +467,56 @@ export default function IndexesPage() {
                             flexShrink: 0,
                             backgroundColor: colors.primary.light,
                             color: colors.primary.contrastText,
+                            fontWeight: 500,
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </>
+            )}
+            {hasFolders && (
+              <>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Folder
+                </Typography>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={(e) => setFolderMenuAnchor(e.currentTarget)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    pl: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.common.border}`,
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: colors.grey[100] },
+                  }}>
+                  {selectedFolderIds.length === 0 ? 'All folders' : `${selectedFolderIds.length} selected`}
+                </Button>
+                {selectedFolderIds.length > 0 && (
+                  <Box sx={mobileActiveFiltersRowSx}>
+                    {selectedFolderIds.map((id) => {
+                      const folder = folderOptions.find((x) => x.id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={folder?.name ?? id}
+                          size="small"
+                          onDelete={() => handleFolderToggle(id)}
+                          sx={{
+                            flexShrink: 0,
+                            backgroundColor: colors.grey[200],
+                            color: colors.text.primary,
                             fontWeight: 500,
                           }}
                         />
@@ -335,7 +554,7 @@ export default function IndexesPage() {
                   {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
                 </Button>
                 {selectedKeywordIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                  <Box sx={mobileActiveFiltersRowSx}>
                     {selectedKeywordIds.map((kw) => (
                       <Chip
                         key={kw}
@@ -344,8 +563,8 @@ export default function IndexesPage() {
                         onDelete={() => handleKeywordToggle(kw)}
                         sx={{
                           flexShrink: 0,
-                          backgroundColor: colors.primary.light,
-                          color: colors.primary.contrastText,
+                          backgroundColor: colors.grey[200],
+                          color: colors.text.primary,
                           fontWeight: 500,
                         }}
                       />
@@ -356,6 +575,85 @@ export default function IndexesPage() {
             )}
           </Box>
         </Box>
+      )}
+
+      {hasFolders && (
+        <Menu
+          anchorEl={folderMenuAnchor}
+          open={folderMenuOpen}
+          onClose={closeFolderMenu}
+          disableAutoFocusItem
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{ list: { dense: true, disablePadding: true } }}
+          sx={{
+            mt: 0.5,
+            '& .MuiPaper-root': { maxHeight: 360, width: 360 },
+          }}>
+          <Box sx={{ p: 1.5, borderBottom: `1px solid ${colors.common.border}` }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Filter folders..."
+              value={folderFilterTerm}
+              onChange={(e) => setFolderFilterTerm(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              inputRef={folderFilterInputRef}
+              autoFocus
+            />
+          </Box>
+          <Box sx={{ maxHeight: 280, overflowY: 'auto', py: 0.5 }}>
+            {filteredFoldersForDropdown.map((folder) => {
+              const checked = selectedFolderIds.includes(folder.id);
+              const count = recordingsPerFolderId[folder.id] ?? 0;
+              return (
+                <MenuItem
+                  key={folder.id}
+                  onClick={() => handleFolderToggle(folder.id)}
+                  sx={{ alignItems: 'flex-start', py: 1.1, gap: 1.25 }}
+                  dense>
+                  <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        lineHeight: 1.35,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal',
+                      }}>
+                      {folder.collectionName}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      sx={{
+                        mt: 0.15,
+                        lineHeight: 1.35,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal',
+                      }}>
+                      {folder.name}
+                      {count >= 0 && ` (${count} recording${count !== 1 ? 's' : ''})`}
+                    </Typography>
+                  </Box>
+                  <Checkbox
+                    size="small"
+                    checked={checked}
+                    sx={{ p: 0.25, mt: 0.2, flexShrink: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => handleFolderToggle(folder.id)}
+                  />
+                </MenuItem>
+              );
+            })}
+            {filteredFoldersForDropdown.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2 }}>
+                No folders match.
+              </Typography>
+            )}
+          </Box>
+        </Menu>
       )}
 
       {/* Keyword filter menu (shared for list and horizontal view) */}
@@ -410,147 +708,268 @@ export default function IndexesPage() {
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
+            alignItems: 'stretch',
             gap: 2,
             mb: 2,
             flexShrink: 0,
           }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}>
             <Typography variant="h4" fontWeight={700}>
               All Indexes
             </Typography>
-            {/* Inline filters for horizontal view (desktop): search + collection next to title */}
+            {!loading && data && data.stories.length > 0 && (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewChange}
+                aria-label="indexes view mode"
+                size="small"
+                sx={{ display: { xs: 'inline-flex', md: 'none' } }}>
+                <ToggleButton value="list" aria-label="vertical list view">
+                  <ViewListIcon />
+                </ToggleButton>
+                <ToggleButton value="horizontal" aria-label="horizontal scroll view">
+                  <ViewModuleIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: { xs: 'stretch', md: 'center' },
+              justifyContent: 'space-between',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}>
             {!loading && data && data.stories.length > 0 && viewMode === 'horizontal' && (
               <Box
                 sx={{
                   display: { xs: 'none', md: 'flex' },
-                  alignItems: 'center',
-                  gap: 1.5,
-                  flexWrap: 'wrap',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  gap: 1,
+                  minWidth: 0,
+                  flex: 1,
                 }}>
-                <TextField
-                  size="small"
-                  variant="outlined"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: searchQuery ? (
-                      <InputAdornment position="end">
-                        <IconButton aria-label="clear search" onClick={() => setSearchQuery('')} size="small">
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ) : null,
-                  }}
-                  sx={{
-                    width: { md: 380, lg: 440 },
-                    bgcolor: colors.background.default,
-                    borderRadius: '8px',
-                  }}
-                />
-                {hasMultipleCollections && (
-                  <Button
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                  <TextField
                     size="small"
-                    onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-                    endIcon={<KeyboardArrowDownIcon />}
+                    variant="outlined"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: searchQuery ? (
+                        <InputAdornment position="end">
+                          <IconButton aria-label="clear search" onClick={() => setSearchQuery('')} size="small">
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    }}
                     sx={{
-                      textTransform: 'none',
-                      minHeight: 40,
-                      pl: 1.5,
+                      width: { md: 380, lg: 440 },
                       bgcolor: colors.background.default,
                       borderRadius: '8px',
-                      border: `1px solid ${colors.common.border}`,
-                      color: 'text.primary',
-                      '&:hover': { bgcolor: colors.grey[100] },
-                    }}>
-                    {selectedCollectionIds.length === 0
-                      ? 'All collections'
-                      : `${selectedCollectionIds.length} selected`}
-                  </Button>
-                )}
-                {hasKeywords && (
-                  <Button
-                    size="small"
-                    onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
-                    endIcon={<KeyboardArrowDownIcon />}
-                    sx={{
-                      textTransform: 'none',
-                      minHeight: 40,
-                      pl: 1.5,
-                      bgcolor: colors.background.default,
-                      borderRadius: '8px',
-                      border: `1px solid ${colors.common.border}`,
-                      color: 'text.primary',
-                      '&:hover': { bgcolor: colors.grey[100] },
-                    }}>
-                    {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
-                  </Button>
-                )}
-                {hasMultipleCollections && selectedCollectionIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-                    {selectedCollectionIds.map((id) => {
-                      const c = collectionOptions.find((x) => x.id === id);
-                      return (
-                        <Chip
-                          key={id}
-                          label={c?.name ?? id}
-                          size="small"
-                          onDelete={() => handleCollectionToggle(id)}
-                          sx={{
-                            flexShrink: 0,
-                            backgroundColor: colors.primary.light,
-                            color: colors.primary.contrastText,
-                            fontWeight: 500,
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-                {hasKeywords && selectedKeywordIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-                    {selectedKeywordIds.map((kw) => (
+                    }}
+                  />
+                  {hasMultipleCollections && (
+                    <Button
+                      size="small"
+                      onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
+                      endIcon={<KeyboardArrowDownIcon />}
+                      sx={{
+                        textTransform: 'none',
+                        minHeight: 40,
+                        pl: 1.5,
+                        bgcolor: colors.background.default,
+                        borderRadius: '8px',
+                        border: `1px solid ${colors.common.border}`,
+                        color: 'text.primary',
+                        '&:hover': { bgcolor: colors.grey[100] },
+                      }}>
+                      {selectedCollectionIds.length === 0
+                        ? 'All collections'
+                        : `${selectedCollectionIds.length} selected`}
+                    </Button>
+                  )}
+                  {hasFolders && (
+                    <Button
+                      size="small"
+                      onClick={(e) => setFolderMenuAnchor(e.currentTarget)}
+                      endIcon={<KeyboardArrowDownIcon />}
+                      sx={{
+                        textTransform: 'none',
+                        minHeight: 40,
+                        pl: 1.5,
+                        bgcolor: colors.background.default,
+                        borderRadius: '8px',
+                        border: `1px solid ${colors.common.border}`,
+                        color: 'text.primary',
+                        '&:hover': { bgcolor: colors.grey[100] },
+                      }}>
+                      {selectedFolderIds.length === 0 ? 'All folders' : `${selectedFolderIds.length} selected`}
+                    </Button>
+                  )}
+                  {hasKeywords && (
+                    <Button
+                      size="small"
+                      onClick={(e) => setKeywordMenuAnchor(e.currentTarget)}
+                      endIcon={<KeyboardArrowDownIcon />}
+                      sx={{
+                        textTransform: 'none',
+                        minHeight: 40,
+                        pl: 1.5,
+                        bgcolor: colors.background.default,
+                        borderRadius: '8px',
+                        border: `1px solid ${colors.common.border}`,
+                        color: 'text.primary',
+                        '&:hover': { bgcolor: colors.grey[100] },
+                      }}>
+                      {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
+                    </Button>
+                  )}
+                </Box>
+                {hasDesktopActiveFilters && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, width: '100%' }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => scrollDesktopFilters('left')}
+                      disabled={!canScrollDesktopFiltersLeft}
+                      sx={{
+                        p: 0.25,
+                        flexShrink: 0,
+                        visibility: canScrollDesktopFiltersLeft ? 'visible' : 'hidden',
+                      }}>
+                        <ChevronLeftIcon fontSize="small" />
+                    </IconButton>
+                    <Box
+                      ref={desktopFiltersScrollRef}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        flexWrap: 'nowrap',
+                        overflowX: 'auto',
+                        overflowY: 'hidden',
+                        minWidth: 0,
+                        flex: 1,
+                        scrollbarWidth: 'none',
+                        '&::-webkit-scrollbar': {
+                          display: 'none',
+                        },
+                      }}>
                       <Chip
-                        key={kw}
-                        label={kw}
+                        label="Clear all"
                         size="small"
-                        onDelete={() => handleKeywordToggle(kw)}
+                        variant="outlined"
+                        onClick={clearAllDesktopFilters}
                         sx={{
                           flexShrink: 0,
-                          backgroundColor: colors.primary.light,
-                          color: colors.primary.contrastText,
-                          fontWeight: 500,
+                          borderColor: colors.error.main,
+                          color: colors.error.main,
+                          '&:hover': {
+                            backgroundColor: colors.error.light,
+                          },
                         }}
                       />
-                    ))}
+                      {hasMultipleCollections &&
+                        selectedCollectionIds.map((id) => {
+                          const c = collectionOptions.find((x) => x.id === id);
+                          return (
+                            <Chip
+                              key={id}
+                              label={c?.name ?? id}
+                              size="small"
+                              onDelete={() => handleCollectionToggle(id)}
+                              sx={{
+                                flexShrink: 0,
+                                backgroundColor: colors.primary.light,
+                                color: colors.primary.contrastText,
+                                fontWeight: 500,
+                              }}
+                            />
+                          );
+                        })}
+                      {hasFolders &&
+                        selectedFolderIds.map((id) => {
+                          const folder = folderOptions.find((x) => x.id === id);
+                          return (
+                            <Chip
+                              key={id}
+                              label={folder?.name ?? id}
+                              size="small"
+                              onDelete={() => handleFolderToggle(id)}
+                              sx={{
+                                flexShrink: 0,
+                                backgroundColor: colors.grey[200],
+                                color: colors.text.primary,
+                                fontWeight: 500,
+                              }}
+                            />
+                          );
+                        })}
+                      {hasKeywords &&
+                        selectedKeywordIds.map((kw) => (
+                          <Chip
+                            key={kw}
+                            label={kw}
+                            size="small"
+                            onDelete={() => handleKeywordToggle(kw)}
+                            sx={{
+                              flexShrink: 0,
+                              backgroundColor: colors.grey[200],
+                              color: colors.text.primary,
+                              fontWeight: 500,
+                            }}
+                          />
+                        ))}
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => scrollDesktopFilters('right')}
+                      disabled={!canScrollDesktopFiltersRight}
+                      sx={{
+                        p: 0.25,
+                        flexShrink: 0,
+                        visibility: canScrollDesktopFiltersRight ? 'visible' : 'hidden',
+                      }}>
+                        <ChevronRightIcon fontSize="small" />
+                    </IconButton>
                   </Box>
                 )}
               </Box>
             )}
+            {!loading && data && data.stories.length > 0 && (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewChange}
+                aria-label="indexes view mode"
+                size="small"
+                sx={{ display: { xs: 'none', md: 'inline-flex' } }}>
+                <ToggleButton value="list" aria-label="vertical list view">
+                  <ViewListIcon />
+                </ToggleButton>
+                <ToggleButton value="horizontal" aria-label="horizontal scroll view">
+                  <ViewModuleIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
           </Box>
-          {!loading && data && data.stories.length > 0 && (
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewChange}
-              aria-label="indexes view mode"
-              size="small">
-              <ToggleButton value="list" aria-label="vertical list view">
-                <ViewListIcon />
-              </ToggleButton>
-              <ToggleButton value="horizontal" aria-label="horizontal scroll view">
-                <ViewModuleIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-          )}
         </Box>
 
         {/* Mobile: search and collection inline */}
@@ -606,27 +1025,6 @@ export default function IndexesPage() {
                   }}>
                   {selectedCollectionIds.length === 0 ? 'All collections' : `${selectedCollectionIds.length} selected`}
                 </Button>
-                {selectedCollectionIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                    {selectedCollectionIds.map((id) => {
-                      const c = collectionOptions.find((x) => x.id === id);
-                      return (
-                        <Chip
-                          key={id}
-                          label={c?.name ?? id}
-                          size="small"
-                          onDelete={() => handleCollectionToggle(id)}
-                          sx={{
-                            flexShrink: 0,
-                            backgroundColor: colors.primary.light,
-                            color: colors.primary.contrastText,
-                            fontWeight: 500,
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
               </>
             )}
             {hasKeywords && (
@@ -656,24 +1054,6 @@ export default function IndexesPage() {
                   }}>
                   {selectedKeywordIds.length === 0 ? 'All keywords' : `${selectedKeywordIds.length} selected`}
                 </Button>
-                {selectedKeywordIds.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                    {selectedKeywordIds.map((kw) => (
-                      <Chip
-                        key={kw}
-                        label={kw}
-                        size="small"
-                        onDelete={() => handleKeywordToggle(kw)}
-                        sx={{
-                          flexShrink: 0,
-                          backgroundColor: colors.primary.light,
-                          color: colors.primary.contrastText,
-                          fontWeight: 500,
-                        }}
-                      />
-                    ))}
-                  </Box>
-                )}
               </>
             )}
           </Box>

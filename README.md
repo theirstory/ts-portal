@@ -109,7 +109,13 @@ Default embedding model is `sentence-transformers/LaBSE`. NER uses `urchade/glin
 
 ### Getting Interview JSONs from TheirStory
 
-If you have interviews already uploaded to TheirStory, you can easily obtain the JSON files:
+You can obtain interview JSONs from TheirStory in two ways.
+
+Option 1: use the TheirStory import script to generate import-ready JSON files directly from story IDs, projects, or folders.
+
+See [docs/IMPORTING_FROM_THEIRSTORY.md](./docs/IMPORTING_FROM_THEIRSTORY.md) for the full workflow.
+
+Option 2: download the JSON files manually.
 
 1. Navigate to https://lab.theirstory.io/ts-api-core-demo/v028/
 2. Log in with your TheirStory username and password
@@ -127,13 +133,17 @@ Example:
 json/interviews/
 ├── oral-history/
 │   ├── collection.json
-│   └── interview-1.json
+│   ├── interview-1.json
+│   └── argentina/
+│       └── interview-2.json
 └── veterans/
     ├── collection.json
-    └── interview-2.json
+    └── interview-3.json
 ```
 
 Note: If needed, you can skip subfolders: JSON files placed directly under `json/interviews/` are imported into the `default` collection.
+
+Nested folders inside a collection are also supported. The top-level folder still defines the collection, and any deeper subfolders are stored as folder metadata (`folder_id`, `folder_name`, `folder_path`) on the imported interviews and chunks.
 
 ```bash
 # 1. Add your collection subfolders and interview JSON files under:
@@ -195,6 +205,7 @@ nano .env.production
 
 # Optional but recommended: domain + HTTPS + firewall
 # sudo bash scripts/deploy/setup-nginx-ssl.sh YOUR_DOMAIN YOUR_EMAIL 3000
+# For strict public lock-down after HTTPS works, bind frontend to 127.0.0.1 in docker-compose.prod.yml.
 ```
 
 First production build can take **15-20 minutes** on small servers.
@@ -205,13 +216,13 @@ On your local terminal:
 
 ```bash
 # One command: export backup + sync config/json/public + upload backup
-./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" ts-portal_weaviate_data root@YOUR_SERVER_IP /root/ts-portal
+./scripts/deploy/export-weaviate-data.sh "$PWD/weaviate-data.tar.gz" root@YOUR_SERVER_IP
 ```
 
 On the server terminal:
 
 ```bash
-cd /root/ts-portal
+cd /root/ts-portal-ushmm2
 ./scripts/deploy/restore-weaviate-data.sh /tmp/weaviate-data.tar.gz
 ./scripts/deploy/deploy-prod.sh
 ```
@@ -248,7 +259,7 @@ docker compose logs -f nlp-processor  # Follow logs
 docker compose ps                     # Service status
 
 # Data
-docker compose run --rm weaviate-init # Reimport interviews
+docker compose run --rm weaviate-init # Incremental schema + interview import
 docker volume rm portals_weaviate_data # Clear DB
 
 # Verify data

@@ -24,8 +24,11 @@ export const ActiveFiltersDisplay: React.FC = () => {
     nerFilters,
     setNerFilters,
     collections,
+    folders,
     selectedCollectionIds,
+    selectedFolderIds,
     setSelectedCollectionIds,
+    setSelectedFolderIds,
     hasSearched,
     searchType,
     runHybridSearch,
@@ -38,6 +41,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
   const { minValue, maxValue } = useThreshold();
 
   const selectedCollectionMap = new Map(collections.map((collection) => [collection.id, collection.name]));
+  const selectedFolderMap = new Map(folders.map((folder) => [folder.id, folder]));
 
   const refreshCollectionQueries = () => {
     setCurrentPage(1);
@@ -83,10 +87,26 @@ export const ActiveFiltersDisplay: React.FC = () => {
 
   const handleClearAllFilters = () => {
     setNerFilters([]);
+    if (selectedFolderIds.length > 0) {
+      setSelectedFolderIds([]);
+    }
     if (selectedCollectionIds.length > 0) {
       setSelectedCollectionIds([]);
-      refreshCollectionQueries();
     }
+    refreshCollectionQueries();
+  };
+
+  const handleRemoveCollection = (collectionId: string) => {
+    const remainingFolderIds = selectedFolderIds.filter((folderId) => {
+      const folder = selectedFolderMap.get(folderId);
+      return folder?.collectionId !== collectionId;
+    });
+
+    const remainingCollectionIds = selectedCollectionIds.filter((selectedId) => selectedId !== collectionId);
+
+    setSelectedFolderIds(remainingFolderIds);
+    setSelectedCollectionIds(remainingCollectionIds);
+    refreshCollectionQueries();
   };
 
   const updateFilterScrollButtons = useCallback(() => {
@@ -128,16 +148,16 @@ export const ActiveFiltersDisplay: React.FC = () => {
       element.removeEventListener('scroll', onScroll);
       resizeObserver.disconnect();
     };
-  }, [updateFilterScrollButtons, nerFilters.length, selectedCollectionIds.length]);
+  }, [updateFilterScrollButtons, nerFilters.length, selectedCollectionIds.length, selectedFolderIds.length]);
 
   useEffect(() => {
-    const hasActiveFilters = nerFilters.length > 0 || selectedCollectionIds.length > 0;
+    const hasActiveFilters = nerFilters.length > 0 || selectedCollectionIds.length > 0 || selectedFolderIds.length > 0;
     if (isMobile && hasActiveFilters) {
       setTopBarCollapsedAuto(true);
     }
-  }, [isMobile, nerFilters.length, selectedCollectionIds.length, setTopBarCollapsedAuto]);
+  }, [isMobile, nerFilters.length, selectedCollectionIds.length, selectedFolderIds.length, setTopBarCollapsedAuto]);
 
-  if (nerFilters.length === 0 && selectedCollectionIds.length === 0) {
+  if (nerFilters.length === 0 && selectedCollectionIds.length === 0 && selectedFolderIds.length === 0) {
     return null;
   }
 
@@ -187,7 +207,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
               display: 'none',
             },
           }}>
-          {(nerFilters.length + selectedCollectionIds.length) > 0 && (
+          {(nerFilters.length + selectedCollectionIds.length + selectedFolderIds.length) > 0 && (
             <Chip
               label="Clear all"
               size="small"
@@ -230,10 +250,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
               key={collectionId}
               label={selectedCollectionMap.get(collectionId) ?? collectionId}
               size="small"
-              onDelete={() => {
-                setSelectedCollectionIds(selectedCollectionIds.filter((selectedId) => selectedId !== collectionId));
-                refreshCollectionQueries();
-              }}
+              onDelete={() => handleRemoveCollection(collectionId)}
               sx={{
                 flexShrink: 0,
                 backgroundColor: colors.primary.light,
@@ -242,6 +259,29 @@ export const ActiveFiltersDisplay: React.FC = () => {
               }}
             />
           ))}
+
+          {selectedFolderIds.map((folderId) => {
+            const folder = selectedFolderMap.get(folderId);
+            const label = folder?.name ?? folderId;
+
+            return (
+              <Chip
+                key={folderId}
+                label={label}
+                size="small"
+                onDelete={() => {
+                  setSelectedFolderIds(selectedFolderIds.filter((selectedId) => selectedId !== folderId));
+                  refreshCollectionQueries();
+                }}
+                sx={{
+                  flexShrink: 0,
+                  backgroundColor: colors.grey[200],
+                  color: colors.text.primary,
+                  fontWeight: 500,
+                }}
+              />
+            );
+          })}
         </Box>
 
         {canScrollFiltersRight && (

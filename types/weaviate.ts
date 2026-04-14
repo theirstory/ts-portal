@@ -10,6 +10,9 @@ export type Testimonies = {
   collection_id: string;
   collection_name: string;
   collection_description: string;
+  folder_id: string;
+  folder_name: string;
+  folder_path: string;
   recording_date: string;
   transcoded: string;
   interview_duration: number;
@@ -28,6 +31,9 @@ export type Chunks = {
   collection_id: string;
   collection_name: string;
   collection_description: string;
+  folder_id: string;
+  folder_name: string;
+  folder_path: string;
   description: string;
   transcoded: string;
   asset_id: string;

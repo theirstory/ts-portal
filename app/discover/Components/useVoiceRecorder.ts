@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSpeechRecognitionLanguage } from './ChatComposerControls';
 
 type SpeechRecognitionAlternative = {
@@ -68,9 +68,9 @@ export function useVoiceRecorder({ language, inputValue, onConfirmText }: UseVoi
   const [audioLevels, setAudioLevels] = useState<number[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<MicrophonePermissionState>('unknown');
-  const hasSpeechRecognitionSupport = useMemo(() => Boolean(getSpeechRecognitionConstructor()), []);
-  const hasMediaSupport = useMemo(() => hasMediaRecordingSupport(), []);
-  const hasSecureContext = useMemo(() => isSecureRecordingContext(), []);
+  const [hasSpeechRecognitionSupport, setHasSpeechRecognitionSupport] = useState(false);
+  const [hasMediaSupport, setHasMediaSupport] = useState(false);
+  const [hasSecureContext, setHasSecureContext] = useState(false);
   const isSupported = hasSpeechRecognitionSupport && hasMediaSupport && hasSecureContext && permissionState !== 'denied';
   const unavailableReason = !hasSecureContext
     ? 'Voice input requires HTTPS or localhost'
@@ -81,6 +81,12 @@ export function useVoiceRecorder({ language, inputValue, onConfirmText }: UseVoi
         : permissionState === 'denied'
           ? 'Microphone permission is blocked. Enable it in your browser settings.'
           : null;
+
+  useEffect(() => {
+    setHasSpeechRecognitionSupport(Boolean(getSpeechRecognitionConstructor()));
+    setHasMediaSupport(hasMediaRecordingSupport());
+    setHasSecureContext(isSecureRecordingContext());
+  }, []);
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('permissions' in navigator) || !navigator.permissions?.query) return;
