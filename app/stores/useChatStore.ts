@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatMessage, Citation, ChatStreamChunk } from '@/types/chat';
-import { config } from '@/config/organizationConfig';
+import { config, isZoteroEnabled } from '@/config/organizationConfig';
+import { useZoteroStore } from './useZoteroStore';
 
 type SidePanelMode = 'hidden' | 'recording' | 'search' | 'transcript';
 type SearchType = 'bm25' | 'vector' | 'hybrid';
@@ -125,6 +126,7 @@ export const useChatStore = create<ChatStore>()(
                 messages: apiMessages,
                 query: content,
                 responseLanguage: get().selectedLanguage,
+                includeZoteroContext: isZoteroEnabled && useZoteroStore.getState().isAuthenticated,
               }),
             });
 
@@ -213,6 +215,20 @@ export const useChatStore = create<ChatStore>()(
                     set({ streamingStatus: chunk.status }, false, 'sendMessage:status');
                   } else if (chunk.type === 'citations') {
                     citations = chunk.citations;
+                  } else if (chunk.type === 'zotero_context') {
+                    // Store Zotero items on the assistant message
+                    set(
+                      (state) => {
+                        const msgs = [...state.messages];
+                        const last = msgs[msgs.length - 1];
+                        if (last?.role === 'assistant') {
+                          msgs[msgs.length - 1] = { ...last, zoteroItems: chunk.items };
+                        }
+                        return { messages: msgs };
+                      },
+                      false,
+                      'sendMessage:zotero_context',
+                    );
                   } else if (chunk.type === 'text') {
                     pendingAssistantText += chunk.content;
                     scheduleAssistantTextFlush();

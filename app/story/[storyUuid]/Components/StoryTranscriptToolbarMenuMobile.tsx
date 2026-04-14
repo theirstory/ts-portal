@@ -7,6 +7,8 @@ import { StoryTranscriptToolbarFilterMenu } from './StoryTranscriptToolbarFilter
 import { StorySettings } from './StorySettings';
 import { StoryTranscriptToolbarNerToggle } from './StoryTranscriptToolbarNerToggle';
 import SubjectIcon from '@mui/icons-material/Subject';
+import { isZoteroEnabled } from '@/config/organizationConfig';
+import { ZoteroSaveSelectionButton } from '@/components/zotero/ZoteroSaveSelectionButton';
 
 interface StoryTranscriptToolbarMenuMobileProps {
   toggleAllSections: () => void;
@@ -71,6 +73,12 @@ export const StoryTranscriptToolbarMenuMobile = ({ toggleAllSections, onCiteClic
             <IconButton size="small" disableRipple sx={{ ml: 'auto', p: 0.5 }}>
               <FormatQuoteIcon fontSize="small" />
             </IconButton>
+          </MenuItem>
+        )}
+        {isZoteroEnabled && (
+          <MenuItem disableRipple sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ListItemText primary="Save to Zotero" />
+            <ZoteroSaveSelectionButton />
           </MenuItem>
         )}
         <MenuItem disableRipple sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

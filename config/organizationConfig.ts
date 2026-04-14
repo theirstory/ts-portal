@@ -94,6 +94,9 @@ export interface FeaturesConfig {
     model?: string;
     baseUrl?: string;
   };
+  zotero?: {
+    enabled?: boolean;
+  };
 }
 
 export interface AppConfig {
@@ -127,6 +130,7 @@ export const themeColors = config.theme.colors;
 export const nerLabels = config.ner.labels;
 export const nerFallbackColors = config.ner.fallbackColors;
 export const isChatEnabled = config.features?.chat?.enabled ?? false;
+export const isZoteroEnabled = config.features?.zotero?.enabled ?? false;
 
 const normalize = (value: string) => value?.trim()?.toLowerCase();
 

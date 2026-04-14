@@ -11,7 +11,8 @@ import { LogoArchive } from '@/app/assets/svg/LogoArchive';
 import { CarouselTopBar } from '../CarouselTopBar/CarouselTopBar';
 import useLayoutState from '@/app/stores/useLayout';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { config, organizationConfig, isChatEnabled } from '@/config/organizationConfig';
+import { config, organizationConfig, isChatEnabled, isZoteroEnabled } from '@/config/organizationConfig';
+import { ZoteroAuthButton } from '@/components/zotero/ZoteroAuthButton';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { colors } from '@/lib/theme';
 
@@ -190,6 +191,7 @@ export const AppTopBar = () => {
                     DISCOVER
                   </Box>
                 )}
+                {isZoteroEnabled && <ZoteroAuthButton />}
               </Box>
               <Typography
                 variant="caption"

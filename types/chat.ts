@@ -1,8 +1,19 @@
+export type ZoteroContextItem = {
+  key: string;
+  title: string;
+  creators: string;
+  date: string;
+  itemType: string;
+  abstractNote: string;
+  url: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   citations?: Citation[];
+  zoteroItems?: ZoteroContextItem[];
 };
 
 export type Citation = {
@@ -24,10 +35,12 @@ export type ChatRequest = {
   messages: { role: 'user' | 'assistant'; content: string }[];
   query: string;
   responseLanguage?: string;
+  includeZoteroContext?: boolean;
 };
 
 export type ChatStreamChunk =
   | { type: 'status'; status: string }
   | { type: 'citations'; citations: Citation[] }
   | { type: 'text'; content: string }
+  | { type: 'zotero_context'; items: ZoteroContextItem[] }
   | { type: 'done' };
