@@ -1,25 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Paper, CircularProgress } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Button, Paper } from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { isZoteroEnabled } from '@/config/organizationConfig';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
 import { ZoteroIcon } from '@/components/zotero/ZoteroIcon';
 
-type SearchType = 'bm25' | 'vector' | 'hybrid';
-
 type Props = {
   containerRef: React.RefObject<HTMLDivElement | null>;
-  onSearch?: (query: string, type: SearchType) => void;
+  onAskAI?: (query: string) => void;
   onZoteroSave?: (selectedText: string, startTime: number, endTime: number) => void;
 };
-
-const SEARCH_BUTTONS: { type: SearchType; label: string }[] = [
-  { type: 'bm25', label: 'Keyword' },
-  { type: 'vector', label: 'Thematic' },
-  { type: 'hybrid', label: 'Hybrid' },
-];
 
 function getSelectionTimeRange(container: HTMLElement): { startTime: number; endTime: number } | null {
   const selection = window.getSelection();
@@ -46,14 +38,19 @@ function getSelectionTimeRange(container: HTMLElement): { startTime: number; end
   return found ? { startTime: minStart, endTime: maxEnd } : null;
 }
 
-export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZoteroSave }: Props) => {
+export const StoryTranscriptSelectionPopover = ({ containerRef, onAskAI, onZoteroSave }: Props) => {
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [timeRange, setTimeRange] = useState<{ startTime: number; endTime: number } | null>(null);
-  const [activeSearchType, setActiveSearchType] = useState<SearchType | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const isAuthenticated = useZoteroStore((s) => s.isAuthenticated);
   const showZotero = isZoteroEnabled && isAuthenticated;
+
+  const dismiss = () => {
+    setPosition(null);
+    setSelectedText('');
+    setTimeRange(null);
+  };
 
   const handleMouseUp = useCallback(() => {
     setTimeout(() => {
@@ -61,9 +58,7 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZote
       const text = selection?.toString().trim() || '';
 
       if (text.length < 3) {
-        setPosition(null);
-        setSelectedText('');
-        setTimeRange(null);
+        dismiss();
         return;
       }
 
@@ -87,9 +82,7 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZote
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if (popoverRef.current?.contains(e.target as Node)) return;
-    setPosition(null);
-    setSelectedText('');
-    setTimeRange(null);
+    dismiss();
   }, []);
 
   useEffect(() => {
@@ -105,21 +98,17 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZote
     };
   }, [containerRef, handleMouseUp, handleMouseDown]);
 
-  const handleSearch = (searchType: SearchType) => {
-    if (!selectedText || activeSearchType) return;
-    onSearch?.(selectedText, searchType);
-    setPosition(null);
-    setSelectedText('');
-    setTimeRange(null);
+  const handleAskAI = () => {
+    if (!selectedText) return;
+    onAskAI?.(selectedText);
+    dismiss();
     window.getSelection()?.removeAllRanges();
   };
 
   const handleZoteroSave = () => {
     if (!selectedText || !timeRange) return;
     onZoteroSave?.(selectedText, timeRange.startTime, timeRange.endTime);
-    setPosition(null);
-    setSelectedText('');
-    setTimeRange(null);
+    dismiss();
   };
 
   if (!position || !selectedText) return null;
@@ -139,32 +128,27 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZote
         display: 'flex',
         alignItems: 'stretch',
       }}>
-      {SEARCH_BUTTONS.map(({ type, label }) => (
-        <Button
-          key={type}
-          size="small"
-          startIcon={activeSearchType === type ? <CircularProgress size={14} /> : <SearchIcon fontSize="small" />}
-          onClick={() => handleSearch(type)}
-          disabled={activeSearchType !== null}
-          sx={{
-            textTransform: 'none',
-            px: 1.5,
-            py: 0.75,
-            fontSize: '0.8rem',
-            whiteSpace: 'nowrap',
-            borderRadius: 0,
-            borderRight: '1px solid',
-            borderColor: 'divider',
-          }}>
-          {label}
-        </Button>
-      ))}
+      <Button
+        size="small"
+        startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
+        onClick={handleAskAI}
+        sx={{
+          textTransform: 'none',
+          px: 1.5,
+          py: 0.75,
+          fontSize: '0.8rem',
+          whiteSpace: 'nowrap',
+          borderRadius: 0,
+          borderRight: showZotero && timeRange ? '1px solid' : 'none',
+          borderColor: 'divider',
+        }}>
+        Ask AI
+      </Button>
       {showZotero && timeRange && (
         <Button
           size="small"
           startIcon={<ZoteroIcon size={14} />}
           onClick={handleZoteroSave}
-          disabled={activeSearchType !== null}
           sx={{
             textTransform: 'none',
             px: 1.5,

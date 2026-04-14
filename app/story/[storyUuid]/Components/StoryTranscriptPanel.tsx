@@ -14,7 +14,7 @@ import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
 import { StoryTranscriptSelectionPopover } from './StoryTranscriptSelectionPopover';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
-import { SchemaTypes } from '@/types/weaviate';
+import { useChatStore } from '@/app/stores/useChatStore';
 import { organizationConfig } from '@/config/organizationConfig';
 import { ZoteroSaveModal } from '@/components/zotero/ZoteroSaveModal';
 import { Snackbar, Alert } from '@mui/material';
@@ -54,11 +54,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
    * Popover search + Zotero state
    */
   const storyHubPage = useSemanticSearchStore((s) => s.storyHubPage);
-  const setSearchTerm = useSemanticSearchStore((s) => s.setSearchTerm);
-  const setIsSemanticSearching = useSemanticSearchStore((s) => s.setIsSemanticSearching);
-  const runHybridSearchForStoryId = useSemanticSearchStore((s) => s.runHybridSearchForStoryId);
-  const runVectorSearchForStoryId = useSemanticSearchStore((s) => s.runVectorSearchForStoryId);
-  const run25bmSearchForStoryId = useSemanticSearchStore((s) => s.run25bmSearchForStoryId);
+  const sendChatMessage = useChatStore((s) => s.sendMessage);
   const zoteroStore = useZoteroStore();
   const [zoteroModalOpen, setZoteroModalOpen] = useState(false);
   const [zoteroSnackbarOpen, setZoteroSnackbarOpen] = useState(false);
@@ -76,24 +72,11 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
     }
   }, [zoteroStore.lastSaveSuccess, zoteroStore.lastSaveError]);
 
-  const handlePopoverSearch = useCallback(
-    (query: string, type: 'bm25' | 'vector' | 'hybrid') => {
-      setSearchTerm(query);
-      setIsSemanticSearching(true);
-      const searchArgs = [SchemaTypes.Chunks, 1000, undefined, undefined, undefined] as const;
-      switch (type) {
-        case 'hybrid':
-          runHybridSearchForStoryId(...searchArgs);
-          break;
-        case 'vector':
-          runVectorSearchForStoryId(...searchArgs);
-          break;
-        case 'bm25':
-          run25bmSearchForStoryId(...searchArgs);
-          break;
-      }
+  const handleAskAI = useCallback(
+    (query: string) => {
+      sendChatMessage(query);
     },
-    [setSearchTerm, setIsSemanticSearching, runHybridSearchForStoryId, runVectorSearchForStoryId, run25bmSearchForStoryId],
+    [sendChatMessage],
   );
 
   const handlePopoverZoteroSave = useCallback(
@@ -365,7 +348,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
         })}
         <StoryTranscriptSelectionPopover
           containerRef={transcriptContentRef}
-          onSearch={handlePopoverSearch}
+          onAskAI={handleAskAI}
           onZoteroSave={handlePopoverZoteroSave}
         />
       </Box>
