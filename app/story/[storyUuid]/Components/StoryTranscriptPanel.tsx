@@ -13,8 +13,8 @@ import { colors } from '@/lib/theme';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
 import { StoryTranscriptSelectionPopover } from './StoryTranscriptSelectionPopover';
-import { useChatStore } from '@/app/stores/useChatStore';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
+import { SchemaTypes } from '@/types/weaviate';
 import { organizationConfig } from '@/config/organizationConfig';
 import { ZoteroSaveModal } from '@/components/zotero/ZoteroSaveModal';
 import { Snackbar, Alert } from '@mui/material';
@@ -51,11 +51,15 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
   const transcriptContentRef = useRef<HTMLDivElement>(null);
 
   /**
-   * Zotero popover state
+   * Popover search + Zotero state
    */
   const storyHubPage = useSemanticSearchStore((s) => s.storyHubPage);
+  const setSearchTerm = useSemanticSearchStore((s) => s.setSearchTerm);
+  const setIsSemanticSearching = useSemanticSearchStore((s) => s.setIsSemanticSearching);
+  const runHybridSearchForStoryId = useSemanticSearchStore((s) => s.runHybridSearchForStoryId);
+  const runVectorSearchForStoryId = useSemanticSearchStore((s) => s.runVectorSearchForStoryId);
+  const run25bmSearchForStoryId = useSemanticSearchStore((s) => s.run25bmSearchForStoryId);
   const zoteroStore = useZoteroStore();
-  const setSearchResults = useChatStore((s) => s.setSearchResults);
   const [zoteroModalOpen, setZoteroModalOpen] = useState(false);
   const [zoteroSnackbarOpen, setZoteroSnackbarOpen] = useState(false);
   const [pendingZoteroSelection, setPendingZoteroSelection] = useState<{
@@ -71,6 +75,26 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
       setZoteroSnackbarOpen(true);
     }
   }, [zoteroStore.lastSaveSuccess, zoteroStore.lastSaveError]);
+
+  const handlePopoverSearch = useCallback(
+    (query: string, type: 'bm25' | 'vector' | 'hybrid') => {
+      setSearchTerm(query);
+      setIsSemanticSearching(true);
+      const searchArgs = [SchemaTypes.Chunks, 1000, undefined, undefined, undefined] as const;
+      switch (type) {
+        case 'hybrid':
+          runHybridSearchForStoryId(...searchArgs);
+          break;
+        case 'vector':
+          runVectorSearchForStoryId(...searchArgs);
+          break;
+        case 'bm25':
+          run25bmSearchForStoryId(...searchArgs);
+          break;
+      }
+    },
+    [setSearchTerm, setIsSemanticSearching, runHybridSearchForStoryId, runVectorSearchForStoryId, run25bmSearchForStoryId],
+  );
 
   const handlePopoverZoteroSave = useCallback(
     (selectedText: string, startTime: number, endTime: number) => {
@@ -341,7 +365,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
         })}
         <StoryTranscriptSelectionPopover
           containerRef={transcriptContentRef}
-          onSearchResults={(results, query, type) => setSearchResults(results, query, type)}
+          onSearch={handlePopoverSearch}
           onZoteroSave={handlePopoverZoteroSave}
         />
       </Box>

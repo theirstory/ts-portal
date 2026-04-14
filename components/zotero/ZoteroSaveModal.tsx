@@ -96,7 +96,7 @@ export const ZoteroSaveModal = ({
             <>
               {startTime !== undefined && endTime !== undefined && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  {formatTime(startTime)} \u2013 {formatTime(endTime)}
+                  {formatTime(startTime)} &ndash; {formatTime(endTime)}
                   {speaker ? ` \u00b7 ${speaker}` : ''}
                   {sectionTitle ? ` \u00b7 ${sectionTitle}` : ''}
                 </Typography>

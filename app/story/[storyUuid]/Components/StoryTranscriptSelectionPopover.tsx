@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Paper, CircularProgress } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { Citation } from '@/types/chat';
 import { isZoteroEnabled } from '@/config/organizationConfig';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
 import { ZoteroIcon } from '@/components/zotero/ZoteroIcon';
@@ -12,7 +11,7 @@ type SearchType = 'bm25' | 'vector' | 'hybrid';
 
 type Props = {
   containerRef: React.RefObject<HTMLDivElement | null>;
-  onSearchResults?: (results: Citation[], query: string, type: SearchType) => void;
+  onSearch?: (query: string, type: SearchType) => void;
   onZoteroSave?: (selectedText: string, startTime: number, endTime: number) => void;
 };
 
@@ -47,7 +46,7 @@ function getSelectionTimeRange(container: HTMLElement): { startTime: number; end
   return found ? { startTime: minStart, endTime: maxEnd } : null;
 }
 
-export const StoryTranscriptSelectionPopover = ({ containerRef, onSearchResults, onZoteroSave }: Props) => {
+export const StoryTranscriptSelectionPopover = ({ containerRef, onSearch, onZoteroSave }: Props) => {
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [timeRange, setTimeRange] = useState<{ startTime: number; endTime: number } | null>(null);
@@ -106,29 +105,13 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onSearchResults,
     };
   }, [containerRef, handleMouseUp, handleMouseDown]);
 
-  const handleSearch = async (searchType: SearchType) => {
+  const handleSearch = (searchType: SearchType) => {
     if (!selectedText || activeSearchType) return;
-    setActiveSearchType(searchType);
-
-    try {
-      const response = await fetch('/api/discover/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: selectedText, searchType }),
-      });
-
-      if (!response.ok) throw new Error('Search failed');
-      const data = (await response.json()) as { citations: Citation[] };
-      onSearchResults?.(data.citations, selectedText, searchType);
-    } catch (error) {
-      console.error('Selection search error:', error);
-    } finally {
-      setActiveSearchType(null);
-      setPosition(null);
-      setSelectedText('');
-      setTimeRange(null);
-      window.getSelection()?.removeAllRanges();
-    }
+    onSearch?.(selectedText, searchType);
+    setPosition(null);
+    setSelectedText('');
+    setTimeRange(null);
+    window.getSelection()?.removeAllRanges();
   };
 
   const handleZoteroSave = () => {
