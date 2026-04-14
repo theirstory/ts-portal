@@ -1,5 +1,5 @@
 import { getZoteroSession } from '@/lib/zotero/cookies';
-import { createInterviewItem } from '@/lib/zotero/client';
+import { createInterviewItem, createResearchNote } from '@/lib/zotero/client';
 import type { InterviewSaveData } from '@/lib/zotero/types';
 
 export async function POST(request: Request) {
@@ -16,6 +16,12 @@ export async function POST(request: Request) {
     }
 
     const result = await createInterviewItem(session.apiKey, session.userID, data);
+
+    // If a research note was provided, add it as a child note
+    if (data.researchNote?.trim()) {
+      await createResearchNote(session.apiKey, session.userID, result.itemKey, data.researchNote.trim());
+    }
+
     return Response.json(result);
   } catch (error) {
     console.error('Zotero create item error:', error);

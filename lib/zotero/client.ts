@@ -67,7 +67,7 @@ export async function createInterviewItem(
     abstractNote: data.description,
     archive: data.archiveName,
     language: 'en',
-    runningTime: formatDuration(data.duration),
+    extra: data.duration > 0 ? `Running Time: ${formatDuration(data.duration)}` : '',
     tags: [{ tag: 'oral-history' }, { tag: 'theirstory-portal', type: 1 }],
     relations: {},
   };
@@ -106,6 +106,7 @@ export async function createChildNote(
     `<blockquote><p>${escapeHtml(data.selectedText)}</p></blockquote>`,
     data.speaker ? `<p><strong>Speaker:</strong> ${escapeHtml(data.speaker)}</p>` : '',
     data.sectionTitle ? `<p><strong>Section:</strong> ${escapeHtml(data.sectionTitle)}</p>` : '',
+    data.researchNote ? `<hr/><p><strong>Research note:</strong> ${escapeHtml(data.researchNote)}</p>` : '',
     `<p>Source: <a href="${escapeHtml(data.sourceUrl)}">${escapeHtml(data.interviewTitle)}</a></p>`,
   ]
     .filter(Boolean)
@@ -116,6 +117,45 @@ export async function createChildNote(
     parentItem: data.parentItemKey,
     note: noteHtml,
     tags: [{ tag: 'transcript-excerpt' }, { tag: 'theirstory-portal', type: 1 }],
+  };
+
+  const response = await fetch(`${ZOTERO_API_BASE}/users/${userID}/items`, {
+    method: 'POST',
+    headers: zoteroHeaders(apiKey),
+    body: JSON.stringify([note]),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Zotero API error: ${response.status} ${text}`);
+  }
+
+  const result = (await response.json()) as ZoteroWriteResponse;
+
+  const firstSuccess = result.successful?.['0'];
+  if (!firstSuccess) {
+    const firstFailure = result.failed?.['0'];
+    throw new Error(firstFailure?.message || 'Failed to create Zotero note');
+  }
+
+  return { noteKey: firstSuccess.key };
+}
+
+// ── Create standalone research note ─────────────────────────────────────
+
+export async function createResearchNote(
+  apiKey: string,
+  userID: string,
+  parentItemKey: string,
+  researchNote: string,
+): Promise<{ noteKey: string }> {
+  const noteHtml = `<p><strong>Research note:</strong> ${escapeHtml(researchNote)}</p>`;
+
+  const note: ZoteroNotePayload = {
+    itemType: 'note',
+    parentItem: parentItemKey,
+    note: noteHtml,
+    tags: [{ tag: 'research-note' }, { tag: 'theirstory-portal', type: 1 }],
   };
 
   const response = await fetch(`${ZOTERO_API_BASE}/users/${userID}/items`, {

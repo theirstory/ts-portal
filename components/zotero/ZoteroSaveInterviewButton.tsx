@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Button, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Button, Snackbar, Alert } from '@mui/material';
 import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
 import CheckIcon from '@mui/icons-material/Check';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { organizationConfig } from '@/config/organizationConfig';
+import { ZoteroSaveModal } from './ZoteroSaveModal';
 import type { InterviewSaveData } from '@/lib/zotero/types';
 
 export const ZoteroSaveInterviewButton = () => {
@@ -14,6 +15,7 @@ export const ZoteroSaveInterviewButton = () => {
     useZoteroStore();
   const storyHubPage = useSemanticSearchStore((state) => state.storyHubPage);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (lastSaveSuccess || lastSaveError) {
@@ -26,50 +28,56 @@ export const ZoteroSaveInterviewButton = () => {
     setTimeout(clearSaveState, 300);
   };
 
-  const handleSave = useCallback(async () => {
-    if (!storyHubPage?.properties) return;
+  const handleSave = useCallback(
+    async (researchNote: string) => {
+      if (!storyHubPage?.properties) return;
 
-    const p = storyHubPage.properties;
-    const participants = Array.isArray(p.participants) ? (p.participants as string[]) : [];
-    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+      const p = storyHubPage.properties;
+      const participants = Array.isArray(p.participants) ? (p.participants as string[]) : [];
+      const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
 
-    const data: InterviewSaveData = {
-      title: (p.interview_title as string) || 'Untitled Interview',
-      participants,
-      recordingDate: (p.recording_date as string) || '',
-      isAudio: Boolean(p.isAudioFile),
-      url: pageUrl,
-      description: (p.interview_description as string) || '',
-      archiveName: organizationConfig?.displayName || organizationConfig?.name || '',
-      duration: typeof p.interview_duration === 'number' ? (p.interview_duration as number) : 0,
-    };
+      const data: InterviewSaveData = {
+        title: (p.interview_title as string) || 'Untitled Interview',
+        participants,
+        recordingDate: (p.recording_date as string) || '',
+        isAudio: Boolean(p.isAudioFile),
+        url: pageUrl,
+        description: (p.interview_description as string) || '',
+        archiveName: organizationConfig?.displayName || organizationConfig?.name || '',
+        duration: typeof p.interview_duration === 'number' ? (p.interview_duration as number) : 0,
+        researchNote: researchNote || undefined,
+      };
 
-    await saveInterview(data);
-  }, [storyHubPage, saveInterview]);
+      await saveInterview(data);
+      setModalOpen(false);
+    },
+    [storyHubPage, saveInterview],
+  );
 
   if (!isAuthenticated) return null;
 
   const alreadySaved = Boolean(lastSavedItemKey);
+  const interviewTitle = (storyHubPage?.properties?.interview_title as string) || 'Untitled Interview';
 
   return (
     <>
       <Button
-        onClick={handleSave}
+        onClick={() => setModalOpen(true)}
         disabled={isSaving || alreadySaved}
         size="small"
         variant="outlined"
-        startIcon={
-          isSaving ? (
-            <CircularProgress size={14} />
-          ) : alreadySaved ? (
-            <CheckIcon fontSize="small" />
-          ) : (
-            <BookmarkAddIcon fontSize="small" />
-          )
-        }
+        startIcon={alreadySaved ? <CheckIcon fontSize="small" /> : <BookmarkAddIcon fontSize="small" />}
         sx={{ textTransform: 'none', fontSize: '0.8rem' }}>
-        {isSaving ? 'Saving...' : alreadySaved ? 'Saved to Zotero' : 'Save to Zotero'}
+        {alreadySaved ? 'Saved to Zotero' : 'Save to Zotero'}
       </Button>
+      <ZoteroSaveModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        isSaving={isSaving}
+        mode="interview"
+        interviewTitle={interviewTitle}
+      />
       <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={handleSnackbarClose}>
         <Alert
           onClose={handleSnackbarClose}

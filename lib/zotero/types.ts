@@ -89,6 +89,7 @@ export type InterviewSaveData = {
   description: string;
   archiveName: string;
   duration: number;
+  researchNote?: string;
 };
 
 export type NoteSaveData = {
@@ -100,4 +101,5 @@ export type NoteSaveData = {
   sectionTitle: string;
   interviewTitle: string;
   sourceUrl: string;
+  researchNote?: string;
 };
