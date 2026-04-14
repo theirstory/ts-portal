@@ -98,6 +98,14 @@ export const FloatingChatDrawer = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, open, currentView, isStreaming]);
 
+  // Auto-open drawer when streaming starts (e.g. from transcript selection popover)
+  useEffect(() => {
+    if (isStreaming && !open) {
+      setOpen(true);
+      setViewStack(['chat']);
+    }
+  }, [isStreaming, open]);
+
   // Focus input when drawer opens to chat
   useEffect(() => {
     if (open && currentView === 'chat') {
