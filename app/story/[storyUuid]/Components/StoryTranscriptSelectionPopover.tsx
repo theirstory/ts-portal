@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Paper } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { isZoteroEnabled } from '@/config/organizationConfig';
+import { isZoteroEnabled, isChatEnabled } from '@/config/organizationConfig';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
 import { ZoteroIcon } from '@/components/zotero/ZoteroIcon';
 
@@ -111,7 +111,11 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onAskAI, onZoter
     dismiss();
   };
 
+  const showAskAI = isChatEnabled;
+  const showZoteroButton = showZotero && timeRange;
+
   if (!position || !selectedText) return null;
+  if (!showAskAI && !showZoteroButton) return null;
 
   return (
     <Paper
@@ -128,23 +132,25 @@ export const StoryTranscriptSelectionPopover = ({ containerRef, onAskAI, onZoter
         display: 'flex',
         alignItems: 'stretch',
       }}>
-      <Button
-        size="small"
-        startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
-        onClick={handleAskAI}
-        sx={{
-          textTransform: 'none',
-          px: 1.5,
-          py: 0.75,
-          fontSize: '0.8rem',
-          whiteSpace: 'nowrap',
-          borderRadius: 0,
-          borderRight: showZotero && timeRange ? '1px solid' : 'none',
-          borderColor: 'divider',
-        }}>
-        Ask AI
-      </Button>
-      {showZotero && timeRange && (
+      {showAskAI && (
+        <Button
+          size="small"
+          startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
+          onClick={handleAskAI}
+          sx={{
+            textTransform: 'none',
+            px: 1.5,
+            py: 0.75,
+            fontSize: '0.8rem',
+            whiteSpace: 'nowrap',
+            borderRadius: 0,
+            borderRight: showZoteroButton ? '1px solid' : 'none',
+            borderColor: 'divider',
+          }}>
+          Ask AI
+        </Button>
+      )}
+      {showZoteroButton && (
         <Button
           size="small"
           startIcon={<ZoteroIcon size={14} />}
