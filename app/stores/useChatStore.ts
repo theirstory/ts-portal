@@ -28,6 +28,7 @@ type ChatStore = {
   sidePanelDetailView: boolean;
   scrollToCitationIndex: number | null;
   activeAssistantMessageId: string | null;
+  pendingContext: string | null;
 
   sendMessage: (content: string) => Promise<void>;
   stopStreaming: () => void;
@@ -44,6 +45,7 @@ type ChatStore = {
   setSidePanelDetailView: (detail: boolean) => void;
   scrollToCitation: (index: number) => void;
   clearScrollToCitation: () => void;
+  setPendingContext: (context: string | null) => void;
 };
 
 let messageIdCounter = Date.now();
@@ -86,6 +88,7 @@ export const useChatStore = create<ChatStore>()(
         sidePanelDetailView: false,
         scrollToCitationIndex: null,
         activeAssistantMessageId: null,
+        pendingContext: null,
 
         sendMessage: async (content: string) => {
           const controller = new AbortController();
@@ -536,6 +539,9 @@ export const useChatStore = create<ChatStore>()(
         scrollToCitation: (index: number) => set({ scrollToCitationIndex: index }, false, 'scrollToCitation'),
 
         clearScrollToCitation: () => set({ scrollToCitationIndex: null }, false, 'clearScrollToCitation'),
+
+        setPendingContext: (context: string | null) =>
+          set({ pendingContext: context }, false, 'setPendingContext'),
       }),
       {
         name: chatStoreName,

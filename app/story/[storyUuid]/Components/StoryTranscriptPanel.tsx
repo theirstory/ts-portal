@@ -15,6 +15,7 @@ import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContain
 import { StoryTranscriptSelectionPopover } from './StoryTranscriptSelectionPopover';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
 import { useChatStore } from '@/app/stores/useChatStore';
+import { isChatEnabled } from '@/config/organizationConfig';
 import { organizationConfig } from '@/config/organizationConfig';
 import { ZoteroSaveModal } from '@/components/zotero/ZoteroSaveModal';
 import { Snackbar, Alert } from '@mui/material';
@@ -54,7 +55,7 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
    * Popover search + Zotero state
    */
   const storyHubPage = useSemanticSearchStore((s) => s.storyHubPage);
-  const sendChatMessage = useChatStore((s) => s.sendMessage);
+  const setPendingContext = useChatStore((s) => s.setPendingContext);
   const zoteroStore = useZoteroStore();
   const [zoteroModalOpen, setZoteroModalOpen] = useState(false);
   const [zoteroSnackbarOpen, setZoteroSnackbarOpen] = useState(false);
@@ -74,9 +75,10 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
 
   const handleAskAI = useCallback(
     (query: string) => {
-      sendChatMessage(query);
+      // Set the selected text as pending context and let the drawer open for the user to add their prompt
+      setPendingContext(query);
     },
-    [sendChatMessage],
+    [setPendingContext],
   );
 
   const handlePopoverZoteroSave = useCallback(

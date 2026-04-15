@@ -6,10 +6,12 @@ import {
   Drawer,
   IconButton,
   Tooltip,
+  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloseIcon from '@mui/icons-material/Close';
 import { usePathname } from 'next/navigation';
 import { useChatStore } from '@/app/stores/useChatStore';
 import { ChatInteractionProvider } from '@/app/discover/ChatInteractionContext';
@@ -98,13 +100,17 @@ export const FloatingChatDrawer = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, open, currentView, isStreaming]);
 
-  // Auto-open drawer when streaming starts (e.g. from transcript selection popover)
+  const pendingContext = useChatStore((s) => s.pendingContext);
+  const setPendingContext = useChatStore((s) => s.setPendingContext);
+
+  // Auto-open drawer when pending context is set (e.g. from transcript selection "Ask AI")
   useEffect(() => {
-    if (isStreaming && !open) {
+    if (pendingContext && !open) {
       setOpen(true);
       setViewStack(['chat']);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [isStreaming, open]);
+  }, [pendingContext, open]);
 
   // Focus input when drawer opens to chat
   useEffect(() => {
@@ -199,10 +205,19 @@ export const FloatingChatDrawer = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
+    if ((!trimmed && !pendingContext) || isStreaming) return;
+
+    // Build message with optional context prefix
+    let message = trimmed;
+    if (pendingContext) {
+      const contextBlock = `Regarding this transcript excerpt:\n\n> ${pendingContext.replace(/\n/g, '\n> ')}`;
+      message = trimmed ? `${contextBlock}\n\n${trimmed}` : contextBlock;
+      setPendingContext(null);
+    }
+
     setInput('');
     setViewStack(['chat']);
-    sendMessage(trimmed);
+    sendMessage(message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -269,6 +284,7 @@ export const FloatingChatDrawer = () => {
             hasMessages={messages.length > 0}
             onClear={() => {
               clearMessages();
+              setPendingContext(null);
               setViewStack(['chat']);
             }}
             onOpenFullChat={() => window.open('/discover', '_blank')}
@@ -340,6 +356,41 @@ export const FloatingChatDrawer = () => {
                 />
               )}
 
+              {pendingContext && (
+                <Box
+                  sx={{
+                    mx: 1.5,
+                    mb: 0.5,
+                    p: 1.5,
+                    bgcolor: colors.grey[50],
+                    border: `1px solid ${colors.grey[300]}`,
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1,
+                  }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      flex: 1,
+                      fontSize: '0.8rem',
+                      lineHeight: 1.5,
+                      fontStyle: 'italic',
+                      color: colors.text.secondary,
+                      maxHeight: 80,
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                    &ldquo;{pendingContext.length > 300 ? `${pendingContext.slice(0, 300)}...` : pendingContext}&rdquo;
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => setPendingContext(null)}
+                    sx={{ flexShrink: 0, mt: -0.5 }}>
+                    <CloseIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              )}
               <ChatComposer
                 input={input}
                 isStreaming={isStreaming}
@@ -348,7 +399,7 @@ export const FloatingChatDrawer = () => {
                 onSubmit={handleSubmit}
                 onKeyDown={handleKeyDown}
                 onStop={stopStreaming}
-                placeholder={copy.placeholderShort}
+                placeholder={pendingContext ? 'Add a question about this excerpt...' : copy.placeholderShort}
                 variant="compact"
                 selectedLanguage={selectedLanguage}
                 onLanguageChange={setSelectedLanguage}
