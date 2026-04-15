@@ -187,11 +187,14 @@ export async function findItemByUrl(
   userID: string,
   url: string,
 ): Promise<string | null> {
+  // Search by our automatic tag to find items created by the portal,
+  // then match on URL. Zotero's `q` param does full-text search which
+  // doesn't reliably match URL fields.
   const params = new URLSearchParams({
-    q: url,
-    limit: '5',
-    format: 'json',
+    tag: 'theirstory-portal',
     itemType: 'interview',
+    limit: '50',
+    format: 'json',
   });
 
   const response = await fetch(`${ZOTERO_API_BASE}/users/${userID}/items?${params.toString()}`, {
@@ -206,9 +209,23 @@ export async function findItemByUrl(
     data: Record<string, unknown>;
   }>;
 
-  // Match on exact URL
-  const match = items.find((item) => item.data.url === url);
+  // Extract the path from the URL to match regardless of host/port differences
+  // e.g. "http://localhost:3000/story/abc123" -> "/story/abc123"
+  const urlPath = extractPath(url);
+  const match = items.find((item) => {
+    const itemUrl = String(item.data.url || '');
+    return itemUrl === url || extractPath(itemUrl) === urlPath;
+  });
+
   return match?.key ?? null;
+}
+
+function extractPath(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url;
+  }
 }
 
 // ── Search user library ────────────────────────────────────────────────
