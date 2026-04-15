@@ -11,11 +11,18 @@ import { ZoteroSaveModal } from './ZoteroSaveModal';
 import type { InterviewSaveData } from '@/lib/zotero/types';
 
 export const ZoteroSaveInterviewButton = () => {
-  const { isAuthenticated, isSaving, lastSavedItemKey, lastSaveError, lastSaveSuccess, saveInterview, clearSaveState } =
+  const { isAuthenticated, isSaving, lastSavedItemKey, lastSaveError, lastSaveSuccess, saveInterview, checkExistingItem, clearSaveState } =
     useZoteroStore();
   const storyHubPage = useSemanticSearchStore((state) => state.storyHubPage);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Check if this interview already exists in the user's Zotero library
+  useEffect(() => {
+    if (!isAuthenticated || lastSavedItemKey) return;
+    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+    if (pageUrl) checkExistingItem(pageUrl);
+  }, [isAuthenticated, lastSavedItemKey, checkExistingItem]);
 
   useEffect(() => {
     if (lastSaveSuccess || lastSaveError) {

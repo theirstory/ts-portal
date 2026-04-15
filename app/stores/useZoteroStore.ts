@@ -17,6 +17,7 @@ type ZoteroStore = {
   logout: () => Promise<void>;
   saveInterview: (data: InterviewSaveData) => Promise<string | null>;
   saveSelectionNote: (data: NoteSaveData) => Promise<void>;
+  checkExistingItem: (storyUrl: string) => Promise<void>;
   clearSaveState: () => void;
   clearLastSavedItemKey: () => void;
 };
@@ -136,6 +137,23 @@ export const useZoteroStore = create<ZoteroStore>()(
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to save note';
           set({ isSaving: false, lastSaveError: message }, false, 'saveSelectionNote:error');
+        }
+      },
+
+      checkExistingItem: async (storyUrl: string) => {
+        if (!get().isAuthenticated) return;
+        try {
+          const res = await fetch('/api/zotero/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: storyUrl }),
+          });
+          const data = await res.json();
+          if (data.exists && data.itemKey) {
+            set({ lastSavedItemKey: data.itemKey }, false, 'checkExistingItem:found');
+          }
+        } catch {
+          // Non-critical — if it fails, user can still save (will create a new item)
         }
       },
 

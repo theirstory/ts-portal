@@ -180,6 +180,37 @@ export async function createResearchNote(
   return { noteKey: firstSuccess.key };
 }
 
+// ── Find existing item by URL ──────────────────────────────────────────
+
+export async function findItemByUrl(
+  apiKey: string,
+  userID: string,
+  url: string,
+): Promise<string | null> {
+  const params = new URLSearchParams({
+    q: url,
+    limit: '5',
+    format: 'json',
+    itemType: 'interview',
+  });
+
+  const response = await fetch(`${ZOTERO_API_BASE}/users/${userID}/items?${params.toString()}`, {
+    method: 'GET',
+    headers: zoteroHeaders(apiKey),
+  });
+
+  if (!response.ok) return null;
+
+  const items = (await response.json()) as Array<{
+    key: string;
+    data: Record<string, unknown>;
+  }>;
+
+  // Match on exact URL
+  const match = items.find((item) => item.data.url === url);
+  return match?.key ?? null;
+}
+
 // ── Search user library ────────────────────────────────────────────────
 
 export async function searchUserLibrary(
