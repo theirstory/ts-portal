@@ -12,6 +12,7 @@ import { StoryProgressBar } from './StoryProgressBar';
 import { colors } from '@/lib/theme';
 import { SearchType } from '@/types/searchType';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
+import { FloatingDonateButton } from '@/components/donations/FloatingDonateButton';
 
 export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
   const theme = useTheme();
@@ -28,6 +29,7 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
     setSelectedNerLabels,
     clearStore,
   } = useSemanticSearchStore();
+  const storyHubPage = useSemanticSearchStore((s) => s.storyHubPage);
   const { seekAndScroll } = useTranscriptNavigation();
   const searchParams = useSearchParams();
 
@@ -268,6 +270,11 @@ export const StoryContainer = ({ storyUuid }: { storyUuid: string }) => {
           </Box>
         </Box>
       )}
+      <FloatingDonateButton
+        interviewTitle={storyHubPage?.properties?.interview_title as string}
+        storyId={storyHubPage?.uuid}
+        collectionId={storyHubPage?.properties?.collection_id as string}
+      />
       <StoryProgressBar />
     </>
   );

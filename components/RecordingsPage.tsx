@@ -6,6 +6,7 @@ import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { SchemaTypes } from '@/types/weaviate';
 import { PAGINATION_ITEMS_PER_PAGE } from '@/app/constants';
 import CollectionLayout from './CollectionLayout';
+import { FloatingDonateButton } from '@/components/donations/FloatingDonateButton';
 
 const STORIES_RETURN_PROPERTIES = [
   'interview_title',
@@ -59,5 +60,10 @@ export const RecordingsPage = () => {
     setSelectedFolderIds,
   ]);
 
-  return <CollectionLayout />;
+  return (
+    <>
+      <CollectionLayout />
+      <FloatingDonateButton />
+    </>
+  );
 };

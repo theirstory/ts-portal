@@ -94,6 +94,14 @@ export interface FeaturesConfig {
     model?: string;
     baseUrl?: string;
   };
+  donations?: {
+    enabled?: boolean;
+    currency?: string;
+    presetAmounts?: number[];
+    defaultSplit?: Array<{ label: string; accountId: string; percent: number }>;
+    collectionSplits?: Record<string, Array<{ label: string; accountId: string; percent: number }>>;
+    recordingSplits?: Record<string, Array<{ label: string; accountId: string; percent: number }>>;
+  };
 }
 
 export interface AppConfig {
@@ -127,6 +135,7 @@ export const themeColors = config.theme.colors;
 export const nerLabels = config.ner.labels;
 export const nerFallbackColors = config.ner.fallbackColors;
 export const isChatEnabled = config.features?.chat?.enabled ?? false;
+export const isDonationsEnabled = config.features?.donations?.enabled ?? false;
 
 const normalize = (value: string) => value?.trim()?.toLowerCase();
 

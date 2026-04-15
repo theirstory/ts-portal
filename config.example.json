@@ -110,6 +110,18 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-20250514",
       "baseUrl": ""
+    },
+    "donations": {
+      "_comment": "Enable Stripe donations. Splits define how donations are distributed. Override per collection or recording.",
+      "enabled": false,
+      "currency": "usd",
+      "presetAmounts": [5, 10, 25, 50],
+      "defaultSplit": [
+        { "label": "TheirStory", "accountId": "acct_REPLACE_ME", "percent": 10 },
+        { "label": "Organization", "accountId": "acct_REPLACE_ME", "percent": 90 }
+      ],
+      "collectionSplits": {},
+      "recordingSplits": {}
     }
   },
 

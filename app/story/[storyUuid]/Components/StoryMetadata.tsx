@@ -6,6 +6,7 @@ import { StoryMetadataEntity } from './StoryMetadataEntity';
 import { useState } from 'react';
 import { colors } from '@/lib/theme';
 import { formatStoryDate } from '@/app/utils/util';
+import { DonateButton } from '@/components/donations/DonateButton';
 
 interface StoryMetadataProps {
   isMobile?: boolean;
@@ -15,8 +16,9 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
   const { storyHubPage } = useSemanticSearchStore();
   const [tabValue, setTabValue] = useState(0);
 
-  const { interview_title, interview_description, recording_date, publisher, participants } =
+  const { interview_title, interview_description, recording_date, publisher, participants, collection_id } =
     storyHubPage?.properties || {};
+  const storyId = storyHubPage?.uuid;
   const formattedRecordingDate = formatStoryDate(recording_date);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -49,6 +51,12 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
           <Typography variant="caption" color="text.secondary">
             {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
           </Typography>
+
+          <DonateButton
+            interviewTitle={interview_title as string}
+            storyId={storyId}
+            collectionId={collection_id as string}
+          />
 
           <Divider sx={{ my: 1 }} />
 
@@ -138,6 +146,14 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 0.5 }}>
               {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
             </Typography>
+
+            <Box sx={{ mt: 1 }}>
+              <DonateButton
+                interviewTitle={interview_title as string}
+                storyId={storyId}
+                collectionId={collection_id as string}
+              />
+            </Box>
 
             <Divider sx={{ my: 2 }} />
 
