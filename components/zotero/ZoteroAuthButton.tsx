@@ -1,36 +1,61 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { Button, Popover, Box, Typography, IconButton, Tooltip, CircularProgress } from '@mui/material';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import { useZoteroStore } from '@/app/stores/useZoteroStore';
-import { useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/theme';
 import { ZoteroIcon } from './ZoteroIcon';
 
 export const ZoteroAuthButton = () => {
-  const { isAuthenticated, username, isCheckingAuth, checkAuthStatus, startOAuthFlow, logout } = useZoteroStore();
-  const searchParams = useSearchParams();
+  const { isAuthenticated, username, isCheckingAuth, checkAuthStatus, logout } = useZoteroStore();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-  // Check auth on mount and after OAuth redirect
+  // Check auth on mount
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  // Re-check after OAuth callback redirect
-  useEffect(() => {
-    if (searchParams.get('zotero') === 'connected') {
-      checkAuthStatus();
-      // Clean up the URL param
-      const url = new URL(window.location.href);
-      url.searchParams.delete('zotero');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [searchParams, checkAuthStatus]);
+  // Listen for postMessage from the OAuth popup
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
+      if (event.data?.type === 'zotero-auth' && event.data.status === 'connected') {
+        checkAuthStatus();
+      }
+    },
+    [checkAuthStatus],
+  );
 
-  const handleConnect = () => {
-    startOAuthFlow(window.location.pathname + window.location.search);
+  useEffect(() => {
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleMessage]);
+
+  const handleConnect = async () => {
+    try {
+      const res = await fetch('/api/zotero/auth/request-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnTo: window.location.pathname + window.location.search }),
+      });
+      const data = await res.json();
+      if (data.authorizationUrl) {
+        // Open in a centered popup
+        const w = 600;
+        const h = 700;
+        const left = window.screenX + (window.outerWidth - w) / 2;
+        const top = window.screenY + (window.outerHeight - h) / 2;
+        window.open(
+          data.authorizationUrl,
+          'zotero-auth',
+          `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`,
+        );
+      } else {
+        console.error('No authorization URL returned:', data.error);
+      }
+    } catch (error) {
+      console.error('Failed to start Zotero OAuth:', error);
+    }
   };
 
   const handleDisconnect = async () => {
