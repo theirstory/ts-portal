@@ -22,8 +22,9 @@ import { getNerColor, getNerDisplayName } from '@/config/organizationConfig';
 import { StorySettings } from './StorySettings';
 import { StoryCitationModal } from './StoryCitationModal';
 import usePlayerStore from '@/app/stores/usePlayerStore';
-import { organizationConfig } from '@/config/organizationConfig';
+import { organizationConfig, isZoteroEnabled } from '@/config/organizationConfig';
 import { colors } from '@/lib/theme';
+import { ZoteroSaveSelectionButton } from '@/components/zotero/ZoteroSaveSelectionButton';
 import { StoryTranscriptToolbarMenuMobile } from './StoryTranscriptToolbarMenuMobile';
 import { MatchNavigation } from './StoryTranscriptToolbarMatchNavigation';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
@@ -414,6 +415,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
                 <FormatQuoteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+            {isZoteroEnabled && <ZoteroSaveSelectionButton />}
             <StorySettings />
           </Box>
         )}

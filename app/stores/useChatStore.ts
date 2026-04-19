@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatMessage, Citation, ChatStreamChunk } from '@/types/chat';
-import { config } from '@/config/organizationConfig';
+import { config, isZoteroEnabled } from '@/config/organizationConfig';
+import { useZoteroStore } from './useZoteroStore';
 
 type SidePanelMode = 'hidden' | 'recording' | 'search' | 'transcript';
 type SearchType = 'bm25' | 'vector' | 'hybrid';
@@ -27,6 +28,7 @@ type ChatStore = {
   sidePanelDetailView: boolean;
   scrollToCitationIndex: number | null;
   activeAssistantMessageId: string | null;
+  pendingContext: string | null;
 
   sendMessage: (content: string) => Promise<void>;
   stopStreaming: () => void;
@@ -43,6 +45,7 @@ type ChatStore = {
   setSidePanelDetailView: (detail: boolean) => void;
   scrollToCitation: (index: number) => void;
   clearScrollToCitation: () => void;
+  setPendingContext: (context: string | null) => void;
 };
 
 let messageIdCounter = Date.now();
@@ -85,6 +88,7 @@ export const useChatStore = create<ChatStore>()(
         sidePanelDetailView: false,
         scrollToCitationIndex: null,
         activeAssistantMessageId: null,
+        pendingContext: null,
 
         sendMessage: async (content: string) => {
           const controller = new AbortController();
@@ -125,6 +129,7 @@ export const useChatStore = create<ChatStore>()(
                 messages: apiMessages,
                 query: content,
                 responseLanguage: get().selectedLanguage,
+                includeZoteroContext: isZoteroEnabled && useZoteroStore.getState().isAuthenticated,
               }),
             });
 
@@ -213,6 +218,20 @@ export const useChatStore = create<ChatStore>()(
                     set({ streamingStatus: chunk.status }, false, 'sendMessage:status');
                   } else if (chunk.type === 'citations') {
                     citations = chunk.citations;
+                  } else if (chunk.type === 'zotero_context') {
+                    // Store Zotero items on the assistant message
+                    set(
+                      (state) => {
+                        const msgs = [...state.messages];
+                        const last = msgs[msgs.length - 1];
+                        if (last?.role === 'assistant') {
+                          msgs[msgs.length - 1] = { ...last, zoteroItems: chunk.items };
+                        }
+                        return { messages: msgs };
+                      },
+                      false,
+                      'sendMessage:zotero_context',
+                    );
                   } else if (chunk.type === 'text') {
                     pendingAssistantText += chunk.content;
                     scheduleAssistantTextFlush();
@@ -520,6 +539,9 @@ export const useChatStore = create<ChatStore>()(
         scrollToCitation: (index: number) => set({ scrollToCitationIndex: index }, false, 'scrollToCitation'),
 
         clearScrollToCitation: () => set({ scrollToCitationIndex: null }, false, 'clearScrollToCitation'),
+
+        setPendingContext: (context: string | null) =>
+          set({ pendingContext: context }, false, 'setPendingContext'),
       }),
       {
         name: chatStoreName,
