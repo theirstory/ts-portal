@@ -20,6 +20,10 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
     storyHubPage?.properties || {};
   const storyId = storyHubPage?.uuid;
   const formattedRecordingDate = formatStoryDate(recording_date);
+  const storytellerName =
+    participants && Array.isArray(participants) && participants.length > 0
+      ? Array.from(new Set(participants)).join(' & ')
+      : undefined;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -54,6 +58,7 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
 
           <DonateButton
             interviewTitle={interview_title as string}
+            storytellerName={storytellerName}
             storyId={storyId}
             collectionId={collection_id as string}
           />
@@ -150,6 +155,7 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
             <Box sx={{ mt: 1 }}>
               <DonateButton
                 interviewTitle={interview_title as string}
+                storytellerName={storytellerName}
                 storyId={storyId}
                 collectionId={collection_id as string}
               />

@@ -98,6 +98,10 @@ export interface FeaturesConfig {
     enabled?: boolean;
     currency?: string;
     presetAmounts?: number[];
+    popularAmount?: number;
+    presetLabels?: Record<string, string>;
+    recurringEnabled?: boolean;
+    taxDeductible?: boolean;
     defaultSplit?: Array<{ label: string; accountId: string; percent: number }>;
     collectionSplits?: Record<string, Array<{ label: string; accountId: string; percent: number }>>;
     recordingSplits?: Record<string, Array<{ label: string; accountId: string; percent: number }>>;

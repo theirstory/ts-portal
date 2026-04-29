@@ -2,7 +2,7 @@ import { config } from '@/config/organizationConfig';
 import type { SplitRecipient, DonationsConfig } from './types';
 
 function getDonationsConfig(): DonationsConfig {
-  return (config.features as Record<string, unknown>)?.donations as DonationsConfig ?? {};
+  return ((config.features as Record<string, unknown>)?.donations as DonationsConfig) ?? {};
 }
 
 export function isDonationsFeatureEnabled(): boolean {
@@ -14,7 +14,23 @@ export function getCurrency(): string {
 }
 
 export function getPresetAmounts(): number[] {
-  return getDonationsConfig().presetAmounts ?? [5, 10, 25, 50];
+  return getDonationsConfig().presetAmounts ?? [25, 50, 100, 250];
+}
+
+export function getPopularAmount(): number | undefined {
+  return getDonationsConfig().popularAmount;
+}
+
+export function getPresetLabel(amount: number): string | undefined {
+  return getDonationsConfig().presetLabels?.[String(amount)];
+}
+
+export function isRecurringEnabled(): boolean {
+  return getDonationsConfig().recurringEnabled ?? false;
+}
+
+export function isTaxDeductible(): boolean {
+  return getDonationsConfig().taxDeductible ?? false;
 }
 
 /**

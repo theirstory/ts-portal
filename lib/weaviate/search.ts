@@ -641,6 +641,50 @@ export async function searchNerEntitiesAcrossCollection(
 
 const NER_ENTITY_RECORDING_COUNT_KEY = (text: string, label: string) => `${text.toLowerCase()}|${label}`;
 
+// Mirrors Weaviate's default English stopword list. Searching with a query that tokenizes
+// to only stopwords ("they", "the", etc.) raises "only stopwords provided" — guard client-side.
+const WEAVIATE_DEFAULT_STOPWORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'but',
+  'by',
+  'for',
+  'if',
+  'in',
+  'into',
+  'is',
+  'it',
+  'no',
+  'not',
+  'of',
+  'on',
+  'or',
+  'such',
+  'that',
+  'the',
+  'their',
+  'then',
+  'there',
+  'these',
+  'they',
+  'this',
+  'to',
+  'was',
+  'will',
+  'with',
+]);
+
+const isOnlyStopwords = (text: string): boolean => {
+  const tokens = text.toLowerCase().split(/\W+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  return tokens.every((t) => WEAVIATE_DEFAULT_STOPWORDS.has(t));
+};
+
 /** Returns how many distinct recordings (testimonies) contain each entity. */
 export async function getNerEntityRecordingCounts(
   entities: { text: string; label: string }[],
@@ -653,6 +697,10 @@ export async function getNerEntityRecordingCounts(
   const limit = 1000;
 
   for (const { text, label } of entities) {
+    if (isOnlyStopwords(text)) {
+      result[NER_ENTITY_RECORDING_COUNT_KEY(text, label)] = 0;
+      continue;
+    }
     try {
       const filtersArray: FilterValue[] = [
         byProperty('ner_text').containsAny([text.toLowerCase()]),

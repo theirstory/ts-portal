@@ -11,7 +11,17 @@ function getStripe(): Stripe {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutRequest;
-    const { amount, storyId, collectionId, interviewTitle, isEmbed, returnUrl } = body;
+    const {
+      amount,
+      frequency = 'one-time',
+      storyId,
+      collectionId,
+      interviewTitle,
+      storytellerName,
+      inHonorOf,
+      isEmbed,
+      returnUrl,
+    } = body;
 
     if (!amount || amount < 1) {
       return Response.json({ error: 'Amount must be at least $1' }, { status: 400 });
@@ -31,27 +41,48 @@ export async function POST(request: Request) {
     const currency = getCurrency();
     const amountInCents = Math.round(amount * 100);
 
-    // Determine return URLs
     const origin = returnUrl || request.headers.get('origin') || '';
-    const embedParam = isEmbed ? '&embed=true' : '';
-    const successUrl = `${origin}/donate/success?session_id={CHECKOUT_SESSION_ID}${embedParam}`;
-    const cancelUrl = `${origin}/donate/cancel?${storyId ? `storyId=${storyId}` : ''}${embedParam}`;
+    const successParams = new URLSearchParams({ session_id: '{CHECKOUT_SESSION_ID}' });
+    if (storyId) successParams.set('storyId', storyId);
+    if (storytellerName) successParams.set('storytellerName', storytellerName);
+    if (interviewTitle) successParams.set('interviewTitle', interviewTitle);
+    if (isEmbed) successParams.set('embed', 'true');
+    // Stripe replaces {CHECKOUT_SESSION_ID} server-side, so we must not URL-encode the braces.
+    const successUrl = `${origin}/donate/success?${successParams.toString().replace('%7BCHECKOUT_SESSION_ID%7D', '{CHECKOUT_SESSION_ID}')}`;
+    const cancelParams = new URLSearchParams();
+    if (storyId) cancelParams.set('storyId', storyId);
+    if (isEmbed) cancelParams.set('embed', 'true');
+    const cancelUrl = `${origin}/donate/cancel${cancelParams.toString() ? `?${cancelParams.toString()}` : ''}`;
+
+    const productName = storytellerName
+      ? `Donation — ${storytellerName}'s story`
+      : interviewTitle
+        ? `Donation — ${interviewTitle}`
+        : 'Donation';
+    const descriptionPieces = [
+      storytellerName
+        ? `Supporting ${storytellerName}'s story and the archive`
+        : interviewTitle
+          ? `Supporting "${interviewTitle}" and the archive`
+          : 'Supporting the oral history archive',
+      inHonorOf ? `In honor of ${inHonorOf}` : null,
+    ].filter(Boolean);
 
     const stripe = getStripe();
+    const isSubscription = frequency === 'monthly';
 
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
+      mode: isSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
             currency,
             unit_amount: amountInCents,
+            ...(isSubscription ? { recurring: { interval: 'month' as const } } : {}),
             product_data: {
-              name: interviewTitle ? `Donation — ${interviewTitle}` : 'Donation',
-              description: interviewTitle
-                ? `Supporting "${interviewTitle}" and the archive`
-                : 'Supporting the oral history archive',
+              name: productName,
+              description: descriptionPieces.join(' · '),
             },
           },
           quantity: 1,
@@ -61,6 +92,9 @@ export async function POST(request: Request) {
         storyId: storyId || '',
         collectionId: collectionId || '',
         interviewTitle: interviewTitle || '',
+        storytellerName: storytellerName || '',
+        inHonorOf: inHonorOf || '',
+        frequency,
         splitConfig: JSON.stringify(split),
       },
       success_url: successUrl,

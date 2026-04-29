@@ -14,6 +14,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { config, organizationConfig, isChatEnabled } from '@/config/organizationConfig';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { colors } from '@/lib/theme';
+import { DonateButton } from '@/components/donations/DonateButton';
 
 export interface NavLink {
   name: string;
@@ -29,8 +30,6 @@ export const AppTopBar = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get('embed') === 'true';
-
-  if (isEmbed) return null;
   const isStoryPage = pathname.startsWith('/story/');
   const isChatPage = pathname.startsWith('/discover');
   const isIndexPage = pathname.startsWith('/indexes');
@@ -64,6 +63,8 @@ export const AppTopBar = () => {
       loadCollections();
     }
   }, [collections.length, loadCollections]);
+
+  if (isEmbed) return null;
 
   const shouldShowCollectionsLink = collections.length > 1;
 
@@ -132,6 +133,22 @@ export const AppTopBar = () => {
                 {!isHomePage && <Link href="/">RECORDINGS</Link>}
                 {!isIndexPage && <Link href="/indexes">INDEXES</Link>}
                 {shouldShowCollectionsLink && !isCollectionsPage && <Link href="/collections">COLLECTIONS</Link>}
+                <DonateButton
+                  sx={{
+                    color: config.theme.colors.primary.contrastText,
+                    borderColor: config.theme.colors.primary.contrastText,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    opacity: 0.85,
+                    '&:hover': {
+                      opacity: 1,
+                      borderColor: config.theme.colors.primary.contrastText,
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                />
                 {!isFullScreenPage && (
                   <Tooltip title={isTopBarCollapsed ? 'Expand' : 'Collapse'}>
                     <IconButton
@@ -199,6 +216,21 @@ export const AppTopBar = () => {
                     DISCOVER
                   </Box>
                 )}
+                <DonateButton
+                  sx={{
+                    color: config.theme.colors.primary.contrastText,
+                    borderColor: config.theme.colors.primary.contrastText,
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    textShadow: '0 1px 8px rgba(0,0,0,0.45)',
+                    '&:hover': {
+                      borderColor: config.theme.colors.primary.contrastText,
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                />
               </Box>
               <Typography
                 variant="caption"
