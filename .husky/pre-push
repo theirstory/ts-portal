@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "🔍 Running type check before push..."
-yarn type-check
+npx --no-install tsc --noEmit
 
 echo "🔨 Running build check..."
-yarn build 
+npx --no-install next build --webpack
