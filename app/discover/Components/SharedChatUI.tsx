@@ -328,6 +328,7 @@ export function ChatMessagesThread({
                         size="small"
                         disabled={pairIndex === 0}
                         onClick={() => navigateToPair(pairIndex - 1)}
+                        aria-label="Previous message"
                         sx={{
                           p: 0.25,
                           color: 'rgba(255,255,255,0.88)',
@@ -341,6 +342,7 @@ export function ChatMessagesThread({
                         size="small"
                         disabled={pairIndex === pairs.length - 1}
                         onClick={() => navigateToPair(pairIndex + 1)}
+                        aria-label="Next message"
                         sx={{
                           p: 0.25,
                           color: 'rgba(255,255,255,0.88)',
@@ -527,6 +529,7 @@ export function ChatComposer({
                           type={isStreaming ? 'button' : 'submit'}
                           onClick={isStreaming ? onStop : undefined}
                           disabled={isStreaming ? !onStop : !input.trim()}
+                          aria-label={isStreaming ? 'Stop response' : 'Send message'}
                           sx={{
                             bgcolor: isStreaming ? colors.error.main : colors.primary.main,
                             color: colors.primary.contrastText,
@@ -588,6 +591,7 @@ export function ChatComposer({
             type={isStreaming ? 'button' : 'submit'}
             onClick={isStreaming ? onStop : undefined}
             disabled={isStreaming ? !onStop : !input.trim()}
+            aria-label={isStreaming ? 'Stop response' : 'Send message'}
             sx={{
               bgcolor: isStreaming ? colors.error.main : colors.primary.main,
               color: colors.primary.contrastText,

@@ -173,26 +173,27 @@ export const SearchTableRow: React.FC<Props> = ({ result, isMobile = false, inde
     return `/story/${theirstory_id}?${params.toString()}`;
   };
 
-  const handleClick = () => {
-    window.open(buildStoryUrl(), '_blank');
-  };
-
   // Mobile Card Layout
   if (isMobile) {
     return (
-      <Paper
-        id={`mobile-card-${result.uuid}-${index}`}
-        sx={{
-          p: 2,
-          mb: 2,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          '&:hover': {
-            bgcolor: colors.grey[100],
-            boxShadow: 2,
-          },
-        }}
-        onClick={handleClick}>
+      <Link
+        href={buildStoryUrl()}
+        target="_blank"
+        underline="none"
+        sx={{ display: 'block', color: 'inherit' }}
+        aria-label={`Open ${interview_title || 'Untitled Interview'} in a new tab`}>
+        <Paper
+          id={`mobile-card-${result.uuid}-${index}`}
+          sx={{
+            p: 2,
+            mb: 2,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: colors.grey[100],
+              boxShadow: 2,
+            },
+          }}>
         {/* Header with thumbnail and basic info */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
           {/* Thumbnail */}
@@ -333,7 +334,8 @@ export const SearchTableRow: React.FC<Props> = ({ result, isMobile = false, inde
             </Typography>
           </Box>
         )}
-      </Paper>
+        </Paper>
+      </Link>
     );
   }
 

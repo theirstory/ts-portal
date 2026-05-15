@@ -95,6 +95,7 @@ export const ChatMessage = memo(({ message }: Props) => {
               id={`chat-copy-response-${message.id}`}
               size="small"
               onClick={handleCopy}
+              aria-label={copied ? 'Response copied' : 'Copy response to clipboard'}
               sx={{ color: colors.text.secondary }}>
               {copied ? <CheckIcon sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
             </IconButton>

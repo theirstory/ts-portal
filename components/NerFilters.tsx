@@ -119,7 +119,11 @@ export const NerFilters = () => {
 
   return (
     <>
-      <IconButton onClick={handleClick}>
+      <IconButton
+        onClick={handleClick}
+        aria-label="Filter search by NER labels"
+        aria-haspopup="menu"
+        aria-expanded={open}>
         <FilterListIcon fontSize="small" />
       </IconButton>
 
@@ -177,7 +181,7 @@ export const NerFilters = () => {
 
             return (
               <MenuItem key={id} onClick={() => toggleId(id)} dense>
-                <ListItemIcon sx={{ minWidth: 24 }}>
+                <ListItemIcon sx={{ minWidth: 24 }} aria-hidden="true">
                   <span
                     style={{
                       display: 'inline-block',
@@ -196,6 +200,7 @@ export const NerFilters = () => {
                   onClick={(e) => e.stopPropagation()}
                   onChange={() => toggleId(id)}
                   size="small"
+                  inputProps={{ 'aria-label': `${labelText} filter` }}
                 />
               </MenuItem>
             );

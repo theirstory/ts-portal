@@ -50,12 +50,11 @@ export const StoryVideo = () => {
     <Box position="relative" height="100%" borderRadius={2} overflow="hidden">
       {isAudioFile && (
         <Box
+          component="button"
+          type="button"
           id="audio-file-wave-container"
-          width="100%"
-          height="calc(100% - 48px)"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
+          aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+          aria-pressed={isPlaying}
           onClick={() => {
             if (videoRef.current) {
               if (isPlaying) {
@@ -67,7 +66,18 @@ export const StoryVideo = () => {
               }
             }
           }}
-          sx={{ cursor: 'pointer', backgroundColor: colors.common.black }}>
+          sx={{
+            width: '100%',
+            height: 'calc(100% - 48px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            backgroundColor: colors.common.black,
+            border: 0,
+            padding: 0,
+            color: 'inherit',
+          }}>
           <AudioFileWave width="50%" height="auto" style={{ paddingTop: '20px' }} />
         </Box>
       )}

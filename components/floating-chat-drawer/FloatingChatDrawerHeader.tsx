@@ -54,19 +54,31 @@ export function FloatingChatDrawerHeader({
       <Box sx={{ display: 'flex', gap: 0.5 }}>
         {hasMessages && (
           <Tooltip title="Clear conversation">
-            <IconButton size="small" onClick={onClear} sx={{ color: colors.primary.contrastText }}>
+            <IconButton
+              size="small"
+              onClick={onClear}
+              aria-label="Clear conversation"
+              sx={{ color: colors.primary.contrastText }}>
               <DeleteOutlineIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         )}
         {!isMobile && (
           <Tooltip title="Open full chat">
-            <IconButton size="small" onClick={onOpenFullChat} sx={{ color: colors.primary.contrastText }}>
+            <IconButton
+              size="small"
+              onClick={onOpenFullChat}
+              aria-label="Open full chat in new tab"
+              sx={{ color: colors.primary.contrastText }}>
               <OpenInNewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         )}
-        <IconButton size="small" onClick={onClose} sx={{ color: colors.primary.contrastText }}>
+        <IconButton
+          size="small"
+          onClick={onClose}
+          aria-label="Close chat drawer"
+          sx={{ color: colors.primary.contrastText }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>

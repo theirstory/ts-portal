@@ -64,7 +64,7 @@ export const SidePanel = () => {
         <Typography variant="subtitle2" fontWeight={600} noWrap>
           {getHeaderTitle()}
         </Typography>
-        <IconButton size="small" onClick={closeSidePanel}>
+        <IconButton size="small" onClick={closeSidePanel} aria-label="Close side panel">
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>

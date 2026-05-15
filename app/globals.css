@@ -115,16 +115,48 @@ mux-player::part(control-bar) {
   }
 }
 
-/* Mobile-friendly focus states */
-@media (max-width: 768px) {
-  *:focus {
-    outline: 2px solid #1976d2;
-    outline-offset: 2px;
-  }
+/* Global focus indicator (WCAG 2.4.7) — only when keyboard-focused */
+:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
 
-  /* Remove focus on touch for better UX */
-  *:focus:not(:focus-visible) {
-    outline: none;
+/* Suppress default mouse-click focus rings; keep :focus-visible above. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link — visible only when focused (WCAG 2.4.1) */
+.skip-to-main {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateY(-200%);
+  z-index: 2000;
+  padding: 12px 16px;
+  background: #1976d2;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+}
+.skip-to-main:focus,
+.skip-to-main:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Respect user motion preferences (WCAG 2.3.3 best practice) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

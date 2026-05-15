@@ -133,6 +133,23 @@ export const VideoThumbnail = ({
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
+  // Mirror hover-preview behavior on keyboard focus of the closest focusable ancestor
+  // so keyboard users get parity with mouse users (WCAG 2.1.1).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const focusTarget = container.closest('a, button, [tabindex]') as HTMLElement | null;
+    if (!focusTarget) return;
+    const onFocus = () => setIsHovered(true);
+    const onBlur = () => setIsHovered(false);
+    focusTarget.addEventListener('focusin', onFocus);
+    focusTarget.addEventListener('focusout', onBlur);
+    return () => {
+      focusTarget.removeEventListener('focusin', onFocus);
+      focusTarget.removeEventListener('focusout', onBlur);
+    };
+  }, []);
+
   if (story.properties.isAudioFile) {
     return (
       <Box
@@ -188,7 +205,8 @@ export const VideoThumbnail = ({
         <img
           key={`thumbnail-${thumbnailRetryCount}`}
           src={thumbnailUrl}
-          alt="Video thumbnail"
+          alt=""
+          aria-hidden="true"
           onLoad={() => setThumbnailLoaded(true)}
           onError={handleThumbnailError}
           style={{
@@ -223,7 +241,8 @@ export const VideoThumbnail = ({
         <img
           key={`gif-${gifRetryCount}`} // Force re-render en retry
           src={gifUrl}
-          alt="Video preview"
+          alt=""
+          aria-hidden="true"
           style={{
             width: '100%',
             height: '100%',

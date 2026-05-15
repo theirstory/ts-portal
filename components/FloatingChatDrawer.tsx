@@ -105,18 +105,22 @@ export const FloatingChatDrawer = () => {
     }
   }, [open, currentView]);
 
-  // Cmd+K / Ctrl+K
+  // Cmd+K / Ctrl+K to toggle, Escape to close while open
   useEffect(() => {
     if (!shouldShow) return;
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setOpen((prev) => !prev);
+        return;
+      }
+      if (e.key === 'Escape' && open) {
+        setOpen(false);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [shouldShow]);
+  }, [shouldShow, open]);
 
   // Context: citation click → show recording view
   const handleCitationClick = useCallback(
@@ -219,6 +223,10 @@ export const FloatingChatDrawer = () => {
         <Tooltip title={isDesktop ? `Ask AI (${shortcutLabel})` : 'Ask AI'} placement="left">
           <IconButton
             onClick={() => setOpen(true)}
+            aria-label={isDesktop ? `Ask AI (${shortcutLabel})` : 'Ask AI'}
+            aria-expanded={open}
+            aria-controls="floating-chat-drawer"
+            aria-haspopup="dialog"
             sx={{
               position: 'fixed',
               bottom: 24,
@@ -245,6 +253,14 @@ export const FloatingChatDrawer = () => {
         open={open}
         onClose={() => setOpen(false)}
         variant="persistent"
+        id="floating-chat-drawer"
+        slotProps={{
+          paper: {
+            role: 'dialog',
+            'aria-modal': false,
+            'aria-label': 'Ask AI chat panel',
+          },
+        }}
         sx={{
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,

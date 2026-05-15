@@ -88,13 +88,41 @@ export default function CollectionLayout() {
 
           {/* Loading State */}
           {semanticSearchLoading && (
-            <Box display="flex" height="100%" justifyContent="center" alignItems="center" sx={{ py: { xs: 4, md: 8 } }}>
-              <CircularProgress size={'50px'} />
+            <Box
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              display="flex"
+              height="100%"
+              justifyContent="center"
+              alignItems="center"
+              sx={{ py: { xs: 4, md: 8 } }}>
+              <CircularProgress size={'50px'} aria-label="Loading search results" />
             </Box>
           )}
 
           {/* Semantic Search Results */}
-          {!semanticSearchLoading && hasSearched && results.length > 0 && <SearchTable />}
+          {!semanticSearchLoading && hasSearched && results.length > 0 && (
+            <>
+              <Box
+                role="status"
+                aria-live="polite"
+                sx={{
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0,0,0,0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}>
+                {`${results.length} ${results.length === 1 ? 'result' : 'results'} found.`}
+              </Box>
+              <SearchTable />
+            </>
+          )}
 
           {/* Show List/Grid View By Default (No Search) */}
           {!semanticSearchLoading &&
@@ -136,6 +164,8 @@ export default function CollectionLayout() {
           {/* No Results Message */}
           {!semanticSearchLoading && hasSearched && results.length === 0 && (
             <Box
+              role="status"
+              aria-live="polite"
               sx={{
                 display: 'flex',
                 flexDirection: 'column',

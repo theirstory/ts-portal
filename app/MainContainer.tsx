@@ -22,7 +22,19 @@ export const MainContainer = ({ children }: { children: React.ReactNode }) => {
         display: 'flex',
         flexDirection: 'column',
       }}>
-      {children}
+      <Box
+        component="main"
+        id="main-content"
+        tabIndex={-1}
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          outline: 'none',
+        }}>
+        {children}
+      </Box>
     </Box>
   );
 };

@@ -186,6 +186,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
             size="small"
             onClick={() => scrollFilters('left')}
             disabled={!canScrollFiltersLeft}
+            aria-label="Scroll active filters left"
             sx={{ p: 0.25 }}>
             <ChevronLeftIcon fontSize="small" />
           </IconButton>
@@ -289,6 +290,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
             size="small"
             onClick={() => scrollFilters('right')}
             disabled={!canScrollFiltersRight}
+            aria-label="Scroll active filters right"
             sx={{ p: 0.25 }}>
             <ChevronRightIcon fontSize="small" />
           </IconButton>

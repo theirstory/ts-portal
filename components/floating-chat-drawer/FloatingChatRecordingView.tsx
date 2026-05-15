@@ -40,6 +40,7 @@ export function FloatingChatRecordingView({
         <Tooltip title="Open recording in new tab">
           <IconButton
             size="small"
+            aria-label="Open recording in new tab"
             onClick={() => window.open(`/story/${citation.theirstoryId}?start=${citation.startTime}`, '_blank')}>
             <OpenInNewIcon fontSize="small" />
           </IconButton>

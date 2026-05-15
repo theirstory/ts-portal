@@ -37,6 +37,9 @@ export default function RootLayout({
   return (
     <html className=" overflow-x-hidden" lang="en">
       <body suppressHydrationWarning>
+        <a href="#main-content" className="skip-to-main">
+          Skip to main content
+        </a>
         <MaterialUIThemeProvider>
           <Suspense>
             <MainContainer>

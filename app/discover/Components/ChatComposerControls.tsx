@@ -89,6 +89,9 @@ export function LanguageSelector({ selectedLanguage, onLanguageChange, compact =
         <IconButton
           id={compact ? 'chat-language-button-compact' : 'chat-language-button'}
           onClick={handleOpen}
+          aria-label={`Change chat language (current: ${getSpeechRecognitionLanguage(selectedLanguage)})`}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(anchorEl)}
           sx={{
             ...getUtilityButtonStyles(compact),
             position: 'relative',
@@ -188,6 +191,8 @@ export function VoiceInputButton({
           id={compact ? 'chat-voice-button-compact' : 'chat-voice-button'}
           onClick={onClick}
           disabled={disabled}
+          aria-label={isRecording ? 'Stop voice input' : 'Start voice input'}
+          aria-pressed={isRecording}
           sx={{
             ...getUtilityButtonStyles(compact),
             color: isRecording ? colors.primary.main : colors.grey[500],
@@ -268,6 +273,7 @@ export function VoiceRecordingComposer({
       <IconButton
         id={compact ? 'chat-voice-cancel-compact' : 'chat-voice-cancel'}
         onClick={onCancel}
+        aria-label="Cancel voice recording"
         sx={{
           color: colors.grey[600],
           width: cancelButtonSize,
@@ -279,6 +285,7 @@ export function VoiceRecordingComposer({
       <IconButton
         id={compact ? 'chat-voice-confirm-compact' : 'chat-voice-confirm'}
         onClick={onConfirm}
+        aria-label="Send voice recording"
         sx={{
           width: confirmButtonSize,
           height: confirmButtonSize,
