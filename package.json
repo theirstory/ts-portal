@@ -67,5 +67,5 @@
     "tsx": "^4.19.4",
     "typescript": "5.4.5"
   },
-  "packageManager": "yarn@3.1.1+sha512.05e7cd089fdbb9a82ea64d75895b2712026aa50110e046be9a8f4672bafbd05fbd368256831c9e02cd96d8e637917eaeace985482375fb828062bc915883e2c5"
+  "packageManager": "yarn@3.8.7"
 }

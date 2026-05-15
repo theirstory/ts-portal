@@ -16,7 +16,11 @@ export const MainContainer = ({ children }: { children: React.ReactNode }) => {
       id="main-container"
       sx={{
         height: '100dvh',
-        bgcolor: isEmbed ? 'transparent' : isStoryPage || isChatPage ? colors.background.storyPage : colors.background.mainPage,
+        bgcolor: isEmbed
+          ? 'transparent'
+          : isStoryPage || isChatPage
+            ? colors.background.storyPage
+            : colors.background.mainPage,
         overflow: 'auto',
         overscrollBehaviorY: 'contain',
         display: 'flex',

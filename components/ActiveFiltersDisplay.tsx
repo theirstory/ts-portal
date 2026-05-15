@@ -208,7 +208,7 @@ export const ActiveFiltersDisplay: React.FC = () => {
               display: 'none',
             },
           }}>
-          {(nerFilters.length + selectedCollectionIds.length + selectedFolderIds.length) > 0 && (
+          {nerFilters.length + selectedCollectionIds.length + selectedFolderIds.length > 0 && (
             <Chip
               label="Clear all"
               size="small"

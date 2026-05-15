@@ -68,12 +68,13 @@ export const SidePanel = () => {
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
-      <Box sx={{
-        flex: 1,
-        overflow: (sidePanelMode === 'transcript' || sidePanelMode === 'search') ? 'hidden' : 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflow: sidePanelMode === 'transcript' || sidePanelMode === 'search' ? 'hidden' : 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
         {sidePanelMode === 'recording' && <SidePanelRecordingView />}
         {sidePanelMode === 'search' && <SidePanelSearchResults />}
         {sidePanelMode === 'transcript' && <SidePanelTranscriptView />}

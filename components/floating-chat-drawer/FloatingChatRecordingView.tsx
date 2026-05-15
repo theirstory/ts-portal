@@ -16,11 +16,7 @@ type FloatingChatRecordingViewProps = {
   onOpenTranscript: (citation: Citation) => void;
 };
 
-export function FloatingChatRecordingView({
-  citation,
-  onBack,
-  onOpenTranscript,
-}: FloatingChatRecordingViewProps) {
+export function FloatingChatRecordingView({ citation, onBack, onOpenTranscript }: FloatingChatRecordingViewProps) {
   return (
     <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <Box

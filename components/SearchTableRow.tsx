@@ -194,146 +194,146 @@ export const SearchTableRow: React.FC<Props> = ({ result, isMobile = false, inde
               boxShadow: 2,
             },
           }}>
-        {/* Header with thumbnail and basic info */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
-          {/* Thumbnail */}
-          <VideoThumbnail
-            story={result}
-            fontSize={10}
-            audioFileSize={{ width: '40', height: '25' }}
-            startTime={start_time}
-          />
-        </Box>
+          {/* Header with thumbnail and basic info */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
+            {/* Thumbnail */}
+            <VideoThumbnail
+              story={result}
+              fontSize={10}
+              audioFileSize={{ width: '40', height: '25' }}
+              startTime={start_time}
+            />
+          </Box>
 
-        {/* Title and basic info */}
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography
-            variant="subtitle1"
-            fontWeight={700}
-            sx={{
-              fontSize: '1.1rem',
-              lineHeight: 1.3,
-              mb: 1,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              color: colors.text.primary,
-            }}>
-            {interview_title || 'Untitled Interview'}
-          </Typography>
+          {/* Title and basic info */}
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+              sx={{
+                fontSize: '1.1rem',
+                lineHeight: 1.3,
+                mb: 1,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: colors.text.primary,
+              }}>
+              {interview_title || 'Untitled Interview'}
+            </Typography>
 
-          {/* Section */}
-          {section_title && (
-            <Box sx={{ mb: 1 }}>
+            {/* Section */}
+            {section_title && (
+              <Box sx={{ mb: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    mb: 0.25,
+                    fontSize: '0.68rem',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: colors.text.secondary,
+                    fontWeight: 700,
+                  }}>
+                  Section
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: colors.text.primary,
+                    lineHeight: 1.35,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                  {section_title}
+                </Typography>
+              </Box>
+            )}
+
+            {(speaker || (start_time && end_time)) && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1.1, minWidth: 0 }}>
+                {speaker && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.8rem',
+                      color: colors.text.secondary,
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                    {speaker}
+                  </Typography>
+                )}
+                {speaker && start_time && end_time && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      color: colors.text.secondary,
+                      fontSize: '0.75rem',
+                      lineHeight: 1,
+                    }}>
+                    •
+                  </Typography>
+                )}
+                {start_time && end_time && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.8rem',
+                      color: colors.text.secondary,
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}>
+                    {getTimeRange(start_time, end_time)}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Excerpt */}
+          {transcription && (
+            <Box sx={{ pt: 1.1, borderTop: `1px solid ${colors.grey[300]}` }}>
               <Typography
                 variant="caption"
                 sx={{
                   display: 'block',
-                  mb: 0.25,
-                  fontSize: '0.68rem',
+                  mb: 0.55,
+                  fontSize: '0.66rem',
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   color: colors.text.secondary,
                   fontWeight: 700,
                 }}>
-                Section
+                Excerpt
               </Typography>
               <Typography
                 variant="body2"
+                color="text.secondary"
                 sx={{
-                  fontWeight: 600,
-                  color: colors.text.primary,
-                  lineHeight: 1.35,
                   display: '-webkit-box',
-                  WebkitLineClamp: 2,
+                  WebkitLineClamp: 4,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  lineHeight: 1.55,
+                  fontSize: '0.875rem',
+                  color: colors.text.secondary,
                 }}>
-                {section_title}
+                {highlightNERText(transcription, searchTerm)}
               </Typography>
             </Box>
           )}
-
-          {(speaker || (start_time && end_time)) && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1.1, minWidth: 0 }}>
-              {speaker && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontSize: '0.8rem',
-                    color: colors.text.secondary,
-                    fontWeight: 500,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                  {speaker}
-                </Typography>
-              )}
-              {speaker && start_time && end_time && (
-                <Typography
-                  component="span"
-                  sx={{
-                    color: colors.text.secondary,
-                    fontSize: '0.75rem',
-                    lineHeight: 1,
-                  }}>
-                  •
-                </Typography>
-              )}
-              {start_time && end_time && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontSize: '0.8rem',
-                    color: colors.text.secondary,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}>
-                  {getTimeRange(start_time, end_time)}
-                </Typography>
-              )}
-            </Box>
-          )}
-        </Box>
-
-        {/* Excerpt */}
-        {transcription && (
-          <Box sx={{ pt: 1.1, borderTop: `1px solid ${colors.grey[300]}` }}>
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                mb: 0.55,
-                fontSize: '0.66rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: colors.text.secondary,
-                fontWeight: 700,
-              }}>
-              Excerpt
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                lineHeight: 1.55,
-                fontSize: '0.875rem',
-                color: colors.text.secondary,
-              }}>
-              {highlightNERText(transcription, searchTerm)}
-            </Typography>
-          </Box>
-        )}
         </Paper>
       </Link>
     );

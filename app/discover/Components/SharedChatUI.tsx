@@ -461,7 +461,7 @@ export function ChatComposer({
     ? voiceRecorder.errorMessage
     : isStreaming
       ? 'Voice input is unavailable while the chat is responding'
-      : voiceRecorder.unavailableReason ?? undefined;
+      : (voiceRecorder.unavailableReason ?? undefined);
 
   if (voiceRecorder.isRecording) {
     return (
@@ -573,11 +573,7 @@ export function ChatComposer({
       />
       {!fullHeight && (
         <>
-          <LanguageSelector
-            selectedLanguage={selectedLanguage}
-            onLanguageChange={onLanguageChange}
-            compact={compact}
-          />
+          <LanguageSelector selectedLanguage={selectedLanguage} onLanguageChange={onLanguageChange} compact={compact} />
           <VoiceInputButton
             compact={compact}
             disabled={!voiceRecorder.isSupported || isStreaming}

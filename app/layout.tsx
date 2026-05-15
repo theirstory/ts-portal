@@ -9,7 +9,9 @@ import { FloatingChatDrawer } from '@/components/FloatingChatDrawer';
 import { organizationConfig } from '@/config/organizationConfig';
 
 const siteTitle =
-  organizationConfig.displayName && organizationConfig.name && organizationConfig.displayName !== organizationConfig.name
+  organizationConfig.displayName &&
+  organizationConfig.name &&
+  organizationConfig.displayName !== organizationConfig.name
     ? `${organizationConfig.displayName} - ${organizationConfig.name}`
     : organizationConfig.displayName || organizationConfig.name;
 const siteDescription = organizationConfig.description;

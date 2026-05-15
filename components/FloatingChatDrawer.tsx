@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Drawer,
-  IconButton,
-  Tooltip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { Box, Drawer, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { usePathname } from 'next/navigation';
 import { useChatStore } from '@/app/stores/useChatStore';
@@ -269,7 +262,7 @@ export const FloatingChatDrawer = () => {
             border: 'none',
           },
         }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <FloatingChatDrawerHeader
             isDesktop={isDesktop}
             isMobile={isMobile}
@@ -284,7 +277,11 @@ export const FloatingChatDrawer = () => {
           />
 
           {currentView === 'recording' && activeCitation && (
-            <FloatingChatRecordingView citation={activeCitation} onBack={popView} onOpenTranscript={handleOpenTranscript} />
+            <FloatingChatRecordingView
+              citation={activeCitation}
+              onBack={popView}
+              onOpenTranscript={handleOpenTranscript}
+            />
           )}
 
           {currentView === 'transcript' && (
