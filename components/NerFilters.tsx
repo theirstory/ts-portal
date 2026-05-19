@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   IconButton,
   Menu,
@@ -32,8 +32,19 @@ export const NerFilters = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTermLocal] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const open = Boolean(anchorEl);
+
+  // Focus the search input when the menu opens so keyboard users can
+  // type to filter immediately (MenuList focus management would otherwise
+  // route arrow keys to the first MenuItem, skipping the search field).
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
 
   // Source of truth: ids from config
   const nerIds = useMemo(() => {
@@ -158,6 +169,7 @@ export const NerFilters = () => {
             placeholder="Search labels..."
             value={searchTerm}
             onChange={(e) => setSearchTermLocal(e.target.value)}
+            inputRef={searchInputRef}
             inputProps={{ 'aria-label': 'search ner labels' }}
             sx={{ mb: 1 }}
           />

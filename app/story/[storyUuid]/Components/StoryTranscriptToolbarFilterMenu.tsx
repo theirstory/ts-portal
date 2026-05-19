@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   IconButton,
   Menu,
@@ -33,11 +33,19 @@ export const StoryTranscriptToolbarFilterMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTermLocal] = useState('');
   const [selectedLabels, setSelectedLabels] = useState<NerLabel[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   /**
    * variables
    */
   const open = Boolean(anchorEl);
+
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
   const nerData = useMemo(() => storyHubPage?.properties?.ner_data ?? [], [storyHubPage]);
 
   // Deduplicate NER data by label and start_time to get accurate counts
@@ -168,6 +176,7 @@ export const StoryTranscriptToolbarFilterMenu = () => {
             placeholder="Search labels..."
             value={searchTerm}
             onChange={(e) => setSearchTermLocal(e.target.value)}
+            inputRef={searchInputRef}
             inputProps={{ 'aria-label': 'search ner labels' }}
             sx={{ mb: 1 }}
           />

@@ -138,11 +138,25 @@ const themeOptions: ThemeOptions = {
           '&:hover': {
             backgroundColor: colors.grey[100],
           },
+          '&.Mui-focusVisible': {
+            outline: '2px solid #1976d2',
+            outlineOffset: 2,
+          },
         },
         colorPrimary: {
           color: colors.primary.main,
           '&:hover': {
             backgroundColor: colors.primary.light + '20',
+          },
+        },
+      },
+    },
+    MuiButtonBase: {
+      styleOverrides: {
+        root: {
+          '&.Mui-focusVisible': {
+            outline: '2px solid #1976d2',
+            outlineOffset: 2,
           },
         },
       },
@@ -220,6 +234,10 @@ const themeOptions: ThemeOptions = {
         root: {
           '&.Mui-selected': {
             color: colors.primary.main,
+          },
+          '&.Mui-focusVisible': {
+            outline: '2px solid #1976d2',
+            outlineOffset: -2,
           },
         },
       },
