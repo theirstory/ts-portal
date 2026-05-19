@@ -37,11 +37,15 @@ export const SearchTypeSelector = ({ compact = false }: { compact?: boolean }) =
           fontSize: compact ? 13 : 14,
           padding: 0,
           backgroundColor: 'transparent',
+          borderRadius: 1,
           '& .MuiSelect-select': {
             px: compact ? 1 : 1.5,
             py: compact ? 0.75 : 1,
           },
           '& fieldset': { border: 'none' },
+          '&.Mui-focused': {
+            boxShadow: '0 0 0 2px #1976d2',
+          },
         }}
         inputProps={{ 'aria-label': 'Search Type' }}>
         <MenuItem value={SearchType.bm25}>Keyword Search</MenuItem>

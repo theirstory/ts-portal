@@ -135,7 +135,10 @@ export const NerFilters = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         sx={{ mt: 1, minWidth: 280 }}
-        slotProps={{ list: { dense: true, disablePadding: true } }}>
+        slotProps={{
+          list: { dense: true, disablePadding: true },
+          paper: { sx: { maxHeight: 480, minWidth: 280 } },
+        }}>
         <Box
           sx={{
             padding: '16px',
@@ -173,39 +176,37 @@ export const NerFilters = () => {
           </MenuItem>
         )}
 
-        <Box sx={{ maxHeight: 250, overflowY: 'auto' }}>
-          {filteredNerIds.map((id) => {
-            const isChecked = selectedIds.includes(id);
-            const dotColor = getNerColor(id);
-            const labelText = getNerDisplayName(id);
+        {filteredNerIds.map((id) => {
+          const isChecked = selectedIds.includes(id);
+          const dotColor = getNerColor(id);
+          const labelText = getNerDisplayName(id);
 
-            return (
-              <MenuItem key={id} onClick={() => toggleId(id)} dense>
-                <ListItemIcon sx={{ minWidth: 24 }} aria-hidden="true">
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: dotColor,
-                    }}
-                  />
-                </ListItemIcon>
-
-                <ListItemText primary={labelText} />
-
-                <Checkbox
-                  checked={isChecked}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => toggleId(id)}
-                  size="small"
-                  inputProps={{ 'aria-label': `${labelText} filter` }}
+          return (
+            <MenuItem key={id} onClick={() => toggleId(id)} dense>
+              <ListItemIcon sx={{ minWidth: 24 }} aria-hidden="true">
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: dotColor,
+                  }}
                 />
-              </MenuItem>
-            );
-          })}
-        </Box>
+              </ListItemIcon>
+
+              <ListItemText primary={labelText} />
+
+              <Checkbox
+                checked={isChecked}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => toggleId(id)}
+                size="small"
+                inputProps={{ 'aria-label': `${labelText} filter` }}
+              />
+            </MenuItem>
+          );
+        })}
 
         <Box
           sx={{
@@ -213,6 +214,10 @@ export const NerFilters = () => {
             borderTop: `1px solid ${colors.grey[200]}`,
             display: 'flex',
             gap: 1,
+            position: 'sticky',
+            bottom: 0,
+            bgcolor: colors.common.white,
+            zIndex: 1,
           }}>
           <Button variant="outlined" size="small" onClick={handleClearFilter} sx={{ flex: 1, textTransform: 'none' }}>
             Clear

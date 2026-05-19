@@ -48,7 +48,18 @@ export default function RootLayout({
               <EmbedGuard>
                 <AppTopBar />
               </EmbedGuard>
-              {children}
+              <main
+                id="main-content"
+                tabIndex={-1}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 0,
+                  outline: 'none',
+                }}>
+                {children}
+              </main>
               <FloatingChatDrawer />
             </MainContainer>
           </Suspense>
