@@ -79,7 +79,9 @@ export function IndexesHorizontalView({
               flexDirection: 'column',
               bgcolor: 'transparent',
             }}>
-            <Link href={`/story/${story.uuid}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+            <Link
+              href={`/story/${story.uuid}`}
+              style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'block', borderRadius: 4 }}>
               <Box
                 id="indexes-story-header"
                 minHeight={92}
@@ -127,7 +129,7 @@ export function IndexesHorizontalView({
                 <Link
                   key={`${story.uuid}-${ch.section_id}`}
                   href={`/story/${story.uuid}?start=${ch.start_time}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}>
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block', borderRadius: 4 }}>
                   <Box
                     id="indexes-chapter-card"
                     sx={{

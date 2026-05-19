@@ -96,11 +96,13 @@ export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
 
   return (
     <Box display="flex" alignItems="center" gap={0}>
-      <IconButton onClick={handlePrevious} size="small" sx={{ p: 0.25 }}>
+      <IconButton onClick={handlePrevious} size="small" aria-label="Previous match" sx={{ p: 0.25 }}>
         <NavigateBeforeIcon fontSize="small" />
       </IconButton>
 
       <Box
+        role="status"
+        aria-live="polite"
         fontSize="12px"
         color="gray"
         minWidth={compact ? 'auto' : '40px'}
@@ -110,7 +112,7 @@ export const MatchNavigation = ({ compact = false }: { compact?: boolean }) => {
         {index + 1}/{total}
       </Box>
 
-      <IconButton onClick={handleNext} size="small" sx={{ p: 0.25 }}>
+      <IconButton onClick={handleNext} size="small" aria-label="Next match" sx={{ p: 0.25 }}>
         <NavigateNextIcon fontSize="small" />
       </IconButton>
     </Box>

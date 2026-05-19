@@ -33,10 +33,14 @@ export const SearchTypeSelector = () => {
           padding: 0,
           textAlign: isMobile ? 'right' : 'left',
           backgroundColor: 'transparent',
+          borderRadius: 1,
           '& .MuiSelect-select': {
             padding: '6px 8px',
           },
           '& fieldset': { border: 'none' },
+          '&.Mui-focused': {
+            boxShadow: '0 0 0 2px #1976d2',
+          },
         }}
         inputProps={{ 'aria-label': 'Search Type' }}>
         <MenuItem value={SearchType.traditional}>{isMobile ? 'Keyword' : 'Keyword Search'}</MenuItem>

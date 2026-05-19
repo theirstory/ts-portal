@@ -132,7 +132,10 @@ export default function IndexesPage() {
         ? data.stories.filter((story) => selectedCollectionIds.includes(story.collection_id))
         : data.stories;
 
-    const seen = new Map<string, { id: string; name: string; path: string; collectionId: string; collectionName: string }>();
+    const seen = new Map<
+      string,
+      { id: string; name: string; path: string; collectionId: string; collectionName: string }
+    >();
     for (const story of storiesForFolders) {
       if (!story.folder_id || seen.has(story.folder_id)) continue;
       seen.set(story.folder_id, {
@@ -231,9 +234,7 @@ export default function IndexesPage() {
     setSelectedFolderIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
     if (folder?.collectionId) {
-      setSelectedCollectionIds((prev) =>
-        prev.includes(folder.collectionId) ? prev : [...prev, folder.collectionId],
-      );
+      setSelectedCollectionIds((prev) => (prev.includes(folder.collectionId) ? prev : [...prev, folder.collectionId]));
     }
   };
 
@@ -849,12 +850,13 @@ export default function IndexesPage() {
                       size="small"
                       onClick={() => scrollDesktopFilters('left')}
                       disabled={!canScrollDesktopFiltersLeft}
+                      aria-label="Scroll active filters left"
                       sx={{
                         p: 0.25,
                         flexShrink: 0,
                         visibility: canScrollDesktopFiltersLeft ? 'visible' : 'hidden',
                       }}>
-                        <ChevronLeftIcon fontSize="small" />
+                      <ChevronLeftIcon fontSize="small" />
                     </IconButton>
                     <Box
                       ref={desktopFiltersScrollRef}
@@ -942,12 +944,13 @@ export default function IndexesPage() {
                       size="small"
                       onClick={() => scrollDesktopFilters('right')}
                       disabled={!canScrollDesktopFiltersRight}
+                      aria-label="Scroll active filters right"
                       sx={{
                         p: 0.25,
                         flexShrink: 0,
                         visibility: canScrollDesktopFiltersRight ? 'visible' : 'hidden',
                       }}>
-                        <ChevronRightIcon fontSize="small" />
+                      <ChevronRightIcon fontSize="small" />
                     </IconButton>
                   </Box>
                 )}

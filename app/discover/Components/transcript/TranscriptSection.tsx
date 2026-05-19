@@ -42,6 +42,10 @@ function TranscriptWord({
   };
 
   return (
+     
+    // Per-word click jumps the player to that word. Keyboard users use the chapter
+    // navigation and section toggles instead — making every word a tab stop would
+    // produce thousands of stops per transcript.
     <span
       onClick={onClick}
       data-start={word.start}

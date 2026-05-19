@@ -93,7 +93,12 @@ export const StoryTranscriptToolbarNerToggle = () => {
   return (
     <>
       <Tooltip title="Toggle NER Labels">
-        <IconButton onClick={handleClick} disableRipple>
+        <IconButton
+          onClick={handleClick}
+          disableRipple
+          aria-label="Toggle NER labels"
+          aria-haspopup="menu"
+          aria-expanded={open}>
           <Badge
             badgeContent={selected_ner_labels.length}
             color="primary"
@@ -119,12 +124,9 @@ export const StoryTranscriptToolbarNerToggle = () => {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         sx={{ mt: 1, minWidth: 250 }}
         slotProps={{
-          list: {
-            dense: true,
-            disablePadding: true,
-          },
+          list: { dense: true, disablePadding: true },
+          paper: { sx: { maxHeight: 480, minWidth: 250 } },
         }}>
-        {/* Search and Select All Header */}
         <Box
           sx={{
             p: 1,
@@ -153,42 +155,44 @@ export const StoryTranscriptToolbarNerToggle = () => {
                 </Typography>
               }
             />
-            <Checkbox checked={allVisibleSelected} size="small" />
+            <Checkbox
+              checked={allVisibleSelected}
+              size="small"
+              inputProps={{ 'aria-label': 'Select all visible labels' }}
+            />
           </MenuItem>
         )}
 
-        {/* List of Filtered Items */}
-        <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
-          {filteredEntries.map(([key, values]) => {
-            const isChecked = selected_ner_labels.includes(key as NerLabel);
-            const count = values.length;
-            const labelText = getNerDisplayName(key);
-            const dotColor = getNerColor(key);
+        {filteredEntries.map(([key, values]) => {
+          const isChecked = selected_ner_labels.includes(key as NerLabel);
+          const count = values.length;
+          const labelText = getNerDisplayName(key);
+          const dotColor = getNerColor(key);
 
-            return (
-              <MenuItem key={key} onClick={() => setUpdateSelectedNerLabel(key as NerLabel)} dense>
-                <ListItemIcon sx={{ minWidth: 24 }}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: dotColor,
-                    }}
-                  />
-                </ListItemIcon>
-                <ListItemText primary={`${labelText} (${count})`} />
-                <Checkbox
-                  checked={isChecked}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => setUpdateSelectedNerLabel(key as NerLabel)}
-                  size="small"
+          return (
+            <MenuItem key={key} onClick={() => setUpdateSelectedNerLabel(key as NerLabel)} dense>
+              <ListItemIcon sx={{ minWidth: 24 }} aria-hidden="true">
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: dotColor,
+                  }}
                 />
-              </MenuItem>
-            );
-          })}
-        </Box>
+              </ListItemIcon>
+              <ListItemText primary={`${labelText} (${count})`} />
+              <Checkbox
+                checked={isChecked}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => setUpdateSelectedNerLabel(key as NerLabel)}
+                size="small"
+                inputProps={{ 'aria-label': `${labelText} toggle` }}
+              />
+            </MenuItem>
+          );
+        })}
       </Menu>
     </>
   );

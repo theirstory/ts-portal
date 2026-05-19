@@ -13,10 +13,23 @@ type Props = {
 
 export const StoryTranscriptNERGroupWords = memo(({ nerWords, label, isActive, onClick }: Props) => {
   const color = getNerColor(label);
+  const text = nerWords.map((w) => w.text).join(' ');
+  const labelText = label.replace(/_/g, ' ').toUpperCase();
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
 
   return (
     <span
+      role="button"
+      tabIndex={0}
+      aria-label={`${labelText}: ${text}`}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -28,14 +41,14 @@ export const StoryTranscriptNERGroupWords = memo(({ nerWords, label, isActive, o
         userSelect: 'none',
         border: isActive ? `2px solid ${color}` : 'none',
       }}>
-      <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{nerWords.map((w) => w.text).join(' ')}</span>
+      <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{text}</span>
       <span
         style={{
           marginLeft: '6px',
           fontSize: '10px',
           color: colors.text.primary,
         }}>
-        {label.replace(/_/g, ' ').toUpperCase()}
+        {labelText}
       </span>
     </span>
   );

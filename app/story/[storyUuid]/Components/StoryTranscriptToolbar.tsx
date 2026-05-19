@@ -352,7 +352,11 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
             borderRadius: '8px',
             gap: 0.5,
           }}>
-          <IconButton size="small" onClick={runSemanticSearch} disabled={!inputValue.trim()}>
+          <IconButton
+            size="small"
+            onClick={runSemanticSearch}
+            disabled={!inputValue.trim()}
+            aria-label="Search transcript">
             <SearchIcon fontSize="small" />
           </IconButton>
 
@@ -374,7 +378,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
           {isSemanticSearching || isTraditionalSearching ? (
             <CircularProgress size={16} />
           ) : inputValue ? (
-            <IconButton size="small" onClick={handleClear}>
+            <IconButton size="small" onClick={handleClear} aria-label="Clear transcript search">
               <ClearIcon sx={{ fontSize: 18 }} />
             </IconButton>
           ) : null}
@@ -405,12 +409,12 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
               <StoryTranscriptToolbarNerToggle />
             </Tooltip>
             <Tooltip title="Toggle Section View">
-              <IconButton onClick={toggleAllSections}>
+              <IconButton onClick={toggleAllSections} aria-label="Toggle section view">
                 <SubjectIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Cite (Chicago style)">
-              <IconButton onClick={() => setCitationModalOpen(true)}>
+              <IconButton onClick={() => setCitationModalOpen(true)} aria-label="Show Chicago-style citation">
                 <FormatQuoteIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -430,6 +434,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
               size="small"
               onClick={() => scrollFilters('left')}
               disabled={!canScrollFiltersLeft}
+              aria-label="Scroll filters left"
               sx={{ p: 0.25 }}>
               <ChevronLeftIcon fontSize="small" />
             </IconButton>
@@ -488,6 +493,7 @@ export const StoryTranscriptToolbar = ({ isMobile = false }: StoryTranscriptTool
               size="small"
               onClick={() => scrollFilters('right')}
               disabled={!canScrollFiltersRight}
+              aria-label="Scroll filters right"
               sx={{ p: 0.25 }}>
               <ChevronRightIcon fontSize="small" />
             </IconButton>

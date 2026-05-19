@@ -27,7 +27,7 @@ export const StorySettings = () => {
   return (
     <>
       <Tooltip title="Search Settings">
-        <IconButton onClick={handleClick}>
+        <IconButton onClick={handleClick} aria-label="Search settings" aria-haspopup="dialog" aria-expanded={open}>
           <SettingsIcon fontSize="small" />
         </IconButton>
       </Tooltip>

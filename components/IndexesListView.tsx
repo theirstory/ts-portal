@@ -70,7 +70,9 @@ export function IndexesListView({
           <React.Fragment key={story.uuid}>
             {index > 0 && <Divider sx={{ my: 2 }} />}
             <Box sx={{ bgcolor: 'transparent' }}>
-              <Link href={`/story/${story.uuid}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link
+                href={`/story/${story.uuid}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block', borderRadius: 4 }}>
                 <Box
                   sx={{
                     display: 'flex',
@@ -116,7 +118,7 @@ export function IndexesListView({
                     <Link
                       key={`${story.uuid}-${ch.section_id}`}
                       href={`/story/${story.uuid}?start=${ch.start_time}`}
-                      style={{ textDecoration: 'none', color: 'inherit' }}>
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block', borderRadius: 4 }}>
                       <Box
                         sx={{
                           py: 1.5,

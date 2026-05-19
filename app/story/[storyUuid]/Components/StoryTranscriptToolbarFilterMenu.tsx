@@ -127,7 +127,14 @@ export const StoryTranscriptToolbarFilterMenu = () => {
    */
   return (
     <>
-      <IconButton onClick={handleClick} size="small" disableRipple sx={{ ml: 'auto', p: 0.5 }}>
+      <IconButton
+        onClick={handleClick}
+        size="small"
+        disableRipple
+        aria-label="Filter transcript by NER labels"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        sx={{ ml: 'auto', p: 0.5 }}>
         <FilterListIcon />
       </IconButton>
       <Menu
@@ -139,90 +146,90 @@ export const StoryTranscriptToolbarFilterMenu = () => {
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         sx={{ mt: 1, minWidth: 280 }}
         slotProps={{
-          list: {
-            dense: true,
-            disablePadding: true,
-          },
+          list: { dense: true, disablePadding: true },
+          paper: { sx: { maxHeight: 480, minWidth: 280 } },
         }}>
-        {/* Header */}
-        <Box>
-          <Box
-            sx={{
-              paddingX: '16px',
-              paddingY: '8px',
-              borderBottom: `1px solid ${colors.grey[200]}`,
-              position: 'sticky',
-              top: 0,
-              bgcolor: colors.common.white,
-              zIndex: 1,
-            }}>
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-              Filter search by NER Labels
-            </Typography>
-            <TextField
-              size="small"
-              fullWidth
-              placeholder="Search labels..."
-              value={searchTerm}
-              onChange={(e) => setSearchTermLocal(e.target.value)}
-              inputProps={{ 'aria-label': 'search ner labels' }}
-              sx={{ mb: 1 }}
+        <Box
+          sx={{
+            paddingX: '16px',
+            paddingY: '8px',
+            borderBottom: `1px solid ${colors.grey[200]}`,
+            position: 'sticky',
+            top: 0,
+            bgcolor: colors.common.white,
+            zIndex: 1,
+          }}>
+          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+            Filter search by NER Labels
+          </Typography>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="Search labels..."
+            value={searchTerm}
+            onChange={(e) => setSearchTermLocal(e.target.value)}
+            inputProps={{ 'aria-label': 'search ner labels' }}
+            sx={{ mb: 1 }}
+          />
+        </Box>
+        {!searchTerm && (
+          <MenuItem dense onClick={handleToggleSelectAll} sx={{ paddingX: '16px' }}>
+            <ListItemText
+              primary={
+                <Typography fontSize="14px" fontWeight="bold">
+                  {allVisibleSelected ? 'Unselect All' : 'Select All'}
+                </Typography>
+              }
             />
-          </Box>
-          {!searchTerm && (
-            <MenuItem dense onClick={handleToggleSelectAll} sx={{ paddingX: '16px' }}>
-              <ListItemText
-                primary={
-                  <Typography fontSize="14px" fontWeight="bold">
-                    {allVisibleSelected ? 'Unselect All' : 'Select All'}
-                  </Typography>
-                }
-              />
-              <Checkbox checked={allVisibleSelected} size="small" />
-            </MenuItem>
-          )}
-        </Box>
+            <Checkbox
+              checked={allVisibleSelected}
+              size="small"
+              inputProps={{ 'aria-label': 'Select all visible labels' }}
+            />
+          </MenuItem>
+        )}
 
-        {/* List of Filtered Items */}
-        <Box sx={{ maxHeight: 250, overflowY: 'auto' }}>
-          {filteredEntries.map(([key, values]) => {
-            const isChecked = selectedLabels.includes(key as NerLabel);
-            const count = values.length;
-            const dotColor = getNerColor(key);
-            const labelText = getNerDisplayName(key);
+        {filteredEntries.map(([key, values]) => {
+          const isChecked = selectedLabels.includes(key as NerLabel);
+          const count = values.length;
+          const dotColor = getNerColor(key);
+          const labelText = getNerDisplayName(key);
 
-            return (
-              <MenuItem key={key} onClick={() => handleToggleLabel(key as NerLabel)} dense>
-                <ListItemIcon sx={{ minWidth: 24 }}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: dotColor,
-                    }}
-                  />
-                </ListItemIcon>
-                <ListItemText primary={`${labelText} (${count})`} />
-                <Checkbox
-                  checked={isChecked}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => handleToggleLabel(key as NerLabel)}
-                  size="small"
+          return (
+            <MenuItem key={key} onClick={() => handleToggleLabel(key as NerLabel)} dense>
+              <ListItemIcon sx={{ minWidth: 24 }} aria-hidden="true">
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: dotColor,
+                  }}
                 />
-              </MenuItem>
-            );
-          })}
-        </Box>
+              </ListItemIcon>
+              <ListItemText primary={`${labelText} (${count})`} />
+              <Checkbox
+                checked={isChecked}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => handleToggleLabel(key as NerLabel)}
+                size="small"
+                inputProps={{ 'aria-label': `${labelText} filter` }}
+              />
+            </MenuItem>
+          );
+        })}
 
-        {/* Action Buttons */}
         <Box
           sx={{
             p: 1,
             borderTop: `1px solid ${colors.grey[200]}`,
             display: 'flex',
             gap: 1,
+            position: 'sticky',
+            bottom: 0,
+            bgcolor: colors.common.white,
+            zIndex: 1,
           }}>
           <Button variant="outlined" size="small" onClick={handleClearFilter} sx={{ flex: 1, textTransform: 'none' }}>
             Clear

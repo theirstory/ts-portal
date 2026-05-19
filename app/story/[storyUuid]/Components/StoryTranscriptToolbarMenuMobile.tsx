@@ -13,13 +13,21 @@ interface StoryTranscriptToolbarMenuMobileProps {
   onCiteClick?: () => void;
 }
 
-export const StoryTranscriptToolbarMenuMobile = ({ toggleAllSections, onCiteClick }: StoryTranscriptToolbarMenuMobileProps) => {
+export const StoryTranscriptToolbarMenuMobile = ({
+  toggleAllSections,
+  onCiteClick,
+}: StoryTranscriptToolbarMenuMobileProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
   return (
     <>
-      <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
+      <IconButton
+        size="small"
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        aria-label="Transcript actions menu"
+        aria-haspopup="menu"
+        aria-expanded={open}>
         <MoreVertIcon fontSize="small" />
       </IconButton>
 
