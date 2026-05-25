@@ -110,6 +110,10 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-20250514",
       "baseUrl": ""
+    },
+    "zotero": {
+      "_comment": "Enable Zotero integration for saving interviews and transcript excerpts to users' Zotero libraries. Requires ZOTERO_CLIENT_KEY, ZOTERO_CLIENT_SECRET, and ZOTERO_COOKIE_SECRET env vars.",
+      "enabled": false
     }
   },
 

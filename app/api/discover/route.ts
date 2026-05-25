@@ -1,8 +1,11 @@
 import { retrieveChunksForChat, retrieveAllChapterSynopses } from '@/lib/weaviate/chatRetrieval';
-import { ChatRequest, Citation } from '@/types/chat';
+import { ChatRequest, Citation, ZoteroContextItem } from '@/types/chat';
 import { createChatProvider, getChatProviderSettings } from '@/lib/ai/chatProvider';
+import { getZoteroSession } from '@/lib/zotero/cookies';
+import { searchUserLibrary } from '@/lib/zotero/client';
+import { isZoteroEnabled } from '@/config/organizationConfig';
 
-function buildSystemPrompt(allCitations: Citation[], responseLanguage: string): string {
+function buildSystemPrompt(allCitations: Citation[], responseLanguage: string, zoteroItems?: ZoteroContextItem[]): string {
   const sourcesBlock = allCitations
     .map((c) => {
       if (c.isChapterSynopsis) {
@@ -12,10 +15,16 @@ function buildSystemPrompt(allCitations: Citation[], responseLanguage: string): 
     })
     .join('\n\n');
 
+  const zoteroBlock = zoteroItems?.length
+    ? `\n\nZOTERO LIBRARY CONTEXT:
+The researcher has the following related items in their personal Zotero library. Reference these when relevant to connect the archive sources with their existing research. Cite Zotero items as [Z1], [Z2], etc.
+${zoteroItems.map((item, i) => `[Z${i + 1}] "${item.title}" by ${item.creators || 'Unknown'}. ${item.date || 'n.d.'}${item.abstractNote ? `. ${item.abstractNote.slice(0, 200)}` : ''}`).join('\n')}`
+    : '';
+
   return `You are a helpful research assistant for an oral history interview archive. Answer questions based on the sources provided below. Sources include both chapter summaries (high-level overviews) and transcript excerpts (detailed quotes).
 
 RULES:
-- Use numbered citations like [1], [2] to reference sources. 
+- Use numbered citations like [1], [2] to reference sources.
 - Always cite your sources next to the relevant information. Not at the end of the answer, but right after the fact. For example: "The interviewee discusses their childhood in New York [3]."
 - Only use bracketed citations for source numbers.
 - The only valid citation format is a single number in brackets, like [3].
@@ -30,10 +39,10 @@ RULES:
 - When multiple speakers discuss the same topic, note the different perspectives.
 - For broad questions about themes or patterns, draw on the chapter summaries to cover the full breadth of the collection.
 - Write the entire answer in ${responseLanguage}.
-- If you include a direct quote from a source, keep the quote in its original language, but keep your explanation in ${responseLanguage}.
+- If you include a direct quote from a source, keep the quote in its original language, but keep your explanation in ${responseLanguage}.${zoteroItems?.length ? '\n- When referencing items from the researcher\'s Zotero library, cite them as [Z1], [Z2], etc. and note that these come from their personal library.' : ''}
 
 SOURCES:
-${sourcesBlock}`;
+${sourcesBlock}${zoteroBlock}`;
 }
 
 function formatTime(seconds: number): string {
@@ -53,7 +62,7 @@ function getUserFacingDiscoverError(err: unknown): string {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as ChatRequest;
-    const { messages, query, responseLanguage } = body;
+    const { messages, query, responseLanguage, includeZoteroContext } = body;
 
     if (!query?.trim()) {
       return Response.json({ error: 'Query is required' }, { status: 400 });
@@ -70,6 +79,32 @@ export async function POST(request: Request) {
             retrieveChunksForChat(query, 20),
             retrieveAllChapterSynopses(),
           ]);
+
+          // Phase 1b: Search Zotero library if authenticated
+          let zoteroItems: ZoteroContextItem[] = [];
+          if (isZoteroEnabled && includeZoteroContext) {
+            try {
+              const zoteroSession = await getZoteroSession();
+              if (zoteroSession) {
+                controller.enqueue(encoder.encode(sseEvent({ type: 'status', status: 'Searching your Zotero library...' })));
+                const results = await searchUserLibrary(zoteroSession.apiKey, zoteroSession.userID, query, 8);
+                zoteroItems = results.map((r) => ({
+                  key: r.key,
+                  title: r.title,
+                  creators: r.creators,
+                  date: r.date,
+                  itemType: r.itemType,
+                  abstractNote: r.abstractNote,
+                  url: r.url,
+                }));
+                if (zoteroItems.length > 0) {
+                  controller.enqueue(encoder.encode(sseEvent({ type: 'zotero_context', items: zoteroItems })));
+                }
+              }
+            } catch (zoteroError) {
+              console.error('Zotero search in chat failed (non-fatal):', zoteroError);
+            }
+          }
 
           // Phase 2: Preparing sources
           controller.enqueue(encoder.encode(sseEvent({ type: 'status', status: 'Gathering sources...' })));
@@ -93,7 +128,7 @@ export async function POST(request: Request) {
             index: i + 1,
           }));
 
-          const systemPrompt = buildSystemPrompt(allCitations, responseLanguage?.trim() || 'English');
+          const systemPrompt = buildSystemPrompt(allCitations, responseLanguage?.trim() || 'English', zoteroItems);
           const citations = allCitations;
 
           // Send citations to client

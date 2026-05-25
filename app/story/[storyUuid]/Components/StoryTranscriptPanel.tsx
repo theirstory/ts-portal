@@ -5,13 +5,21 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { StoryTranscriptToolbar } from './StoryTranscriptToolbar';
 import { useSemanticSearchStore } from '@/app/stores/useSemanticSearchStore';
 import { StoryTranscriptParagraph } from './StoryTranscriptParagraph';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranscriptPanelStore } from '@/app/stores/useTranscriptPanelStore';
 import usePlayerStore from '@/app/stores/usePlayerStore';
 import { useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/theme';
 import { useTranscriptNavigation } from '@/app/hooks/useTranscriptNavigation';
 import { scrollElementIntoContainer } from '@/app/utils/scrollElementIntoContainer';
+import { StoryTranscriptSelectionPopover } from './StoryTranscriptSelectionPopover';
+import { useZoteroStore } from '@/app/stores/useZoteroStore';
+import { useChatStore } from '@/app/stores/useChatStore';
+import { isChatEnabled } from '@/config/organizationConfig';
+import { organizationConfig } from '@/config/organizationConfig';
+import { ZoteroSaveModal } from '@/components/zotero/ZoteroSaveModal';
+import { Snackbar, Alert } from '@mui/material';
+import type { InterviewSaveData, NoteSaveData } from '@/lib/zotero/types';
 
 interface StoryTranscriptPanelProps {
   isMobile?: boolean;
@@ -41,6 +49,107 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
    * refs
    */
   const isProgrammaticScrollRef = useRef(false);
+  const transcriptContentRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Popover search + Zotero state
+   */
+  const storyHubPage = useSemanticSearchStore((s) => s.storyHubPage);
+  const setPendingContext = useChatStore((s) => s.setPendingContext);
+  const zoteroStore = useZoteroStore();
+  const [zoteroModalOpen, setZoteroModalOpen] = useState(false);
+  const [zoteroSnackbarOpen, setZoteroSnackbarOpen] = useState(false);
+  const [pendingZoteroSelection, setPendingZoteroSelection] = useState<{
+    selectedText: string;
+    startTime: number;
+    endTime: number;
+    speaker: string;
+    sectionTitle: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (zoteroStore.lastSaveSuccess || zoteroStore.lastSaveError) {
+      setZoteroSnackbarOpen(true);
+    }
+  }, [zoteroStore.lastSaveSuccess, zoteroStore.lastSaveError]);
+
+  const handleAskAI = useCallback(
+    (query: string) => {
+      // Set the selected text as pending context and let the drawer open for the user to add their prompt
+      setPendingContext(query);
+    },
+    [setPendingContext],
+  );
+
+  const handlePopoverZoteroSave = useCallback(
+    (selectedText: string, startTime: number, endTime: number) => {
+      // Find speaker and section for this time range
+      let speaker = '';
+      let sectionTitle = '';
+      if (transcript?.sections) {
+        for (const section of transcript.sections) {
+          if (startTime >= section.start && startTime < section.end) {
+            sectionTitle = section.title || '';
+            const para = section.paragraphs?.find(
+              (p: { start: number; end: number }) => startTime >= p.start && startTime < p.end,
+            );
+            if (para) speaker = para.speaker || '';
+            break;
+          }
+        }
+      }
+      setPendingZoteroSelection({ selectedText, startTime, endTime, speaker, sectionTitle });
+      setZoteroModalOpen(true);
+    },
+    [transcript],
+  );
+
+  const handleZoteroModalSave = useCallback(
+    async (researchNote: string) => {
+      if (!pendingZoteroSelection || !storyHubPage?.properties) return;
+
+      const p = storyHubPage.properties;
+      const interviewTitle = (p.interview_title as string) || 'Untitled Interview';
+      const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+      const pageUrl = baseUrl
+        ? `${baseUrl}?start=${Math.floor(pendingZoteroSelection.startTime)}&end=${Math.floor(pendingZoteroSelection.endTime)}`
+        : '';
+
+      let parentKey = zoteroStore.lastSavedItemKey;
+      if (!parentKey) {
+        const participants = Array.isArray(p.participants) ? (p.participants as string[]) : [];
+        const interviewData: InterviewSaveData = {
+          title: interviewTitle,
+          participants,
+          recordingDate: (p.recording_date as string) || '',
+          isAudio: Boolean(p.isAudioFile),
+          url: baseUrl,
+          description: (p.interview_description as string) || '',
+          archiveName: organizationConfig?.displayName || organizationConfig?.name || '',
+          duration: typeof p.interview_duration === 'number' ? (p.interview_duration as number) : 0,
+        };
+        parentKey = await zoteroStore.saveInterview(interviewData);
+        if (!parentKey) return;
+      }
+
+      const noteData: NoteSaveData = {
+        parentItemKey: parentKey,
+        selectedText: pendingZoteroSelection.selectedText,
+        startTime: pendingZoteroSelection.startTime,
+        endTime: pendingZoteroSelection.endTime,
+        speaker: pendingZoteroSelection.speaker,
+        sectionTitle: pendingZoteroSelection.sectionTitle,
+        interviewTitle,
+        sourceUrl: pageUrl,
+        researchNote: researchNote || undefined,
+      };
+
+      await zoteroStore.saveSelectionNote(noteData);
+      setZoteroModalOpen(false);
+      setPendingZoteroSelection(null);
+    },
+    [pendingZoteroSelection, storyHubPage, zoteroStore],
+  );
 
   /**
    * state
@@ -189,12 +298,14 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
       position="relative">
       <StoryTranscriptToolbar isMobile={isMobile} />
       <Box
+        ref={transcriptContentRef}
         id="transcript-panel-content"
         sx={{
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
           pr: isMobile ? 0 : 1,
+          position: 'relative',
         }}>
         {sections.map((section) => {
           const sectionParagraphs = section.paragraphs || [];
@@ -237,7 +348,48 @@ export const StoryTranscriptPanel = ({ isMobile = false }: StoryTranscriptPanelP
             </Accordion>
           );
         })}
+        <StoryTranscriptSelectionPopover
+          containerRef={transcriptContentRef}
+          onAskAI={handleAskAI}
+          onZoteroSave={handlePopoverZoteroSave}
+        />
       </Box>
+      {pendingZoteroSelection && (
+        <ZoteroSaveModal
+          open={zoteroModalOpen}
+          onClose={() => {
+            setZoteroModalOpen(false);
+            setPendingZoteroSelection(null);
+          }}
+          onSave={handleZoteroModalSave}
+          isSaving={zoteroStore.isSaving}
+          mode="selection"
+          interviewTitle={(storyHubPage?.properties?.interview_title as string) || 'Untitled Interview'}
+          selectedText={pendingZoteroSelection.selectedText}
+          startTime={pendingZoteroSelection.startTime}
+          endTime={pendingZoteroSelection.endTime}
+          speaker={pendingZoteroSelection.speaker}
+          sectionTitle={pendingZoteroSelection.sectionTitle}
+        />
+      )}
+      <Snackbar
+        open={zoteroSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => {
+          setZoteroSnackbarOpen(false);
+          setTimeout(zoteroStore.clearSaveState, 300);
+        }}>
+        <Alert
+          onClose={() => {
+            setZoteroSnackbarOpen(false);
+            setTimeout(zoteroStore.clearSaveState, 300);
+          }}
+          severity={zoteroStore.lastSaveError ? 'error' : 'success'}
+          variant="filled"
+          sx={{ width: '100%' }}>
+          {zoteroStore.lastSaveError || zoteroStore.lastSaveSuccess}
+        </Alert>
+      </Snackbar>
       {isCurrentTimeOutOfView && (
         <Box
           sx={{

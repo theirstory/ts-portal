@@ -6,6 +6,8 @@ import { StoryMetadataEntity } from './StoryMetadataEntity';
 import { useState } from 'react';
 import { colors } from '@/lib/theme';
 import { formatStoryDate } from '@/app/utils/util';
+import { isZoteroEnabled } from '@/config/organizationConfig';
+import { ZoteroSaveInterviewButton } from '@/components/zotero/ZoteroSaveInterviewButton';
 
 interface StoryMetadataProps {
   isMobile?: boolean;
@@ -49,6 +51,8 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
           <Typography variant="caption" color="text.secondary">
             {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
           </Typography>
+
+          {isZoteroEnabled && <ZoteroSaveInterviewButton />}
 
           <Divider sx={{ my: 1 }} />
 
@@ -138,6 +142,12 @@ export const StoryMetadata = ({ isMobile = false }: StoryMetadataProps) => {
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 0.5 }}>
               {formattedRecordingDate ?? 'No date available'} - {publisher ?? ''}
             </Typography>
+
+            {isZoteroEnabled && (
+              <Box sx={{ mt: 1 }}>
+                <ZoteroSaveInterviewButton />
+              </Box>
+            )}
 
             <Divider sx={{ my: 2 }} />
 
