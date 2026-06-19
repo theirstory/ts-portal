@@ -39,6 +39,14 @@ WEAVIATE_SECURE=true
 DEBUG=true
 ```
 
+### Site Security
+
+```bash
+# If set, enables site-wide password protection.
+# If empty or missing, the site is public.
+SITE_PASSWORD=your_secure_password
+```
+
 ## NLP Processor Environment (`nlp-processor/.env.local`)
 
 Located in `nlp-processor/` directory.

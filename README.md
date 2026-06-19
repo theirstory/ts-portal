@@ -14,6 +14,7 @@ A complete system to archive, process, and search video/audio interviews with th
 - **Multi-format**: Video and audio with synchronized transcriptions
 - **Live Highlighting**: Entities highlighted with clickable timestamps
 - **Multi-organization**: Centralized configuration system
+- **Site Gatekeeper**: Optional site-wide password protection
 - **Docker**: Local deployment or cloud Weaviate connection
 
 ## 🛠️ Tech Stack
@@ -91,6 +92,19 @@ Environment variables:
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 AI_API_KEY=
+```
+
+## 🔒 Site Access Protection
+
+The portal includes an optional site-wide password protection layer ("Gatekeeper").
+
+- **Opt-in**: Only active if `SITE_PASSWORD` is set in your environment.
+- **Persistent**: Uses a secure, 30-day cookie to remember authenticated users.
+- **Branded**: Automatically uses your organization's name and theme on the entry page.
+
+To enable, add the password to your `.env` or production environment:
+```bash
+SITE_PASSWORD=your_secure_password
 ```
 
 **First time:** may take several minutes while GLiNER / embedding / spaCy models download. Subsequent runs are much faster thanks to cache reuse.
