@@ -10,7 +10,7 @@
   "collection": {
     "id": "oida-opioid-archive",
     "name": "Opioid Industry Documents Archive (sample)",
-    "description": "A 12-recording, 24-exhibit sample drawn from the Opioid Industry Documents Archive: videotaped Mallinckrodt executive depositions, sales voicemails, litigation documents, trial-exhibit charts, and photographs. Assembled as a multimodal search test base."
+    "description": "A 9-recording, 24-exhibit sample drawn from the Opioid Industry Documents Archive: videotaped Mallinckrodt executive depositions, sales voicemails, litigation documents, trial-exhibit charts, and photographs. Assembled as a multimodal search test base."
   },
   "recordings": {
     "_note": "One part per deposition. Media is downloaded locally, uploaded to TheirStory by hand, transcribed there, then re-imported via `yarn theirstory:import-stories`. Audio ids are chosen from items that actually have a playable Internet Archive derivative \u2014 many IDL audio records list one that the Archive cannot serve.",
@@ -26,16 +26,6 @@
         "role": "President and CEO, Specialty Generics"
       },
       {
-        "id": "jfxh0257",
-        "part": "0001",
-        "role": "EVP and Chief Commercial Officer"
-      },
-      {
-        "id": "hzhh0257",
-        "part": "0001",
-        "role": "Senior Director of Marketing"
-      },
-      {
         "id": "qzhh0257",
         "part": "0001",
         "role": "Senior Manager, Controlled Substances Compliance"
@@ -49,11 +39,6 @@
         "id": "nzhh0257",
         "part": "0001",
         "role": "VP of Global Security"
-      },
-      {
-        "id": "xzhh0257",
-        "part": "0001",
-        "role": "Pharmaceuticals Sales Specialist"
       },
       {
         "id": "hfxh0257",
@@ -74,7 +59,27 @@
         "id": "gxdc0283",
         "note": "Insys voicemail (m4a)"
       }
-    ]
+    ],
+    "excluded": {
+      "_note": "Downloaded and available on the Internet Archive, but deliberately not uploaded to TheirStory, so they have no transcript and do not appear in the portal. Listed here so the exclusion is a recorded decision rather than an unexplained gap, and so oida:fetch does not download them again. Move an entry back into `video` to include it.",
+      "video": [
+        {
+          "id": "jfxh0257",
+          "part": "0001",
+          "role": "EVP and Chief Commercial Officer"
+        },
+        {
+          "id": "hzhh0257",
+          "part": "0001",
+          "role": "Senior Director of Marketing"
+        },
+        {
+          "id": "xzhh0257",
+          "part": "0001",
+          "role": "Pharmaceuticals Sales Specialist"
+        }
+      ]
+    }
   },
   "exhibits": {
     "_note": "Ingested page-by-page: each page becomes one searchable object carrying a rendered page image plus its OCR text.",

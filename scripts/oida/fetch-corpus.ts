@@ -589,9 +589,17 @@ async function readExistingCorpus(): Promise<Corpus | null> {
   }
 }
 
-/** Keeps previously-resolved entries that this run did not touch. */
-function mergeById<T extends { id: string }>(previous: T[], current: T[]): T[] {
-  const merged = new Map(previous.map((entry) => [entry.id, entry]));
+/**
+ * Keep previously-resolved entries that this run skipped, but only for ids the manifest
+ * still declares.
+ *
+ * A plain union was wrong: it meant removing an entry from the manifest never removed it
+ * from the corpus, so an excluded recording silently persisted through every later run.
+ * The manifest is the authority on what belongs; the previous file only supplies detail for
+ * work this invocation chose not to redo.
+ */
+function mergeById<T extends { id: string }>(previous: T[], current: T[], declaredIds: Set<string>): T[] {
+  const merged = new Map(previous.filter((entry) => declaredIds.has(entry.id)).map((entry) => [entry.id, entry]));
   for (const entry of current) merged.set(entry.id, entry);
   return [...merged.values()];
 }
@@ -687,22 +695,31 @@ async function main(): Promise<void> {
   // depends on, even though their files are still on disk.
   const previous = await readExistingCorpus();
 
+  const declaredRecordingIds = new Set([
+    ...manifest.recordings.video.map((entry) => entry.id),
+    ...manifest.recordings.audio.map((entry) => entry.id),
+  ]);
+
   const corpus: Corpus = {
     generatedAt: new Date().toISOString(),
     collection: manifest.collection,
-    recordings: mergeById(previous?.recordings ?? [], recordings),
+    recordings: mergeById(previous?.recordings ?? [], recordings, declaredRecordingIds),
     exhibits: options.skipExhibits ? (previous?.exhibits ?? exhibits) : exhibits,
   };
 
   await writeFile(CORPUS_PATH, `${JSON.stringify(corpus, null, 2)}\n`, 'utf-8');
 
-  const pageTotal = exhibits.reduce((sum, exhibit) => sum + exhibit.pages.length, 0);
-  const imageOnly = exhibits.flatMap((e) => e.pages).filter((page) => page.ocrChars <= 40).length;
-  const mediaBytes = recordings.reduce((sum, record) => sum + record.mediaBytes, 0);
+  // Report what the file now contains, not just what this run fetched — otherwise a
+  // --skip-exhibits run claims zero exhibits while writing all of them.
+  const pageTotal = corpus.exhibits.reduce((sum, exhibit) => sum + exhibit.pages.length, 0);
+  const imageOnly = corpus.exhibits.flatMap((e) => e.pages).filter((page) => page.ocrChars <= 40).length;
+  const mediaBytes = corpus.recordings.reduce((sum, record) => sum + record.mediaBytes, 0);
+  const dropped = (previous?.recordings.length ?? 0) - corpus.recordings.length;
 
   console.log(`\n[oida] corpus written to ${path.relative(ROOT, CORPUS_PATH)}`);
-  console.log(`   recordings: ${recordings.length} (${(mediaBytes / 1e9).toFixed(2)} GB on disk)`);
-  console.log(`   exhibits:   ${exhibits.length} items / ${pageTotal} pages`);
+  console.log(`   recordings: ${corpus.recordings.length} (${(mediaBytes / 1e9).toFixed(2)} GB on disk)`);
+  if (dropped > 0) console.log(`   dropped ${dropped} recording(s) no longer listed in the manifest`);
+  console.log(`   exhibits:   ${corpus.exhibits.length} items / ${pageTotal} pages`);
   console.log(`   pages with little or no OCR text (image-only retrieval): ${imageOnly}`);
 }
 
