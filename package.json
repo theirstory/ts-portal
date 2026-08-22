@@ -21,7 +21,14 @@
     "type-check": "tsc --noEmit",
     "lint": "next lint",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "oida:fetch": "tsx scripts/oida/fetch-corpus.ts",
+    "oida:ingest": "tsx scripts/oida/ingest-exhibits.ts",
+    "oida:upload-manifest": "tsx scripts/oida/theirstory-upload-manifest.ts",
+    "oida:enrich-exports": "tsx scripts/oida/enrich-theirstory-exports.ts",
+    "oida:extract-boxes": "tsx scripts/oida/extract-word-boxes.ts",
+    "oida:thumbnails": "tsx scripts/oida/render-thumbnails.ts",
+    "oida:update-metadata": "tsx scripts/oida/update-exhibit-metadata.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

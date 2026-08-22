@@ -1,0 +1,744 @@
+{
+  "class": "Exhibits",
+  "description": "Non-transcript primary sources: one object per document page or image, carrying a rendered page image and its OCR text, embedded into the same vector space as transcript chunks so a single query can retrieve across recordings, documents, and images.",
+  "invertedIndexConfig": {
+    "bm25": {
+      "b": 0.75,
+      "k1": 1.2
+    },
+    "cleanupIntervalSeconds": 60,
+    "stopwords": {
+      "additions": null,
+      "preset": "en",
+      "removals": null
+    },
+    "usingBlockMaxWAND": true
+  },
+  "moduleConfig": {},
+  "multiTenancyConfig": {
+    "autoTenantActivation": false,
+    "autoTenantCreation": false,
+    "enabled": false
+  },
+  "properties": [
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "source_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "source_type",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "image_category",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "title",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "description",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "ocr_text",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "int"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "page"
+    },
+    {
+      "dataType": [
+        "int"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "page_count"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_name",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_description",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "folder_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "folder_name",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "folder_path",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "exhibit_number",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "custodians",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "collection_code",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "image_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "thumbnail_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "source_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "pdf_url",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "document_date",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "related_ids",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "embedded_modality",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "date"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "date"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "bates_number",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "bates_by_page",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "case_numbers",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "authors",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "recipients",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "copied",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "genre",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "industry",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "drugs",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "alternate_title",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "conversation",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "date_sent",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "time_sent",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "date_received",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "attachments",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "original_filename",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "original_format",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "production_path",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "redacted",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "redaction_types",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "redacted_by",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "language",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text[]"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": true,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "availability",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "date_added",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "text"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "idl_short_id",
+      "tokenization": "word"
+    },
+    {
+      "dataType": [
+        "boolean"
+      ],
+      "indexFilterable": true,
+      "indexRangeFilters": false,
+      "indexSearchable": false,
+      "moduleConfig": {
+        "none": {}
+      },
+      "name": "bates_is_derived"
+    }
+  ],
+  "replicationConfig": {
+    "asyncEnabled": false,
+    "deletionStrategy": "NoAutomatedResolution",
+    "factor": 1
+  },
+  "shardingConfig": {
+    "actualCount": 1,
+    "actualVirtualCount": 128,
+    "desiredCount": 1,
+    "desiredVirtualCount": 128,
+    "function": "murmur3",
+    "key": "_id",
+    "strategy": "hash",
+    "virtualPerPhysical": 128
+  },
+  "vectorConfig": {
+    "content_vector": {
+      "vectorIndexConfig": {
+        "bq": {
+          "enabled": false
+        },
+        "cleanupIntervalSeconds": 300,
+        "distance": "cosine",
+        "dynamicEfFactor": 8,
+        "dynamicEfMax": 500,
+        "dynamicEfMin": 100,
+        "ef": -1,
+        "efConstruction": 128,
+        "filterStrategy": "sweeping",
+        "flatSearchCutoff": 40000,
+        "maxConnections": 32,
+        "multivector": {
+          "aggregation": "maxSim",
+          "enabled": false
+        },
+        "pq": {
+          "bitCompression": false,
+          "centroids": 256,
+          "enabled": false,
+          "encoder": {
+            "distribution": "log-normal",
+            "type": "kmeans"
+          },
+          "segments": 0,
+          "trainingLimit": 100000
+        },
+        "skip": false,
+        "sq": {
+          "enabled": false,
+          "rescoreLimit": 20,
+          "trainingLimit": 100000
+        },
+        "vectorCacheMaxObjects": 1000000000000
+      },
+      "vectorIndexType": "hnsw",
+      "vectorizer": {
+        "none": {}
+      }
+    }
+  }
+}

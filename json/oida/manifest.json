@@ -1,0 +1,116 @@
+{
+  "_about": "Curated sample corpus from the UCSF Industry Documents Library (Opioid Industry Documents Archive) used to build and test unified multimodal search. IDs are IDL document ids; metadata is fetched from the IDL Solr API at build time so this file stays small and auditable.",
+  "source": {
+    "solr": "https://solr.idl.ucsf.edu/solr/ltdl3/select",
+    "download": "https://download.industrydocuments.ucsf.edu",
+    "archive": "https://archive.org/download",
+    "industrycode": "opioids",
+    "license": "Public court records released through litigation; hosted by UCSF IDL. Check per-item availability before redistributing."
+  },
+  "collection": {
+    "id": "oida-opioid-archive",
+    "name": "Opioid Industry Documents Archive (sample)",
+    "description": "A 12-recording, 24-exhibit sample drawn from the Opioid Industry Documents Archive: videotaped Mallinckrodt executive depositions, sales voicemails, litigation documents, trial-exhibit charts, and photographs. Assembled as a multimodal search test base."
+  },
+  "recordings": {
+    "_note": "One part per deposition. Media is downloaded locally, uploaded to TheirStory by hand, transcribed there, then re-imported via `yarn theirstory:import-stories`. Audio ids are chosen from items that actually have a playable Internet Archive derivative \u2014 many IDL audio records list one that the Archive cannot serve.",
+    "video": [
+      {
+        "id": "fgxh0257",
+        "part": "0001",
+        "role": "President and CEO"
+      },
+      {
+        "id": "pzhh0257",
+        "part": "0001",
+        "role": "President and CEO, Specialty Generics"
+      },
+      {
+        "id": "jfxh0257",
+        "part": "0001",
+        "role": "EVP and Chief Commercial Officer"
+      },
+      {
+        "id": "hzhh0257",
+        "part": "0001",
+        "role": "Senior Director of Marketing"
+      },
+      {
+        "id": "qzhh0257",
+        "part": "0001",
+        "role": "Senior Manager, Controlled Substances Compliance"
+      },
+      {
+        "id": "zfxh0257",
+        "part": "0001",
+        "role": "Compliance"
+      },
+      {
+        "id": "nzhh0257",
+        "part": "0001",
+        "role": "VP of Global Security"
+      },
+      {
+        "id": "xzhh0257",
+        "part": "0001",
+        "role": "Pharmaceuticals Sales Specialist"
+      },
+      {
+        "id": "hfxh0257",
+        "part": "0001",
+        "role": "Product Manager"
+      }
+    ],
+    "audio": [
+      {
+        "id": "fmlk0424",
+        "note": "Endo sales voicemail"
+      },
+      {
+        "id": "ffnj0279",
+        "note": "Insys voicemail"
+      },
+      {
+        "id": "gxdc0283",
+        "note": "Insys voicemail (m4a)"
+      }
+    ]
+  },
+  "exhibits": {
+    "_note": "Ingested page-by-page: each page becomes one searchable object carrying a rendered page image plus its OCR text.",
+    "documents": [
+      "ffbb0237",
+      "ffbb0238",
+      "ffbc0237",
+      "ffbc0238",
+      "ffbc0240",
+      "ffbd0426",
+      "ffbf0232",
+      "ffbf0235",
+      "ffbf0255",
+      "ffbg0243",
+      "ffbh0281",
+      "ffbh0352"
+    ],
+    "images": {
+      "photographs": [
+        "fmlx0287",
+        "jmlx0287",
+        "mmlx0287",
+        "hynx0287",
+        "jynx0287",
+        "xynx0287"
+      ],
+      "charts": [
+        "glmh0257",
+        "mpmh0257",
+        "prmh0257",
+        "xlmh0257"
+      ],
+      "book_covers": [
+        "gynx0287",
+        "pnnx0287"
+      ]
+    }
+  }
+}
