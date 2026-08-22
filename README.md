@@ -111,7 +111,12 @@ SITE_PASSWORD=your_secure_password
 
 ## NLP Environment Notes
 
-Default embedding model is `sentence-transformers/LaBSE`. NER uses `urchade/gliner_multi-v2.1`. Chunking is sentence-based with configurable sentence overlap.
+Default embedding model is `Qwen/Qwen3-VL-Embedding-2B`, a multimodal model that embeds text and
+images into one shared vector space. NER uses `urchade/gliner_multi-v2.1`. Chunking is sentence-based
+with configurable sentence overlap.
+
+Set `EMBEDDING_MODEL=sentence-transformers/LaBSE` for text-only search. Note that changing the model
+changes the vector width, which requires recreating the Weaviate collections and re-importing.
 
 **Services:**
 
@@ -245,12 +250,33 @@ Note: with server parameters, `export-weaviate-data.sh` also syncs `config.json`
 
 Full guide (DigitalOcean example): **[docs/DEPLOY_PRODUCTION.md](./docs/DEPLOY_PRODUCTION.md)**
 
+## 🔍 Multimodal Search
+
+Recordings, documents, and images are searchable from one query, out of one vector space — including
+photographs that carry no text at all. Browse it at `/search` ("All sources").
+
+```bash
+# Fetch and ingest the OIDA sample corpus (documents + images)
+yarn oida:fetch
+yarn oida:ingest
+
+# Prepare the recordings for TheirStory transcription (TheirStory has no ingest API)
+yarn oida:upload-manifest
+```
+
+Two things to know before relying on it: page-image embedding costs roughly 5s per page versus
+milliseconds for text, so archive-scale ingest needs a GPU in the path; and raw similarity scores are
+**not** comparable between text and images, which is why ranking applies per-source-type calibration.
+
+See [docs/MULTIMODAL_SEARCH.md](./docs/MULTIMODAL_SEARCH.md) for the measurements behind both.
+
 ## 📚 Documentation
 
 - **[CONFIGURATION.md](./CONFIGURATION.md)** - Portal configuration, colors, NER labels
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines and CLA signing via CLA Assistant
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Container architecture and services
 - **[docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md)** - JSON format and import process
+- **[docs/MULTIMODAL_SEARCH.md](./docs/MULTIMODAL_SEARCH.md)** - Unified search across recordings, documents, and images
 - **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** - Environment variables and advanced configuration
 - **[docs/COMMANDS.md](./docs/COMMANDS.md)** - All available commands
 - **[docs/DEPLOY_PRODUCTION.md](./docs/DEPLOY_PRODUCTION.md)** - Production deployment guide (works on any Docker host, with DigitalOcean example)
