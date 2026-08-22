@@ -133,6 +133,26 @@ export const VideoThumbnail = ({
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
+  // Shared by the audio and video branches: an audio recording has a duration worth showing
+  // just as much as a video does, it simply has no frame to show it over. Omitted entirely
+  // when the duration is missing, since "00:00" reads as a real value.
+  const durationBadge = story.properties.interview_duration ? (
+    <Box
+      sx={{
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        bgcolor: colors.common.overlay,
+        color: colors.common.white,
+        px: 0.5,
+        borderRadius: 0.5,
+        fontSize,
+        zIndex: 3,
+      }}>
+      {durationFormatHandler(story.properties.interview_duration)}
+    </Box>
+  ) : null;
+
   if (story.properties.isAudioFile) {
     return (
       <Box
@@ -150,6 +170,7 @@ export const VideoThumbnail = ({
           placeItems: 'center',
         }}>
         <AudioFileWave width={audioFileSize?.width} height={audioFileSize?.height} color={colors.grey[600]} />
+        {durationBadge}
       </Box>
     );
   }
@@ -237,20 +258,7 @@ export const VideoThumbnail = ({
         />
       )}
 
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 4,
-          right: 4,
-          bgcolor: colors.common.overlay,
-          color: colors.common.white,
-          px: 0.5,
-          borderRadius: 0.5,
-          fontSize,
-          zIndex: 3,
-        }}>
-        {durationFormatHandler(story.properties.interview_duration)}
-      </Box>
+      {durationBadge}
     </Box>
   );
 };

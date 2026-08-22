@@ -34,8 +34,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Browser extensions (screen recorders, password managers, accessibility tools) stamp
+  // attributes onto <html> before React hydrates, which React then reports as a server/client
+  // mismatch it cannot patch. Nothing here renders differently per environment, so suppress the
+  // warning at this level too — <body> already does the same.
   return (
-    <html className=" overflow-x-hidden" lang="en">
+    <html className=" overflow-x-hidden" lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <MaterialUIThemeProvider>
           <Suspense>

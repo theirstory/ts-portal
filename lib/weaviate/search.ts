@@ -178,11 +178,30 @@ export async function getAllStoriesFromCollection<T extends SchemaTypes>(
   const myCollection = client.collections.get<SchemaMap[T]>(collection);
   const combinedFilter = buildCombinedFilters(myCollection, undefined, collectionFilters, folderFilters);
 
+  /**
+   * Audio recordings sort to the end of the gallery. They have no thumbnail to scan, so
+   * leading with them puts a wall of waveform placeholders in front of the video material.
+   *
+   * This has to happen in the query, not on the returned page: the gallery pages
+   * server-side, so sorting what was fetched would only push audio to the end of each page
+   * rather than to the end of the list. `false` sorts before `true`, giving video first.
+   *
+   * Only Testimonies carries `isAudioFile`, hence the narrow cast.
+   */
+  const sort =
+    collection === SchemaTypes.Testimonies
+      ? (myCollection.sort as unknown as { byProperty: (property: string, ascending?: boolean) => unknown })
+          .byProperty('isAudioFile', true)
+      : undefined;
+
   const response = await myCollection.query.fetchObjects({
     limit,
     offset,
     filters: combinedFilter,
     returnProperties: returnProperties,
+    ...(sort
+      ? { sort: sort as NonNullable<Parameters<typeof myCollection.query.fetchObjects>[0]>['sort'] }
+      : {}),
   });
 
   return response;
