@@ -16,7 +16,7 @@ import {
   type CollectionFilterOption,
   type FolderFilterOption,
 } from '@/lib/weaviate/search';
-import { Chunks, Testimonies, SchemaMap, SchemaTypes } from '@/types/weaviate';
+import { Chunks, Exhibits, Testimonies, SchemaMap, SchemaTypes } from '@/types/weaviate';
 import { NerLabel } from '@/types/ner';
 import { SearchType } from '@/types/searchType';
 import { Transcription, Word } from '@/types/transcription';
@@ -26,7 +26,7 @@ type SemanticSearchStore = {
   searchType: SearchType;
   searchTerm: string;
   loading: boolean;
-  stories: WeaviateReturn<Testimonies | Chunks, any> | null;
+  stories: WeaviateReturn<Testimonies | Chunks | Exhibits, any> | null;
   story: WeaviateGenericObject<Chunks, any> | null;
 
   storyHubPage: WeaviateGenericObject<Testimonies, any> | null;
@@ -37,7 +37,7 @@ type SemanticSearchStore = {
   selected_ner_labels: NerLabel[];
   matches: WeaviateGenericObject<Chunks, any>[];
   currentMatchIndex: number;
-  result: WeaviateReturn<Chunks | Testimonies, any> | null;
+  result: WeaviateReturn<Chunks | Testimonies | Exhibits, any> | null;
   currentPage: number;
   hasNextStoriesPage: boolean;
   nerFilters: string[];

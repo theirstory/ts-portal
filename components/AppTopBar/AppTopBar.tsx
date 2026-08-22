@@ -36,6 +36,7 @@ export const AppTopBar = () => {
   const isChatPage = pathname.startsWith('/discover');
   const isIndexPage = pathname.startsWith('/indexes');
   const isCollectionsPage = pathname.startsWith('/collections');
+  const isSearchPage = pathname.startsWith('/search');
   const isHomePage = pathname === '/';
   const isFullScreenPage = isStoryPage || isChatPage;
   const isAutoCollapsePage = isStoryPage || isChatPage || isIndexPage;
@@ -131,6 +132,7 @@ export const AppTopBar = () => {
                   },
                 }}>
                 {!isHomePage && <Link href="/">RECORDINGS</Link>}
+                {!isSearchPage && <Link href="/search">ALL SOURCES</Link>}
                 {!isIndexPage && <Link href="/indexes">INDEXES</Link>}
                 {shouldShowCollectionsLink && !isCollectionsPage && <Link href="/collections">COLLECTIONS</Link>}
                 {!isFullScreenPage && (
@@ -180,6 +182,7 @@ export const AppTopBar = () => {
                   },
                 }}>
                 <Link href="/">RECORDINGS</Link>
+                <Link href="/search">ALL SOURCES</Link>
                 <Link href="/indexes">INDEXES</Link>
                 {shouldShowCollectionsLink && <Link href="/collections">COLLECTIONS</Link>}
                 {isChatEnabled && (
