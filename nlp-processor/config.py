@@ -41,14 +41,27 @@ class Config:
     MIN_TEXT_LENGTH_FOR_NER = int(os.getenv("MIN_TEXT_LENGTH_FOR_NER", "50"))
     
     # HuggingFace Local Embeddings Configuration
+    # Qwen3-VL-Embedding puts text and images in one shared space, which is what makes
+    # unified search across recordings, documents, and images possible. Swap this for a
+    # text-only model (e.g. sentence-transformers/LaBSE) to fall back to text-only search.
     EMBEDDING_MODEL = os.getenv(
         "EMBEDDING_MODEL",
-        "sentence-transformers/LaBSE",
+        "Qwen/Qwen3-VL-Embedding-2B",
     )
     USE_GPU = os.getenv("USE_GPU", "false").lower() == "true"
+    # Overrides device selection entirely ("cuda", "mps", "cpu"). Empty means auto-detect.
+    EMBEDDING_DEVICE = os.getenv("EMBEDDING_DEVICE", "")
     EMBEDDING_LOAD_TIMEOUT_SECONDS = int(
-        os.getenv("EMBEDDING_LOAD_TIMEOUT_SECONDS", "180")
+        os.getenv("EMBEDDING_LOAD_TIMEOUT_SECONDS", "600")
     )
+    # Matryoshka truncation. 0 keeps the model's native width (2048 for Qwen3-VL-Embedding).
+    # Changing this changes the vector width, so it requires recreating Weaviate collections.
+    EMBEDDING_TRUNCATE_DIM = int(os.getenv("EMBEDDING_TRUNCATE_DIM", "0"))
+    # Page images cost roughly an order of magnitude more than text per item, so they get
+    # their own (much smaller) batch size.
+    EMBEDDING_IMAGE_BATCH_SIZE = int(os.getenv("EMBEDDING_IMAGE_BATCH_SIZE", "2"))
+    # Cap an image's long edge before encoding, to bound peak memory on large scans.
+    EMBEDDING_IMAGE_MAX_EDGE = int(os.getenv("EMBEDDING_IMAGE_MAX_EDGE", "1600"))
     
    
     
@@ -91,6 +104,10 @@ class Config:
         print(f"[Config] Weaviate URL: {cls.WEAVIATE_URL}")
         print(f"[Config] Embedding model: {cls.EMBEDDING_MODEL}")
         print(f"[Config] Use GPU: {cls.USE_GPU}")
+        print(f"[Config] Embedding device override: {cls.EMBEDDING_DEVICE or '(auto)'}")
+        print(f"[Config] Embedding truncate dim: {cls.EMBEDDING_TRUNCATE_DIM or '(native)'}")
+        print(f"[Config] Embedding image batch size: {cls.EMBEDDING_IMAGE_BATCH_SIZE}")
+        print(f"[Config] Embedding image max edge: {cls.EMBEDDING_IMAGE_MAX_EDGE}")
         print(f"[Config] Embedding load timeout (s): {cls.EMBEDDING_LOAD_TIMEOUT_SECONDS}")
 
 

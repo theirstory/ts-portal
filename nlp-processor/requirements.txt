@@ -12,7 +12,10 @@ pydantic
 gliner-spacy
 
 # Local Embeddings
-sentence-transformers>=2.2.0
-torch>=2.0.0
+# Qwen3-VL-Embedding ships as a SentenceTransformers 5.4+ multimodal model, and the
+# [image] extra pulls in torchvision, which its vision processor requires.
+sentence-transformers[image]>=5.4.0
+torch>=2.4.0
+pillow
 
 python-dotenv==1.0.1

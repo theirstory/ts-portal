@@ -5,6 +5,7 @@ import traceback
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -604,6 +605,23 @@ class EmbedResponse(BaseModel):
     vector: List[float]
     dim: int
 
+class MultimodalItem(BaseModel):
+    """One thing to embed: text, an image, or an image paired with its text."""
+
+    text: Optional[str] = None
+    # Base64-encoded image bytes. Preferred over image_path, which only works when the
+    # caller and this service share a filesystem.
+    image_base64: Optional[str] = None
+    image_path: Optional[str] = None
+
+class MultimodalEmbedRequest(BaseModel):
+    items: List[MultimodalItem]
+
+class MultimodalEmbedResponse(BaseModel):
+    vectors: List[List[float]]
+    dim: int
+    count: int
+
 @lru_cache(maxsize=2048)
 def _embed_cached(text: str) -> List[float]:
     vec = LocalEmbedding.encode_single(text)
@@ -616,7 +634,7 @@ async def embed(req: EmbedRequest):
         raise HTTPException(status_code=400, detail="text is required")
 
     try:
-        vec = _embed_cached(text)
+        vec = await run_in_threadpool(_embed_cached, text)
     except Exception as exc:
         logger.exception("Embed endpoint failed while loading/generating embedding")
         raise HTTPException(
@@ -632,6 +650,51 @@ async def embed(req: EmbedRequest):
         raise HTTPException(status_code=500, detail="embedding returned empty vector")
 
     return {"vector": vec, "dim": len(vec)}
+
+@app.post("/embed-multimodal", response_model=MultimodalEmbedResponse)
+async def embed_multimodal(req: MultimodalEmbedRequest):
+    """Embed a batch of text/image/image+text items into the shared vector space.
+
+    Used when ingesting document pages and photographs, so they land in the same space
+    as transcript chunks and one query vector can retrieve across all of them.
+    """
+    if not req.items:
+        raise HTTPException(status_code=400, detail="items is required")
+
+    has_image = any(item.image_base64 or item.image_path for item in req.items)
+
+    try:
+        if has_image and not await run_in_threadpool(LocalEmbedding.supports_images):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"EMBEDDING_MODEL='{Config.EMBEDDING_MODEL}' is text-only and cannot embed "
+                    "images. Set EMBEDDING_MODEL to a multimodal model "
+                    "(e.g. Qwen/Qwen3-VL-Embedding-2B) to ingest documents and images."
+                ),
+            )
+
+        vectors = await run_in_threadpool(
+            LocalEmbedding.encode_multimodal, [item.model_dump() for item in req.items]
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Multimodal embed endpoint failed")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Failed to generate multimodal embeddings. Check EMBEDDING_MODEL and "
+                f"HuggingFace cache/connectivity. Current EMBEDDING_MODEL='{Config.EMBEDDING_MODEL}'."
+            ),
+        ) from exc
+
+    listed = [[float(x) for x in row] for row in vectors]
+    return {
+        "vectors": listed,
+        "dim": len(listed[0]) if listed else 0,
+        "count": len(listed),
+    }
 
 @app.get("/health")
 async def health():
@@ -650,6 +713,8 @@ async def health():
             LocalEmbedding.get_embedding_dimension() if LocalEmbedding.is_loaded() else None
         ),
         "use_gpu": Config.USE_GPU,
+        "embedding_device": LocalEmbedding.get_device(),
+        "supports_images": LocalEmbedding.supports_images() if LocalEmbedding.is_loaded() else None,
         "labels_count": len(NER_LABELS),
         "min_text_length_for_ner": Config.MIN_TEXT_LENGTH_FOR_NER,
     }
