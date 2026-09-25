@@ -26,11 +26,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env
-.env.local
-.env.cloud
-.env.production
+# local env files (any variant or editor backup), except committed examples
+.env*
+!.env*.example
+
+# Weaviate data exports (scripts/deploy/export-weaviate-data.sh writes here by default)
+*.tar.gz
 
 # organization-specific configuration
 # Each organization should maintain their own config.json
