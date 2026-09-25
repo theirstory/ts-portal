@@ -59,6 +59,7 @@ Default production services:
 - `weaviate`
 - `nlp-processor` (required for semantic search)
 - `frontend`
+- `portal-sync` (idles unless Portal Publisher sync is configured — see [PORTAL_SYNC.md](./PORTAL_SYNC.md))
 
 ## 5) Optional but recommended: domain + HTTPS + firewall
 
@@ -125,6 +126,8 @@ Run schema+import manually only when needed:
 ```bash
 docker compose -f docker-compose.prod.yml --profile init run --rm weaviate-init
 ```
+
+Enable publishing from Portal Publisher (pull-based sync + "sync now" pings): see [PORTAL_SYNC.md](./PORTAL_SYNC.md).
 
 Update deployment after `git pull`:
 
