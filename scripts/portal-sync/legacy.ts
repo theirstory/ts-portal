@@ -12,45 +12,14 @@
  * `json/interviews/imported/`) is a separate Testimony and shows up twice in the portal until removed.
  */
 import 'dotenv/config';
-import { readdir, readFile, unlink } from 'node:fs/promises';
-import { join, relative, resolve, sep } from 'node:path';
-import { normalizeCollectionId, testimonyUuid } from '../lib/testimony-ids';
+import { unlink } from 'node:fs/promises';
+import { relative, resolve } from 'node:path';
+import { testimonyUuid } from '../lib/testimony-ids';
 import { Weaviate } from './backends';
 import { loadConfig } from './config';
+import { scanInterviewFiles } from './interview-files';
 import { formatError, log } from './log';
 import { loadState } from './state';
-
-const COLLECTION_META_JSON_FILES = ['collection.json', 'collection.config.json'];
-const IGNORED_COLLECTION_FOLDERS = new Set(['example-collection']);
-
-async function listJsonFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
-  const out: string[] = [];
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await listJsonFiles(full)));
-    else if (entry.isFile() && entry.name.toLowerCase().endsWith('.json')) out.push(full);
-  }
-  return out;
-}
-
-/** Same collection-id derivation as scripts/import-interviews-weaviate.ts. */
-async function collectionIdFor(interviewsDir: string, file: string): Promise<string | null> {
-  const parts = relative(interviewsDir, file).split(sep);
-  if (parts.length === 1) return 'default';
-  const top = parts[0];
-  if (IGNORED_COLLECTION_FOLDERS.has(top.toLowerCase())) return null;
-  for (const meta of COLLECTION_META_JSON_FILES) {
-    try {
-      const parsed = JSON.parse(await readFile(join(interviewsDir, top, meta), 'utf-8'));
-      if (typeof parsed.id === 'string' && parsed.id.trim()) return normalizeCollectionId(parsed.id);
-      break;
-    } catch {
-      // missing / invalid
-    }
-  }
-  return normalizeCollectionId(top);
-}
 
 async function main(): Promise<void> {
   const apply = process.argv.includes('--apply');
@@ -59,21 +28,10 @@ async function main(): Promise<void> {
   const managedFiles = new Set(Object.values(state.items).map((item) => resolve(config.interviewsDir, item.file)));
 
   const duplicates: { file: string; storyId: string; legacyUuid: string; sameUuid: boolean }[] = [];
-  for (const file of await listJsonFiles(config.interviewsDir)) {
-    const name = file.split(sep).pop()!.toLowerCase();
-    if (COLLECTION_META_JSON_FILES.includes(name) || managedFiles.has(file)) continue;
-    let payload: any;
-    try {
-      const raw = JSON.parse(await readFile(file, 'utf-8'));
-      payload = raw?.payload && typeof raw.payload === 'object' ? raw.payload : raw;
-    } catch {
-      continue;
-    }
-    const storyId = String(payload?.story?._id || payload?.transcript?.storyId || '').trim();
-    const managed = storyId ? state.items[storyId] : undefined;
-    if (!managed) continue;
-    const collectionId = await collectionIdFor(config.interviewsDir, file);
-    if (!collectionId) continue;
+  for (const { file, storyId, collectionId } of await scanInterviewFiles(config.interviewsDir)) {
+    if (managedFiles.has(file)) continue;
+    const managed = state.items[storyId];
+    if (!managed || !collectionId) continue;
     const legacyUuid = testimonyUuid(collectionId, storyId);
     duplicates.push({ file, storyId, legacyUuid, sameUuid: legacyUuid === managed.uuid });
   }
