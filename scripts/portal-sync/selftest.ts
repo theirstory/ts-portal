@@ -1,24 +1,36 @@
 /**
  * Self-test for portal-sync (no Weaviate / NLP / publisher needed):  yarn portal-sync:test
- * Covers HMAC verification, manifest diffing, run coalescing, the /trigger server, and a full
- * runSync() against in-memory fakes in a temp directory.
+ * Covers HMAC verification, manifest diffing, run coalescing, the /trigger server, inventory
+ * hashing/sending, manifest removals, the data version, and full runSync() runs against in-memory
+ * fakes in a temp directory.
  */
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { testimonyUuid } from '../lib/testimony-ids';
+import { storyIdFromTranscription } from './backends';
+import type { ListedTestimony } from './backends';
 import type { PortalSyncConfig } from './config';
+import { bumpDataVersion, readDataVersion } from './data-version';
 import { collectionMetaHash, planSync } from './diff';
 import { signPing, verifyPing } from './hmac';
+import {
+  buildInventoryItems,
+  INVENTORY_RESEND_MS,
+  inventoryDue,
+  inventoryHash,
+  loadInventoryCache,
+  reportInventory,
+} from './inventory';
 import { CoalescingRunner } from './scheduler';
 import { createTriggerServer } from './server';
 import { emptyState, loadState } from './state';
 import { runSync } from './sync';
 import type { SyncDeps } from './sync';
-import type { ItemSnapshot, LocalState, Manifest, StatusReport } from './types';
+import type { InventoryReport, ItemSnapshot, LocalState, Manifest, StatusReport } from './types';
 
 const tests: [string, () => Promise<void> | void][] = [];
 const test = (name: string, fn: () => Promise<void> | void) => tests.push([name, fn]);
@@ -260,27 +272,58 @@ function snapshot(
   };
 }
 
+function testConfig(dir: string): PortalSyncConfig {
+  return {
+    enabled: true,
+    disabledReason: '',
+    publisherUrl: 'http://publisher.invalid',
+    token: TOKEN,
+    intervalMinutes: 0,
+    port: 0,
+    postProcessCommand: '',
+    postProcessTimeoutMs: 0,
+    interviewsDir: join(dir, 'interviews'),
+    stateFile: join(dir, '.portal-sync', 'state.json'),
+    lockFile: join(dir, '.portal-sync', 'state.json.lock'),
+    inventoryFile: join(dir, '.portal-sync', 'inventory.json'),
+    dataVersionFile: join(dir, '.portal-sync', 'data-version.json'),
+    weaviateUrl: '',
+    weaviateApiKey: '',
+    nlpUrl: '',
+    nlpTimeoutMs: 0,
+    portalVersion: 'test',
+  };
+}
+
+type FakeTestimony = { collectionId: string; title: string; storyId: string };
+
+/** In-memory Weaviate: processStory writes Testimonies, deleteTestimony removes them. */
+function fakeWeaviate(testimonies: Map<string, FakeTestimony>, deleted: string[]) {
+  const storyIdLookups: string[] = [];
+  return {
+    storyIdLookups,
+    weaviate: {
+      waitUntilReady: async () => {},
+      deleteTestimony: async (uuid: string) => {
+        deleted.push(uuid);
+        const existed = testimonies.delete(uuid);
+        return { chunksDeleted: existed ? 3 : 0 };
+      },
+      listTestimonies: async (): Promise<ListedTestimony[]> =>
+        [...testimonies].map(([uuid, t]) => ({ uuid, collectionId: t.collectionId, title: t.title })),
+      getTestimonyStoryId: async (uuid: string) => {
+        storyIdLookups.push(uuid);
+        const t = testimonies.get(uuid);
+        return t ? t.storyId : null;
+      },
+    },
+  };
+}
+
 test('runSync: process, update, move collection, remove, failure retry', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'portal-sync-test-'));
   try {
-    const config: PortalSyncConfig = {
-      enabled: true,
-      disabledReason: '',
-      publisherUrl: 'http://publisher.invalid',
-      token: TOKEN,
-      intervalMinutes: 0,
-      port: 0,
-      postProcessCommand: '',
-      postProcessTimeoutMs: 0,
-      interviewsDir: join(dir, 'interviews'),
-      stateFile: join(dir, '.portal-sync', 'state.json'),
-      lockFile: join(dir, '.portal-sync', 'state.json.lock'),
-      weaviateUrl: '',
-      weaviateApiKey: '',
-      nlpUrl: '',
-      nlpTimeoutMs: 0,
-      portalVersion: 'test',
-    };
+    const config = testConfig(dir);
     const collA = { id: 'coll-a', name: 'Coll A', description: 'A' };
     const collB = { id: 'coll-b', name: 'Coll B', description: 'B' };
 
@@ -292,21 +335,25 @@ test('runSync: process, update, move collection, remove, failure retry', async (
     const postProcessed: string[] = [];
     let failNlpFor = '';
 
+    const testimonies = new Map<string, FakeTestimony>();
     const deps: SyncDeps = {
       publisher: {
         getManifest: async () => structuredClone(current),
         getItem: async (id) => structuredClone(snapshots.get(id) ?? null),
         postStatus: async (r) => void statuses.push(structuredClone(r)),
+        postInventory: async () => {},
       },
-      weaviate: {
-        waitUntilReady: async () => {},
-        deleteTestimony: async (uuid) => (deleted.push(uuid), { chunksDeleted: 3 }),
-      },
+      weaviate: fakeWeaviate(testimonies, deleted).weaviate,
       nlp: {
         waitUntilReady: async () => {},
         processStory: async ({ payload, collection }) => {
           if (payload.story._id === failNlpFor) throw new Error('NLP exploded');
           processed.push(`${collection.id}:${payload.story._id}`);
+          testimonies.set(testimonyUuid(collection.id, payload.story._id), {
+            collectionId: collection.id,
+            title: payload.story.title,
+            storyId: payload.story._id,
+          });
           return { chunks: 5 };
         },
       },
@@ -418,6 +465,265 @@ test('runSync: process, update, move collection, remove, failure retry', async (
     assert.equal(statuses[1].state, 'failed');
     assert.match(statuses[1].message ?? '', /401/);
     assert.deepEqual(JSON.parse(await readFile(config.stateFile, 'utf-8')).items, JSON.parse(before).items);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------- inventory
+const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
+test('inventory: items sorted, deduped, managed from state, story ids from state or cache', () => {
+  const state: LocalState = {
+    ...emptyState(),
+    items: { s1: { ...local('coll-a', 's1', 'v1'), uuid: U(2) } },
+  };
+  const listed: ListedTestimony[] = [
+    { uuid: U(3), collectionId: 'imported', title: 'Legacy' },
+    { uuid: U(2), collectionId: 'coll-a', title: 'Synced' },
+    { uuid: U(1), collectionId: 'imported', title: 'Unknown' },
+    { uuid: U(3), collectionId: 'imported', title: 'Legacy' },
+  ];
+  const items = buildInventoryItems(listed, state, { [U(3)]: 'legacy-story' });
+  assert.deepEqual(items, [
+    { uuid: U(1), storyId: '', collectionId: 'imported', title: 'Unknown', managed: false },
+    { uuid: U(2), storyId: 's1', collectionId: 'coll-a', title: 'Synced', managed: true },
+    { uuid: U(3), storyId: 'legacy-story', collectionId: 'imported', title: 'Legacy', managed: false },
+  ]);
+  // Hash ignores input order and changes with content.
+  const shuffled = buildInventoryItems([...listed].reverse(), state, { [U(3)]: 'legacy-story' });
+  assert.equal(inventoryHash(shuffled), inventoryHash(items));
+  assert.notEqual(inventoryHash(items.slice(1)), inventoryHash(items));
+  assert.notEqual(inventoryHash([{ ...items[0], title: 'Renamed' }, ...items.slice(1)]), inventoryHash(items));
+});
+
+test('inventory: due when hash changed, never sent, or >= 24h since last send', () => {
+  const now = Date.parse('2026-09-25T12:00:00.000Z');
+  const sent = (ms: number) => ({
+    cacheVersion: 1 as const,
+    storyIds: {},
+    lastSentHash: 'h',
+    lastSentAt: new Date(ms).toISOString(),
+  });
+  assert.equal(inventoryDue('h', { cacheVersion: 1, storyIds: {} }, now), true);
+  assert.equal(inventoryDue('h2', sent(now - 1000), now), true);
+  assert.equal(inventoryDue('h', sent(now - 1000), now), false);
+  assert.equal(inventoryDue('h', sent(now - INVENTORY_RESEND_MS + 1), now), false);
+  assert.equal(inventoryDue('h', sent(now - INVENTORY_RESEND_MS), now), true);
+});
+
+test('inventory: story id parsed from the NLP transcription JSON', () => {
+  assert.equal(storyIdFromTranscription(JSON.stringify({ id: '66f1', weaviate_uuid: 'x', sections: [] })), '66f1');
+  assert.equal(storyIdFromTranscription('not json'), '');
+  assert.equal(storyIdFromTranscription(undefined), '');
+  assert.equal(storyIdFromTranscription(JSON.stringify({ sections: [] })), '');
+});
+
+test('reportInventory: resolves story ids once, sends on change / 24h, retries after failure', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'portal-sync-inv-'));
+  try {
+    const cacheFile = join(dir, 'inventory.json');
+    const testimonies = new Map<string, FakeTestimony>([
+      [U(1), { collectionId: 'imported', title: 'Legacy one', storyId: 'legacy1' }],
+      [U(2), { collectionId: 'coll-a', title: 'Synced', storyId: 's1' }],
+    ]);
+    const fake = fakeWeaviate(testimonies, []);
+    const sent: InventoryReport[] = [];
+    let failPost = false;
+    const deps = {
+      weaviate: fake.weaviate,
+      publisher: {
+        postInventory: async (r: InventoryReport) => {
+          if (failPost) throw new Error('POST /inventory: HTTP 503');
+          sent.push(structuredClone(r));
+        },
+      },
+    };
+    const state: LocalState = { ...emptyState(), items: { s1: { ...local('coll-a', 's1', 'v1'), uuid: U(2) } } };
+    let clock = Date.parse('2026-09-25T00:00:00.000Z');
+    const now = () => new Date(clock);
+
+    assert.equal(await reportInventory(cacheFile, deps, state, now), 'sent');
+    assert.deepEqual(fake.storyIdLookups, [U(1)], 'only the unmanaged Testimony is looked up');
+    assert.deepEqual(sent[0].items, [
+      { uuid: U(1), storyId: 'legacy1', collectionId: 'imported', title: 'Legacy one', managed: false },
+      { uuid: U(2), storyId: 's1', collectionId: 'coll-a', title: 'Synced', managed: true },
+    ]);
+    assert.equal(sent[0].generatedAt, now().toISOString());
+
+    // Unchanged, 1h later: not sent, no new lookups.
+    clock += 60 * 60 * 1000;
+    assert.equal(await reportInventory(cacheFile, deps, state, now), 'unchanged');
+    assert.equal(sent.length, 1);
+    assert.deepEqual(fake.storyIdLookups, [U(1)]);
+
+    // Changed, but the POST fails: not recorded, so the next call re-sends.
+    testimonies.delete(U(1));
+    failPost = true;
+    await assert.rejects(reportInventory(cacheFile, deps, state, now), /503/);
+    failPost = false;
+    assert.equal(await reportInventory(cacheFile, deps, state, now), 'sent');
+    assert.deepEqual(
+      sent[1].items.map((i) => i.uuid),
+      [U(2)],
+    );
+    assert.deepEqual((await loadInventoryCache(cacheFile)).storyIds, {}, 'cache pruned to present uuids');
+
+    // Unchanged for 24h: re-sent.
+    clock += INVENTORY_RESEND_MS;
+    assert.equal(await reportInventory(cacheFile, deps, state, now), 'sent');
+    assert.equal(sent.length, 3);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------- data version
+test('data version: missing -> 1 -> 2, corrupt treated as 0, atomic JSON', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'portal-sync-dv-'));
+  try {
+    const file = join(dir, 'nested', 'data-version.json');
+    assert.equal(await readDataVersion(file), 0);
+    assert.equal((await bumpDataVersion(file)).version, 1);
+    const second = await bumpDataVersion(file, new Date('2026-09-25T00:00:00.000Z'));
+    assert.deepEqual(JSON.parse(await readFile(file, 'utf-8')), { version: 2, updatedAt: '2026-09-25T00:00:00.000Z' });
+    assert.equal(second.version, 2);
+    await writeFile(file, '{oops');
+    assert.equal(await readDataVersion(file), 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------- removals + inventory + data version in runSync
+test('runSync: manifest removals (managed skip, already gone, files), inventory, data version', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'portal-sync-rm-'));
+  try {
+    const config = testConfig(dir);
+    const collA = { id: 'coll-a', name: 'Coll A', description: 'A' };
+    const current: Manifest = { protocol: 1, portalId: 'p1', collections: [collA], items: [] };
+    const snapshots = new Map<string, ItemSnapshot>();
+    const statuses: StatusReport[] = [];
+    const inventories: InventoryReport[] = [];
+    const deleted: string[] = [];
+    let failInventory = false;
+
+    // Legacy import: story "legacy1" under json/interviews/imported/ (old file name, {payload} wrapper
+    // on one copy), and "legacy2" whose Testimony exists but has no file.
+    const legacy1Uuid = testimonyUuid('imported', 'legacy1');
+    const legacy2Uuid = testimonyUuid('imported', 'legacy2');
+    const testimonies = new Map<string, FakeTestimony>([
+      [legacy1Uuid, { collectionId: 'imported', title: 'Legacy 1', storyId: 'legacy1' }],
+      [legacy2Uuid, { collectionId: 'imported', title: 'Legacy 2', storyId: 'legacy2' }],
+      [testimonyUuid('imported', 'adopt'), { collectionId: 'imported', title: 'Adopt me', storyId: 'adopt' }],
+    ]);
+    await mkdir(join(config.interviewsDir, 'imported', 'sub'), { recursive: true });
+    const legacyFileA = join(config.interviewsDir, 'imported', 'ts-portal-legacy-one-mp4.json');
+    const legacyFileB = join(config.interviewsDir, 'imported', 'sub', 'copy.json');
+    const otherFile = join(config.interviewsDir, 'imported', 'other.json');
+    await writeFile(legacyFileA, JSON.stringify({ story: { _id: 'legacy1' }, transcript: {} }));
+    await writeFile(legacyFileB, JSON.stringify({ payload: { story: { _id: 'legacy1' } } }));
+    await writeFile(otherFile, JSON.stringify({ story: { _id: 'someone-else' } }));
+
+    const fake = fakeWeaviate(testimonies, deleted);
+    const deps: SyncDeps = {
+      publisher: {
+        getManifest: async () => structuredClone(current),
+        getItem: async (id) => structuredClone(snapshots.get(id) ?? null),
+        postStatus: async (r) => void statuses.push(structuredClone(r)),
+        postInventory: async (r) => {
+          if (failInventory) throw new Error('POST /inventory: HTTP 500');
+          inventories.push(structuredClone(r));
+        },
+      },
+      weaviate: fake.weaviate,
+      nlp: {
+        waitUntilReady: async () => {},
+        processStory: async ({ payload, collection }) => {
+          testimonies.set(testimonyUuid(collection.id, payload.story._id), {
+            collectionId: collection.id,
+            title: payload.story.title,
+            storyId: payload.story._id,
+          });
+          return { chunks: 1 };
+        },
+      },
+    };
+
+    // Run 1: s1 synced; no removals yet. Inventory lists all 4, data version 1.
+    current.items = [{ storyId: 's1', collectionId: 'coll-a', version: 'v1' }];
+    snapshots.set('s1', snapshot('s1', 'v1', collA));
+    let summary = await runSync(config, deps, 'test');
+    assert.equal(summary.state, 'succeeded');
+    assert.equal(inventories.length, 1);
+    const s1Uuid = testimonyUuid('coll-a', 's1');
+    assert.deepEqual(inventories[0].items.map((i) => [i.storyId, i.managed]).sort(), [
+      ['adopt', false],
+      ['legacy1', false],
+      ['legacy2', false],
+      ['s1', true],
+    ]);
+    assert.equal(inventories[0].items.find((i) => i.uuid === s1Uuid)?.collectionId, 'coll-a');
+    assert.equal(await readDataVersion(config.dataVersionFile), 1);
+
+    // Run 2: nothing changed -> no data version bump, inventory not re-sent.
+    summary = await runSync(config, deps, 'test');
+    assert.equal(summary.items.length, 0);
+    assert.equal(await readDataVersion(config.dataVersionFile), 1);
+    assert.equal(inventories.length, 1);
+
+    // Run 3: removals for legacy1 (files), legacy2 (no file), a managed uuid (s1: ignored), an
+    // uuid being adopted in this manifest (ignored), an already-gone uuid, and a malformed uuid.
+    // "adopt" is published into collection "imported" (adoption keeps the uuid).
+    const goneUuid = '11111111-2222-4333-8444-555555555555';
+    current.items.push({ storyId: 'adopt', collectionId: 'imported', version: 'v1' });
+    snapshots.set('adopt', snapshot('adopt', 'v1', { id: 'imported', name: 'Imported', description: '' }));
+    current.removals = [
+      { uuid: legacy1Uuid, storyId: 'legacy1', requestedAt: 'x' },
+      { uuid: legacy2Uuid.toUpperCase(), storyId: 'legacy2' },
+      { uuid: s1Uuid, storyId: 's1' },
+      { uuid: testimonyUuid('imported', 'adopt'), storyId: 'adopt' },
+      { uuid: goneUuid, storyId: '' },
+      { uuid: 'not-a-uuid', storyId: 'x' },
+    ];
+    deleted.length = 0;
+    statuses.length = 0;
+    summary = await runSync(config, deps, 'test');
+    assert.equal(summary.state, 'partial');
+    assert.deepEqual(statuses[1].items, [
+      { storyId: 'legacy1', uuid: legacy1Uuid, state: 'removed' },
+      { storyId: 'legacy2', uuid: legacy2Uuid, state: 'removed' },
+      { storyId: '', uuid: goneUuid, state: 'removed' },
+      { storyId: 'x', uuid: 'not-a-uuid', state: 'failed', error: 'invalid uuid "not-a-uuid"' },
+      { storyId: 'adopt', version: 'v1', state: 'synced' },
+    ]);
+    assert.deepEqual(deleted, [legacy1Uuid, legacy2Uuid, goneUuid], 'managed / adopted uuids never deleted');
+    assert.equal(existsSync(legacyFileA), false);
+    assert.equal(existsSync(legacyFileB), false);
+    assert.equal(existsSync(otherFile), true);
+    assert.equal(existsSync(join(config.interviewsDir, 'coll-a', 's1.json')), true);
+    assert.equal(testimonies.has(s1Uuid), true);
+    assert.equal(await readDataVersion(config.dataVersionFile), 2);
+    const inv = inventories[inventories.length - 1];
+    assert.deepEqual(inv.items.map((i) => [i.storyId, i.managed]).sort(), [
+      ['adopt', true],
+      ['s1', true],
+    ]);
+
+    // Run 4: publisher hasn't dropped the removals yet (e.g. inventory lost) -> re-applied as
+    // already gone, still "removed"; the managed ones still skipped. Inventory failure doesn't fail the run.
+    current.removals = current.removals.slice(0, 3);
+    failInventory = true;
+    deleted.length = 0;
+    summary = await runSync(config, deps, 'test');
+    assert.equal(summary.state, 'succeeded');
+    assert.deepEqual(
+      summary.items.map((i) => i.state),
+      ['removed', 'removed'],
+    );
+    assert.deepEqual(deleted, [legacy1Uuid, legacy2Uuid]);
+    assert.equal(await readDataVersion(config.dataVersionFile), 3);
+    assert.equal(existsSync(config.lockFile), false, 'lock released after inventory failure');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

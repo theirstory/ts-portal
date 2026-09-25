@@ -2,6 +2,20 @@
 import { log } from './log';
 import type { CollectionRef, FolderRef } from './types';
 
+export type ListedTestimony = { uuid: string; collectionId: string; title: string };
+
+/** Story id from a Testimony's `transcription` property (JSON string written by the NLP processor). */
+export function storyIdFromTranscription(transcription: unknown): string {
+  if (typeof transcription !== 'string' || !transcription) return '';
+  try {
+    const parsed = JSON.parse(transcription);
+    const id = parsed?.id ?? parsed?.story?._id ?? parsed?.storyId;
+    return typeof id === 'string' || typeof id === 'number' ? String(id).trim() : '';
+  } catch {
+    return '';
+  }
+}
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 async function waitFor(url: string, label: string, maxSeconds: number): Promise<void> {
@@ -33,6 +47,68 @@ export class Weaviate {
 
   waitUntilReady(maxSeconds = 120): Promise<void> {
     return waitFor(`${this.baseUrl}/v1/.well-known/ready`, 'Weaviate', maxSeconds);
+  }
+
+  private async graphql(query: string): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/v1/graphql`, {
+      method: 'POST',
+      headers: this.headers(),
+      body: JSON.stringify({ query }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    const text = await res.text().catch(() => '');
+    if (!res.ok) throw new Error(`Weaviate GraphQL failed: HTTP ${res.status} ${text.slice(0, 500)}`);
+    return text ? JSON.parse(text) : {};
+  }
+
+  /**
+   * Every Testimony (id, collection_id, interview_title), paginated with the `after` cursor.
+   * Only small properties are selected; `transcription` is not fetched here.
+   */
+  async listTestimonies(pageSize = 200): Promise<ListedTestimony[]> {
+    const out: ListedTestimony[] = [];
+    let after = '';
+    for (let page = 0; page < 10_000; page++) {
+      const args = `limit: ${pageSize}${after ? `, after: ${JSON.stringify(after)}` : ''}`;
+      const parsed = await this.graphql(
+        `{ Get { Testimonies(${args}) { collection_id interview_title _additional { id } } } }`,
+      );
+      if (parsed?.errors?.length) {
+        const message = String(parsed.errors[0]?.message ?? 'unknown error');
+        // No Testimonies class yet (fresh portal): nothing to report.
+        if (/Cannot query field "Testimonies"/i.test(message)) return [];
+        throw new Error(`Weaviate GraphQL listing Testimonies: ${message.slice(0, 500)}`);
+      }
+      const rows: any[] = parsed?.data?.Get?.Testimonies ?? [];
+      for (const row of rows) {
+        const uuid = String(row?._additional?.id ?? '');
+        if (!uuid) continue;
+        out.push({
+          uuid,
+          collectionId: String(row?.collection_id ?? ''),
+          title: String(row?.interview_title ?? ''),
+        });
+      }
+      if (rows.length < pageSize) return out;
+      after = String(rows[rows.length - 1]?._additional?.id ?? '');
+      if (!after) return out;
+    }
+    throw new Error('Weaviate listing Testimonies: too many pages');
+  }
+
+  /**
+   * The TheirStory story id of one Testimony. The schema has no story-id property; the NLP
+   * processor stores it as `id` inside the `transcription` JSON. null if the Testimony is gone.
+   */
+  async getTestimonyStoryId(uuid: string): Promise<string | null> {
+    const res = await fetch(`${this.baseUrl}/v1/objects/Testimonies/${encodeURIComponent(uuid)}`, {
+      headers: this.headers(),
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (res.status === 404) return null;
+    const text = await res.text().catch(() => '');
+    if (!res.ok) throw new Error(`Weaviate GET Testimony ${uuid}: HTTP ${res.status} ${text.slice(0, 300)}`);
+    return storyIdFromTranscription(JSON.parse(text)?.properties?.transcription);
   }
 
   /** Delete all Chunks for a Testimony, then the Testimony itself. Missing objects are fine. */

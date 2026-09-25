@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 export type PortalSyncConfig = {
   /** False when PORTAL_PUBLISHER_URL / PORTAL_SYNC_TOKEN are missing: the service idles. */
@@ -13,6 +13,10 @@ export type PortalSyncConfig = {
   interviewsDir: string;
   stateFile: string;
   lockFile: string;
+  /** Inventory bookkeeping, next to the state file. */
+  inventoryFile: string;
+  /** Read by the frontend (lib/data-version.ts); same env var on both sides. */
+  dataVersionFile: string;
   weaviateUrl: string;
   weaviateApiKey: string;
   nlpUrl: string;
@@ -65,6 +69,8 @@ export function loadConfig(portalVersion: string): PortalSyncConfig {
     interviewsDir: resolve(process.env.INTERVIEWS_DIR ?? './json/interviews'),
     stateFile,
     lockFile: `${stateFile}.lock`,
+    inventoryFile: join(dirname(stateFile), 'inventory.json'),
+    dataVersionFile: resolve(process.env.PORTAL_SYNC_DATA_VERSION_FILE ?? './json/.portal-sync/data-version.json'),
     weaviateUrl: buildWeaviateUrl(),
     weaviateApiKey: (process.env.WEAVIATE_ADMIN_KEY ?? '').trim(),
     nlpUrl: buildNlpUrl(),

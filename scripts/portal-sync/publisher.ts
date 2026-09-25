@@ -1,4 +1,4 @@
-import type { ItemSnapshot, Manifest, StatusReport } from './types';
+import type { InventoryReport, ItemSnapshot, Manifest, StatusReport } from './types';
 
 export class PublisherError extends Error {
   constructor(
@@ -82,5 +82,15 @@ export class PublisherClient {
       timeoutMs: 30_000,
     });
     if (!res.ok) throw await PublisherClient.failure(res, 'POST /status');
+  }
+
+  async postInventory(report: InventoryReport): Promise<void> {
+    const res = await this.request('/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report),
+      timeoutMs: 120_000,
+    });
+    if (!res.ok) throw await PublisherClient.failure(res, 'POST /inventory');
   }
 }

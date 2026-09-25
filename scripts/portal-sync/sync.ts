@@ -2,20 +2,27 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, unlink } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import { normalizeCollectionId, testimonyUuid } from '../lib/testimony-ids';
+import type { ListedTestimony } from './backends';
 import type { PortalSyncConfig } from './config';
+import { bumpDataVersion } from './data-version';
 import { collectionMetaHash, planSync, resolveCollection, SAFE_STORY_ID, summarizeRun } from './diff';
 import type { PlannedRemoval, PlannedUpdate } from './diff';
+import { scanInterviewFiles } from './interview-files';
+import type { InterviewFile } from './interview-files';
+import { reportInventory } from './inventory';
 import { acquireLock, describeLock } from './lock';
 import { formatError, log } from './log';
 import { loadState, saveState, writeFileAtomic } from './state';
 import type {
   CollectionRef,
   FolderRef,
+  InventoryReport,
   ItemResult,
   ItemSnapshot,
   LocalItem,
   LocalState,
   Manifest,
+  ManifestRemoval,
   RunState,
   StatusReport,
 } from './types';
@@ -25,8 +32,14 @@ export type SyncDeps = {
     getManifest(): Promise<Manifest>;
     getItem(storyId: string): Promise<ItemSnapshot | null>;
     postStatus(report: StatusReport): Promise<void>;
+    postInventory(report: InventoryReport): Promise<void>;
   };
-  weaviate: { waitUntilReady(): Promise<void>; deleteTestimony(uuid: string): Promise<{ chunksDeleted: number }> };
+  weaviate: {
+    waitUntilReady(): Promise<void>;
+    deleteTestimony(uuid: string): Promise<{ chunksDeleted: number }>;
+    listTestimonies(): Promise<ListedTestimony[]>;
+    getTestimonyStoryId(uuid: string): Promise<string | null>;
+  };
   nlp: {
     waitUntilReady(): Promise<void>;
     processStory(body: { payload: any; collection: CollectionRef; folder: FolderRef }): Promise<{ chunks?: number }>;
@@ -49,6 +62,7 @@ export type RunSummary = {
 };
 
 const EMPTY_FOLDER: FolderRef = { id: '', name: '', path: '' };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function sanitizeFolderSegments(path: string): string[] {
   return path
@@ -154,6 +168,52 @@ class SyncRun {
       const message = formatError(error);
       log.error(`Remove failed for ${storyId}: ${message}`);
       this.results.push({ storyId, version: previous.version, state: 'failed', error: message });
+    }
+  }
+
+  /**
+   * Manifest `removals`: delete an unmanaged Testimony (Chunks + object) and every JSON file under
+   * the interviews dir for its story, so a later `weaviate:import` doesn't bring it back.
+   * Skipped when the uuid is managed (in local state, or about to be synced from this manifest).
+   */
+  async removeUnmanaged(
+    removal: ManifestRemoval,
+    protectedUuids: Set<string>,
+    files: () => Promise<InterviewFile[]>,
+  ): Promise<void> {
+    const uuid = String(removal?.uuid ?? '')
+      .trim()
+      .toLowerCase();
+    const storyId = String(removal?.storyId ?? '').trim();
+    if (protectedUuids.has(uuid)) {
+      log.info(`Ignoring removal of ${uuid} (${storyId || 'no story id'}): it is managed by portal-sync`);
+      return;
+    }
+    log.info(`Removing unmanaged Testimony ${uuid} (${storyId || 'no story id'}) as requested by the publisher`);
+    try {
+      if (!UUID_RE.test(uuid)) throw new Error(`invalid uuid "${uuid.slice(0, 80)}"`);
+      if (storyId && !SAFE_STORY_ID.test(storyId)) throw new Error(`unsafe storyId "${storyId.slice(0, 80)}"`);
+      await this.ensureWeaviate();
+      // Already gone is fine: deleteTestimony ignores missing objects.
+      const { chunksDeleted } = await this.deps.weaviate.deleteTestimony(uuid);
+      const managedFiles = new Set(Object.values(this.state.items).map((item) => this.abs(item.file)));
+      const deletedFiles: string[] = [];
+      if (storyId) {
+        for (const f of await files()) {
+          if (f.storyId !== storyId || managedFiles.has(f.file)) continue;
+          await removeFileIfExists(f.file);
+          deletedFiles.push(f.file);
+        }
+      }
+      log.info(
+        `Removed unmanaged ${uuid} (chunks deleted=${chunksDeleted}, files deleted=${deletedFiles.length}` +
+          `${deletedFiles.length ? `: ${deletedFiles.join(', ')}` : ''})`,
+      );
+      this.results.push({ storyId, uuid, state: 'removed' });
+    } catch (error) {
+      const message = formatError(error);
+      log.error(`Removal of unmanaged ${uuid} failed: ${message}`);
+      this.results.push({ storyId, uuid, state: 'failed', error: message });
     }
   }
 
@@ -300,12 +360,14 @@ export async function runSync(config: PortalSyncConfig, deps: SyncDeps, reason: 
   let state: RunState = 'failed';
   let message = '';
   let localState: LocalState | null = null;
+  let manifestOk = false;
 
   try {
     localState = await loadState(config.stateFile);
     await report(deps, { syncId, state: 'running', startedAt, portalVersion: config.portalVersion, items: [] });
 
     const manifest = await deps.publisher.getManifest();
+    manifestOk = true;
     if (localState.portalId && manifest.portalId && localState.portalId !== manifest.portalId) {
       log.warn(
         `Manifest portalId ${manifest.portalId} differs from the one in local state (${localState.portalId}); ` +
@@ -323,6 +385,22 @@ export async function runSync(config: PortalSyncConfig, deps: SyncDeps, reason: 
 
     const run = new SyncRun(config, deps, localState, manifest);
     for (const removal of plan.removals) await run.remove(removal);
+
+    const removals = Array.isArray(manifest.removals) ? manifest.removals : [];
+    if (removals.length) {
+      // Never delete what we sync: uuids in local state, or that this manifest is about to (re)sync
+      // (an adopted recording keeps its uuid).
+      const protectedUuids = new Set(Object.values(localState.items).map((item) => item.uuid));
+      for (const item of manifest.items) {
+        if (item?.storyId && item.collectionId) {
+          protectedUuids.add(testimonyUuid(normalizeCollectionId(item.collectionId), item.storyId));
+        }
+      }
+      let scan: Promise<InterviewFile[]> | null = null;
+      const files = () => (scan ??= scanInterviewFiles(config.interviewsDir));
+      for (const removal of removals) await run.removeUnmanaged(removal, protectedUuids, files);
+    }
+
     for (const update of plan.updates) await run.update(update);
     items = run.items;
 
@@ -342,7 +420,26 @@ export async function runSync(config: PortalSyncConfig, deps: SyncDeps, reason: 
       log.error(`Could not save state: ${formatError(error)}`),
     );
   }
+
+  const changed = items.filter((i) => i.state === 'synced' || i.state === 'removed').length;
+  if (changed > 0) {
+    try {
+      const { version } = await bumpDataVersion(config.dataVersionFile);
+      log.info(`Data version bumped to ${version}`);
+    } catch (error) {
+      log.error(`Could not bump data version (${config.dataVersionFile}): ${formatError(error)}`);
+    }
+  }
   await report(deps, { syncId, state, startedAt, finishedAt, portalVersion: config.portalVersion, message, items });
+
+  // Inventory never fails the run; it is retried after the next one.
+  if (manifestOk && localState) {
+    try {
+      await reportInventory(config.inventoryFile, deps, localState);
+    } catch (error) {
+      log.warn(`Inventory report failed (will retry after the next run): ${formatError(error)}`);
+    }
+  }
   await lock.release();
 
   log.info(`Sync ${syncId} ${state}: ${message}`);

@@ -6,7 +6,8 @@
  *   yarn portal-sync:once    one sync run, then exit (manual runs / cron)
  */
 import 'dotenv/config';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NlpProcessor, Weaviate } from './backends';
 import { loadConfig } from './config';
@@ -36,7 +37,15 @@ async function main(): Promise<void> {
     `mode=${once ? 'once' : 'service'} publisher=${config.publisherUrl || '(unset)'} token=${config.token ? 'set' : '(unset)'} ` +
       `interval=${config.intervalMinutes}min port=${config.port}`,
   );
-  log.info(`interviews=${config.interviewsDir} state=${config.stateFile}`);
+  log.info(`interviews=${config.interviewsDir} state=${config.stateFile} dataVersion=${config.dataVersionFile}`);
+  // The frontend bind-mounts this directory (read-only) to read data-version.json; make sure it exists.
+  for (const dir of new Set([dirname(config.stateFile), dirname(config.dataVersionFile)])) {
+    try {
+      mkdirSync(dir, { recursive: true });
+    } catch (error) {
+      log.warn(`Could not create ${dir}: ${formatError(error)}`);
+    }
+  }
   log.info(
     `weaviate=${config.weaviateUrl} nlp=${config.nlpUrl} postProcess=${config.postProcessCommand ? 'set' : 'none'}`,
   );

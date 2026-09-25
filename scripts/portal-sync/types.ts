@@ -12,12 +12,17 @@ export type ManifestItem = {
   publishedAt?: string;
 };
 
+/** An unmanaged Testimony (reported in the inventory) the publisher wants deleted. */
+export type ManifestRemoval = { uuid: string; storyId?: string; requestedAt?: string };
+
 export type Manifest = {
   protocol: number;
   portalId: string;
   generatedAt?: string;
   collections: CollectionRef[];
   items: ManifestItem[];
+  /** Optional (protocol 1, additive). */
+  removals?: ManifestRemoval[];
 };
 
 export type ItemSnapshot = {
@@ -29,7 +34,27 @@ export type ItemSnapshot = {
 };
 
 export type ItemResultState = 'synced' | 'removed' | 'failed';
-export type ItemResult = { storyId: string; version: string; state: ItemResultState; error?: string };
+export type ItemResult = {
+  storyId: string;
+  /** Omitted for manifest `removals` (unmanaged Testimonies have no published version). */
+  version?: string;
+  /** Testimony UUID; set for manifest `removals`. */
+  uuid?: string;
+  state: ItemResultState;
+  error?: string;
+};
+
+export type InventoryItem = {
+  uuid: string;
+  /** TheirStory story id ('' if unknown). */
+  storyId: string;
+  collectionId: string;
+  title: string;
+  /** True when the uuid is synced from the manifest (present in local state). */
+  managed: boolean;
+};
+
+export type InventoryReport = { generatedAt: string; items: InventoryItem[] };
 
 export type RunState = 'running' | 'succeeded' | 'partial' | 'failed';
 
@@ -55,6 +80,18 @@ export type LocalItem = {
   collectionMeta: string;
   syncedAt: string;
 };
+
+/** Sidecar to the state file: inventory bookkeeping (json/.portal-sync/inventory.json). */
+export type InventoryCache = {
+  cacheVersion: 1;
+  /** uuid -> story id for unmanaged Testimonies (resolved once from the Testimony's transcription). */
+  storyIds: Record<string, string>;
+  lastSentHash?: string;
+  lastSentAt?: string;
+};
+
+/** json/.portal-sync/data-version.json: bumped after every run that changed Weaviate. */
+export type DataVersion = { version: number; updatedAt: string };
 
 export type LocalState = {
   stateVersion: 1;
