@@ -1,4 +1,6 @@
 /** Weaviate + NLP processor calls (REST, like scripts/import-interviews-weaviate.ts). */
+import http from 'node:http';
+import https from 'node:https';
 import { log } from './log';
 import type { CollectionRef, FolderRef } from './types';
 
@@ -17,6 +19,50 @@ export function storyIdFromTranscription(transcription: unknown): string {
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * POST JSON and wait up to `timeoutMs` for the whole response. Not `fetch`: Node's fetch gives up
+ * with "fetch failed" when response headers take over 5 minutes (undici's headersTimeout), no matter
+ * the AbortSignal, and /process-story sends nothing until a long interview is fully processed.
+ */
+export function postJsonLongRunning(
+  url: string,
+  body: unknown,
+  timeoutMs: number,
+): Promise<{ status: number; text: string }> {
+  const payload = Buffer.from(JSON.stringify(body));
+  const target = new URL(url);
+  const client = target.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const req = client.request(
+      target,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': payload.length },
+        timeout: timeoutMs, // socket idle limit; the processor is silent while it works
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => {
+          clearTimeout(overall);
+          resolve({ status: res.statusCode ?? 0, text: Buffer.concat(chunks).toString('utf8') });
+        });
+        res.on('error', reject);
+      },
+    );
+    const overall = setTimeout(
+      () => req.destroy(new Error(`timed out after ${Math.round(timeoutMs / 1000)}s`)),
+      timeoutMs,
+    );
+    req.on('timeout', () => req.destroy(new Error(`no response for ${Math.round(timeoutMs / 1000)}s`)));
+    req.on('error', (err) => {
+      clearTimeout(overall);
+      reject(err);
+    });
+    req.end(payload);
+  });
+}
 
 async function waitFor(url: string, label: string, maxSeconds: number): Promise<void> {
   for (let i = 0; i < maxSeconds; i++) {
@@ -168,14 +214,13 @@ export class NlpProcessor {
     collection: CollectionRef;
     folder: FolderRef;
   }): Promise<{ chunks?: number }> {
-    const res = await fetch(`${this.baseUrl}/process-story?write_to_weaviate=true&run_ner=true`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.timeoutMs),
-    });
-    const text = await res.text().catch(() => '');
-    if (!res.ok) {
+    const res = await postJsonLongRunning(
+      `${this.baseUrl}/process-story?write_to_weaviate=true&run_ner=true`,
+      body,
+      this.timeoutMs,
+    );
+    const text = res.text;
+    if (res.status < 200 || res.status >= 300) {
       let detail = text.slice(0, 500);
       try {
         detail = JSON.parse(text)?.error ?? detail;
