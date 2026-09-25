@@ -27,7 +27,13 @@ Portal Publisher ◀── GET manifest / items, POST status ── portal-sync 
 3. **Removals first.** For each synced story that is no longer in the manifest, it deletes the
    story's `Chunks` (`theirstory_id == uuid`) and its `Testimonies` object from Weaviate,
    deletes its JSON file, and forgets it.
-4. **Updates, one at a time** (NLP is heavy). For each story that is new, has a new `version`,
+4. **Removals requested by the publisher.** For each entry in the manifest's optional `removals`
+   (unmanaged Testimonies, see [Existing data](#existing-data)), it deletes that Testimony's
+   Chunks and object, and every JSON file under `json/interviews/**` whose story `_id` is that
+   story id (so a later `weaviate:import` doesn't bring it back). A removal whose uuid is managed
+   (in the state file, or the uuid of an item in the same manifest) is ignored, and so are the
+   synced files. A Testimony that is already gone counts as removed.
+5. **Updates, one at a time** (NLP is heavy). For each story that is new, has a new `version`,
    moved to a different collection, or whose collection name or description changed:
    - `GET /api/portal/v1/items/{storyId}`
    - if the collection changed, deletes the old Testimony UUID and its file first
@@ -40,12 +46,24 @@ Portal Publisher ◀── GET manifest / items, POST status ── portal-sync 
      replaces that Testimony's chunks in place
    - runs `PORTAL_SYNC_POST_PROCESS_COMMAND`, if set
    - records the new version only if all of that succeeded. Failed items are retried on the next run.
-5. `POST /api/portal/v1/status` at the start (`running`) and at the end (`succeeded`, `partial` or
-   `failed`), with a result for every item the run touched.
+6. **Data version.** If anything was synced or removed, it bumps
+   `json/.portal-sync/data-version.json` (`{ "version": <int>, "updatedAt": "…" }`, written
+   atomically). The frontend reads it with `getDataVersion()` (`lib/data-version.ts`, re-checked at
+   most every 2 seconds, `"0"` when the file is missing) to drop in-memory caches and build ETags.
+7. `POST /api/portal/v1/status` at the start (`running`) and at the end (`succeeded`, `partial` or
+   `failed`), with a result for every item the run touched. Publisher-requested removals are
+   reported as `{ "storyId", "uuid", "state" }`.
+8. **Inventory.** It lists every Testimony in Weaviate (uuid, story id, `collection_id`,
+   `interview_title`, and whether it is managed) and `POST`s it to `/api/portal/v1/inventory` when
+   it differs from the last accepted report, or at least every 24 hours. The Testimonies schema has
+   no story-id property, so for unmanaged Testimonies the story id is read once from the
+   `transcription` JSON and cached in `json/.portal-sync/inventory.json` (with the last sent hash
+   and time). An inventory failure is only logged; the next run retries it.
 
-Only stories that portal-sync itself synced are ever removed. Interviews you imported by hand
-(`yarn weaviate:import`) are never touched, unless Portal Publisher publishes the same story into
-the same collection id, in which case portal-sync takes it over (see [Existing data](#existing-data)).
+Portal-sync removes stories it synced itself when they are unpublished. Interviews you imported by
+hand (`yarn weaviate:import`) are only touched when someone in Portal Publisher either publishes the
+same story into the same collection id (portal-sync takes it over, "adopting" it) or asks for that
+Testimony to be removed from the portal's inventory (see [Existing data](#existing-data)).
 
 The Testimony UUID is the same one `weaviate:import` and the NLP processor use:
 `uuidV5("<collectionId lowercased>:<storyId>", URL namespace)` (`scripts/lib/testimony-ids.ts`).
@@ -54,19 +72,20 @@ The Testimony UUID is the same one `weaviate:import` and the NLP processor use:
 
 Set these in `.env.production` (production compose) or `.env.local` (dev compose):
 
-| Variable                                   | Default                          | Meaning                                                                                                                                                                   |
-| ------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORTAL_PUBLISHER_URL`                     | (none)                           | Base URL of Portal Publisher, e.g. `https://publisher.theirstory.io`. **Required.**                                                                                       |
-| `PORTAL_SYNC_TOKEN`                        | (none)                           | The `pps_…` token shown once when the portal was created in Portal Publisher. **Required.** Keep it secret. It is never logged.                                           |
-| `PORTAL_SYNC_INTERVAL_MINUTES`             | `15`                             | How often to poll. `0` turns polling off, so syncs happen only at startup and on pings.                                                                                   |
-| `PORTAL_SYNC_POST_PROCESS_COMMAND`         | (none)                           | Shell command (`sh -c`) run after each recording is (re)processed. Gets `STORY_ID`, `STORY_UUID`, `COLLECTION_ID`, `STORY_FILE`. A non-zero exit marks the item `failed`. |
-| `PORTAL_SYNC_POST_PROCESS_TIMEOUT_MINUTES` | `60`                             | Kill the post-process command after this long (`0` = no limit).                                                                                                           |
-| `PORTAL_SYNC_NLP_TIMEOUT_MINUTES`          | `30`                             | Timeout for one `/process-story` call.                                                                                                                                    |
-| `PORTAL_SYNC_PORT`                         | `7171`                           | Port of the service's internal HTTP server. It is not published to the host.                                                                                              |
-| `PORTAL_SYNC_HOST`                         | `portal-sync`                    | Used by the **frontend** to reach the service (`http://$PORTAL_SYNC_HOST:$PORTAL_SYNC_PORT/trigger`). Set it to `localhost` when you run both outside Docker.             |
-| `PORTAL_VERSION`                           | package version                  | Reported as `portalVersion` in status reports. A git SHA works well here.                                                                                                 |
-| `PORTAL_SYNC_STATE_FILE`                   | `./json/.portal-sync/state.json` | Where sync state lives.                                                                                                                                                   |
-| `INTERVIEWS_DIR`                           | `./json/interviews`              | Same meaning as for `weaviate:import`.                                                                                                                                    |
+| Variable                                   | Default                                 | Meaning                                                                                                                                                                   |
+| ------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORTAL_PUBLISHER_URL`                     | (none)                                  | Base URL of Portal Publisher, e.g. `https://publisher.theirstory.io`. **Required.**                                                                                       |
+| `PORTAL_SYNC_TOKEN`                        | (none)                                  | The `pps_…` token shown once when the portal was created in Portal Publisher. **Required.** Keep it secret. It is never logged.                                           |
+| `PORTAL_SYNC_INTERVAL_MINUTES`             | `15`                                    | How often to poll. `0` turns polling off, so syncs happen only at startup and on pings.                                                                                   |
+| `PORTAL_SYNC_POST_PROCESS_COMMAND`         | (none)                                  | Shell command (`sh -c`) run after each recording is (re)processed. Gets `STORY_ID`, `STORY_UUID`, `COLLECTION_ID`, `STORY_FILE`. A non-zero exit marks the item `failed`. |
+| `PORTAL_SYNC_POST_PROCESS_TIMEOUT_MINUTES` | `60`                                    | Kill the post-process command after this long (`0` = no limit).                                                                                                           |
+| `PORTAL_SYNC_NLP_TIMEOUT_MINUTES`          | `30`                                    | Timeout for one `/process-story` call.                                                                                                                                    |
+| `PORTAL_SYNC_PORT`                         | `7171`                                  | Port of the service's internal HTTP server. It is not published to the host.                                                                                              |
+| `PORTAL_SYNC_HOST`                         | `portal-sync`                           | Used by the **frontend** to reach the service (`http://$PORTAL_SYNC_HOST:$PORTAL_SYNC_PORT/trigger`). Set it to `localhost` when you run both outside Docker.             |
+| `PORTAL_VERSION`                           | package version                         | Reported as `portalVersion` in status reports. A git SHA works well here.                                                                                                 |
+| `PORTAL_SYNC_STATE_FILE`                   | `./json/.portal-sync/state.json`        | Where sync state lives.                                                                                                                                                   |
+| `INTERVIEWS_DIR`                           | `./json/interviews`                     | Same meaning as for `weaviate:import`.                                                                                                                                    |
+| `PORTAL_SYNC_DATA_VERSION_FILE`            | `./json/.portal-sync/data-version.json` | Data version file, written by the service and read by the frontend (set it the same on both if you change it).                                                            |
 
 Weaviate and NLP connection settings are the same ones the importer uses: `WEAVIATE_HOST_URL`,
 `WEAVIATE_PORT`, `WEAVIATE_SECURE`, `WEAVIATE_ADMIN_KEY` (optional), and `NLP_HOST`, `NLP_PORT`,
@@ -111,12 +130,22 @@ If `PORTAL_PUBLISHER_URL` or `PORTAL_SYNC_TOKEN` is missing, the service logs
 
 You should see `Sync … started (startup)` and then `Sync … succeeded: N synced, …` in the logs.
 
+### Frontend data version
+
+The production compose file mounts `./json/.portal-sync` read-only into `frontend` at
+`/app/json/.portal-sync` (the dev compose file mounts the whole repo), so server code can call
+`getDataVersion()` from `lib/data-version.ts`. The service creates the directory on startup.
+Recreate the frontend once after pulling this change:
+`docker compose -f docker-compose.prod.yml up -d frontend`.
+
 ### Health / status
 
 ```bash
 docker compose -f docker-compose.prod.yml exec portal-sync \
   node -e "fetch('http://127.0.0.1:7171/health').then(r=>r.json()).then(console.log)"
-cat json/.portal-sync/state.json   # lastSync + every synced item
+cat json/.portal-sync/state.json          # lastSync + every synced item
+cat json/.portal-sync/data-version.json   # bumped after each run that changed Weaviate
+cat json/.portal-sync/inventory.json      # last inventory hash / time sent
 ```
 
 ## Manual runs and testing
@@ -146,8 +175,9 @@ curl -i -X POST https://<your-domain>/api/portal-sync \
   -d "$BODY"      # expect HTTP 202
 ```
 
-Unit tests (HMAC verification, manifest diffing, coalescing, the trigger server, and a full run
-against in-memory fakes) need no running services:
+Unit tests (HMAC verification, manifest diffing, coalescing, the trigger server, inventory
+hashing and sending, publisher-requested removals, the data version, and full runs against
+in-memory fakes) need no running services:
 
 ```bash
 yarn portal-sync:test
@@ -156,6 +186,11 @@ yarn portal-sync:test
 ## Existing data
 
 Portals that were filled with `theirstory:import-stories` + `weaviate:import` before sync was set up:
+
+- **The publisher sees them.** Every Testimony is in the inventory the portal reports after each
+  run, marked `managed: false`. From Portal Publisher you can adopt one (publish that recording;
+  with the same collection id it is replaced in place) or remove it. Removals arrive in the next
+  manifest and are applied as described in [What a sync run does](#what-a-sync-run-does), step 4.
 
 - **Same collection id.** If the publisher's `collectionId` matches the collection id the old
   import used (the `id` in that folder's `collection.json`, or the folder name), the Testimony
@@ -206,8 +241,10 @@ run: the NLP step runs again, then the command. Make the command idempotent.
 ## Files
 
 - `scripts/portal-sync/`: the service (`index.ts` entry point, `sync.ts` the algorithm,
-  `diff.ts` manifest diffing, `hmac.ts` ping verification, `server.ts` HTTP server, `legacy.ts`
-  the cleanup helper, `selftest.ts` the tests)
+  `diff.ts` manifest diffing, `inventory.ts` the inventory report, `data-version.ts` the data
+  version bump, `interview-files.ts` the interviews-dir scan, `hmac.ts` ping verification,
+  `server.ts` HTTP server, `legacy.ts` the cleanup helper, `selftest.ts` the tests)
+- `lib/data-version.ts`: `getDataVersion()` for the frontend
 - `scripts/lib/testimony-ids.ts`: the Testimony UUID and collection-id helpers, shared with
   `import-interviews-weaviate.ts`
 - `app/api/portal-sync/route.ts`: public ping endpoint that forwards to the service
