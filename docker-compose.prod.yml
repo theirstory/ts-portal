@@ -102,6 +102,9 @@ services:
         condition: service_healthy
     volumes:
       - ./config.json:/app/config.json:ro
+      # Read-only view of portal-sync's state dir, for data-version.json (lib/data-version.ts).
+      # A directory mount (not a file mount) so the service's atomic renames show up here.
+      - ./json/.portal-sync:/app/json/.portal-sync:ro
     ports:
       - "3000:3000"
     restart: unless-stopped
