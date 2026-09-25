@@ -40,6 +40,9 @@ config.json
 # collection-specific data and assets
 json/interviews/
 
+# portal-sync local state (see docs/PORTAL_SYNC.md)
+json/.portal-sync/
+
 
 # TypeScript build cache
 tsconfig.tsbuildinfo

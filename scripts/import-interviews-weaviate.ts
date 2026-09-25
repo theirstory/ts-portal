@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
+import { humanizeCollectionName, normalizeCollectionId, testimonyUuid } from './lib/testimony-ids';
 
 function buildWeaviateUrl(): string {
   const host = process.env.WEAVIATE_HOST_URL ?? 'weaviate';
@@ -26,7 +26,6 @@ const IGNORED_INTERVIEW_FILENAME = 'example-minimum-interview.json';
 const IGNORED_COLLECTION_FOLDERS = new Set(['example-collection']);
 const COLLECTION_META_JSON_FILES = new Set(['collection.json', 'collection.config.json']);
 const COLLECTION_META_MD_FILES = ['COLLECTION.md', 'collection.md', 'README.md'];
-const UUID_NAMESPACE_URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -84,57 +83,8 @@ function getNestedString(value: unknown, path: string[]): string {
   return typeof current === 'string' ? current.trim() : '';
 }
 
-function formatUuidHex(hex: string): string {
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-function uuidToBytes(uuid: string): Buffer {
-  return Buffer.from(uuid.replace(/-/g, ''), 'hex');
-}
-
-function uuidV5(value: string, namespace: string): string {
-  const bytes = createHash('sha1').update(Buffer.concat([uuidToBytes(namespace), Buffer.from(value)])).digest();
-  bytes[6] = (bytes[6] & 0x0f) | 0x50;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  return formatUuidHex(bytes.subarray(0, 16).toString('hex'));
-}
-
-function convertToUuid(rawId: string): string {
-  const value = rawId.trim();
-  const compact = value.replace(/-/g, '');
-
-  if (/^[0-9a-fA-F]{32}$/.test(compact)) {
-    return formatUuidHex(compact.toLowerCase());
-  }
-
-  if (compact && /^[0-9a-fA-F]+$/.test(compact)) {
-    return formatUuidHex(compact.toLowerCase().padEnd(32, '0').slice(0, 32));
-  }
-
-  return uuidV5(value || 'default', UUID_NAMESPACE_URL);
-}
-
 function extractPayload(raw: any): any {
   return raw && typeof raw === 'object' && raw.payload && typeof raw.payload === 'object' ? raw.payload : raw;
-}
-
-function normalizeCollectionId(input: string): string {
-  const normalized = input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return normalized || 'default';
-}
-
-function humanizeCollectionName(id: string): string {
-  return id
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function normalizeFolderPath(input: string): string {
@@ -443,7 +393,7 @@ function getTestimonyUuid(raw: any, job: InterviewImportJob): string {
   if (!storyId) {
     throw new Error(`[weaviate-import] Missing story id in ${job.filePath}. Expected payload.story._id or payload.transcript.storyId`);
   }
-  return convertToUuid(`${job.collection.id.trim().toLowerCase() || 'default'}:${storyId}`);
+  return testimonyUuid(job.collection.id, storyId);
 }
 
 async function weaviateObjectExists(className: string, objectId: string): Promise<boolean> {

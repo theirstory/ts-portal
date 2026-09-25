@@ -77,6 +77,31 @@ services:
       start_period: 180s
     restart: unless-stopped
 
+  portal-sync:
+    profiles: ["local"]
+    # Pulls published recordings from Portal Publisher (docs/PORTAL_SYNC.md).
+    # Idles until PORTAL_PUBLISHER_URL and PORTAL_SYNC_TOKEN are set in .env.local.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.local
+    environment:
+      WEAVIATE_HOST_URL: "weaviate"
+      WEAVIATE_PORT: "8080"
+      NLP_HOST: "nlp-processor"
+      NLP_PORT: "7070"
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      nlp-processor:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: sh -c "yarn portal-sync"
+    restart: unless-stopped
+
   frontend:
     profiles: ["local"]
     build:

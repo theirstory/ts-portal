@@ -572,6 +572,47 @@ curl -X DELETE http://localhost:8080/v1/objects/Testimonies/{uuid}
 
 ---
 
+### Weaviate Read-Only / Disk Full (Portal Sync)
+
+**Symptoms:**
+
+```
+store is read-only due to: disk usage too high
+```
+
+- "Sync failed" in Portal Publisher; imports fail
+
+**Cause:** Above 90% disk use Weaviate makes its shards read-only, and it stays that way after
+space is freed. `--build` deploys leave 8–15 GB of build cache each time.
+
+**Solution:** `docker builder prune -a -f`, then set the shards back to `READY`. See
+[PORTAL_SYNC.md → Disk space and read-only Weaviate](./PORTAL_SYNC.md#disk-space-and-read-only-weaviate).
+
+---
+
+### Recording Missing From Entities or Search (Portal Sync)
+
+**Cause:** A sync run was interrupted (for example by rebuilding containers mid-run) after the
+recording's old chunks were deleted, leaving its Testimony with 0 chunks.
+
+**Solution:** The next run reprocesses it (or press "Sync now"). Don't rebuild while a sync is
+running. See [PORTAL_SYNC.md → A recording is missing from entities or search](./PORTAL_SYNC.md#a-recording-is-missing-from-entities-or-search)
+and [Redeploying safely](./PORTAL_SYNC.md#redeploying-safely).
+
+---
+
+### Stale Entities After Unpublish (Portal Sync)
+
+**Symptoms:**
+
+- An unpublished recording (or its entities) still shows up
+
+**Solution:** Check the portal-sync logs for a failed removal, remove unmanaged copies from the
+inventory in Portal Publisher, and bump the data version for changes made outside portal-sync. See
+[PORTAL_SYNC.md → An unpublished recording still shows up](./PORTAL_SYNC.md#an-unpublished-recording-still-shows-up).
+
+---
+
 ## Getting Help
 
 If issues persist:
