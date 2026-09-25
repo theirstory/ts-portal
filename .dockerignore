@@ -1,0 +1,17 @@
+# Secrets: containers get their env from env_file at runtime, never from the image.
+# (Nothing reads NEXT_PUBLIC_* at build time; if that changes, pass it as a build arg.)
+**/.env*
+!**/.env*.example
+
+# Runtime data, mounted into the containers as volumes
+json/interviews
+json/.portal-sync
+.entity-cache
+*.tar.gz
+
+# Build output, dependencies and VCS
+.git
+node_modules
+.next
+**/.DS_Store
+**/._*
