@@ -103,6 +103,7 @@ The portal includes an optional site-wide password protection layer ("Gatekeeper
 - **Branded**: Automatically uses your organization's name and theme on the entry page.
 
 To enable, add the password to your `.env` or production environment:
+
 ```bash
 SITE_PASSWORD=your_secure_password
 ```
@@ -123,7 +124,11 @@ Default embedding model is `sentence-transformers/LaBSE`. NER uses `urchade/glin
 
 ### Getting Interview JSONs from TheirStory
 
-You can obtain interview JSONs from TheirStory in two ways.
+For a deployed portal, the recommended way to publish recordings is **Portal Publisher**
+(https://publisher.theirstory.io): the portal pulls published recordings and processes them itself.
+See [docs/PORTAL_SYNC.md](./docs/PORTAL_SYNC.md).
+
+Otherwise, you can obtain interview JSONs from TheirStory in two ways.
 
 Option 1: use the TheirStory import script to generate import-ready JSON files directly from story IDs, projects, or folders.
 
@@ -251,6 +256,7 @@ Full guide (DigitalOcean example): **[docs/DEPLOY_PRODUCTION.md](./docs/DEPLOY_P
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines and CLA signing via CLA Assistant
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Container architecture and services
 - **[docs/IMPORTING_INTERVIEWS.md](./docs/IMPORTING_INTERVIEWS.md)** - JSON format and import process
+- **[docs/PORTAL_SYNC.md](./docs/PORTAL_SYNC.md)** - Publishing recordings from Portal Publisher, and operating the sync
 - **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** - Environment variables and advanced configuration
 - **[docs/COMMANDS.md](./docs/COMMANDS.md)** - All available commands
 - **[docs/DEPLOY_PRODUCTION.md](./docs/DEPLOY_PRODUCTION.md)** - Production deployment guide (works on any Docker host, with DigitalOcean example)

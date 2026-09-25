@@ -238,6 +238,139 @@ the JSON). `PORTAL_SYNC_TOKEN` is removed from its environment. Its output is lo
 story id. A non-zero exit (or timeout) marks that item `failed`, so it is retried on the next
 run: the NLP step runs again, then the command. Make the command idempotent.
 
+## Operations
+
+Portal Publisher lives at https://publisher.theirstory.io (`PORTAL_PUBLISHER_URL=https://publisher.theirstory.io`).
+Publish, unpublish and adopt recordings there. The portal picks the change up on the next ping or poll.
+
+### Redeploying safely
+
+**Don't rebuild while a sync is running.** Recreating containers mid-run can kill `/process-story`
+after the processor deleted a recording's old chunks but before it inserted the new ones. That
+Testimony is left with 0 chunks, so it is missing from entities and search. Check first:
+
+```bash
+docker compose -f docker-compose.prod.yml exec portal-sync \
+  node -e "fetch('http://127.0.0.1:7171/health').then(r=>r.json()).then(j=>console.log(j.running, j.pending))"
+```
+
+Rebuild only when it prints `false false`. Rebuild only what changed, with `--no-deps` so
+`nlp-processor` and `weaviate` are not recreated:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build --no-deps portal-sync frontend
+```
+
+`./scripts/deploy/deploy-prod.sh` runs `up -d --build` for every service, so the same check applies.
+
+If a run is interrupted anyway, nothing needs fixing by hand. The item's version is only recorded
+after it succeeded (a new or adopted item stays at version `""`), so it is retried on the next run.
+A lock left by a killed run goes stale and is cleared after 2 minutes.
+
+### Disk space and read-only Weaviate
+
+Every `--build` leaves build cache behind (about 8–15 GB, on a 58 GB droplet). Prune it after each
+deploy:
+
+```bash
+docker builder prune -a -f
+df -h /
+```
+
+Above 90% disk use, Weaviate turns its shards read-only and processing fails with
+`store is read-only due to: disk usage too high`. It does **not** switch back by itself once space
+is freed. Free space first, then set the shards back to `READY`:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T portal-sync node --input-type=module -e "
+const base = 'http://weaviate:8080/v1/schema';
+for (const c of ['Testimonies', 'Chunks']) {
+  const shards = await (await fetch(base + '/' + c + '/shards')).json();
+  for (const s of shards) {
+    if (s.status === 'READY') { console.log(c, s.name, 'READY'); continue; }
+    const r = await fetch(base + '/' + c + '/shards/' + s.name, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'READY' }) });
+    console.log(c, s.name, s.status, '->', r.status);
+  }
+}"
+```
+
+A `200` means that shard is writable again. Failed items are retried on the next run (or use
+"Sync now").
+
+### Long recordings
+
+A long interview on a small droplet can take well over 5 minutes to process. The `/process-story`
+call uses `node:http`, not `fetch` (whose 5-minute headers timeout used to fail every long recording
+with `fetch failed`), and is bounded by `PORTAL_SYNC_NLP_TIMEOUT_MINUTES` (default `30`). Raise it
+for 3h+ interviews on slow hosts, then recreate `portal-sync`.
+
+### Caches and the data version
+
+After a run that synced or removed something, `data-version.json` is bumped, and frontend code
+that uses `getDataVersion()` drops its caches within about 2 seconds. A manual `weaviate:import` (or
+any other change made outside portal-sync) does **not** bump it. To bump it by hand:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T portal-sync node -e "
+const fs = require('fs'), f = '/app/json/.portal-sync/data-version.json';
+let v = 0; try { v = Number(JSON.parse(fs.readFileSync(f, 'utf8')).version) || 0 } catch {}
+fs.writeFileSync(f, JSON.stringify({ version: v + 1, updatedAt: new Date().toISOString() }) + '\n');
+console.log('data version', v + 1);"
+```
+
+The number has to change. A plain `touch` is not enough: the frontend re-reads the file, sees the
+same version and keeps its caches.
+
+### Titles
+
+Adopting or publishing a recording replaces the portal's copy with TheirStory's current data,
+title included, so a title fixed only on the portal side is overwritten. Fix titles in TheirStory
+and publish again.
+
+## Troubleshooting
+
+### Sync failed in Portal Publisher
+
+Hover "Sync failed" to see the error. Usually:
+
+- `fetch failed` or another connection error: the NLP processor (or Weaviate) restarted or is
+  unreachable. See [Redeploying safely](#redeploying-safely).
+- `store is read-only`: disk. See [Disk space and read-only Weaviate](#disk-space-and-read-only-weaviate).
+- `NLP /process-story failed: HTTP 500 …`: check `docker logs nlp-processor-prod`.
+- `timed out after …` / `no response for …`: see [Long recordings](#long-recordings).
+- `post-process command exited …`: `PORTAL_SYNC_POST_PROCESS_COMMAND` failed (e.g. a missing
+  `ANTHROPIC_API_KEY`). Its output is in `docker compose -f docker-compose.prod.yml logs portal-sync`.
+
+Failed items are retried on every run.
+
+### A recording is missing from entities or search
+
+Usually a run was interrupted after the old chunks were deleted, leaving the Testimony with 0
+chunks. Count them (`<uuid>` is the Testimony UUID from `json/.portal-sync/state.json`):
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T portal-sync node -e "
+fetch('http://weaviate:8080/v1/graphql', { method: 'POST', headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ query: '{ Aggregate { Chunks(where: {path: [\"theirstory_id\"], operator: Equal, valueText: \"<uuid>\"}) { meta { count } } } }' }) })
+  .then(r => r.json()).then(j => console.log(JSON.stringify(j.data)))"
+```
+
+The interrupted item was never recorded as synced, so the next run reprocesses it (use "Sync now"
+to not wait). If it is still at 0 after a successful run, check that run's error in Portal Publisher.
+
+### An unpublished recording still shows up
+
+On the next run after an unpublish, portal-sync deletes the Testimony, its Chunks and its JSON file,
+then bumps the data version. If the recording still shows up:
+
+- Look for `Remove failed for …` in `docker compose -f docker-compose.prod.yml logs portal-sync`
+  (read-only shards, for example). Failed removals are retried.
+- A copy imported by hand under a different collection id is a separate, unmanaged Testimony.
+  Remove it from the portal's inventory in Portal Publisher (see [Existing data](#existing-data)).
+- If the frontend predates the `./json/.portal-sync` mount, recreate it:
+  `docker compose -f docker-compose.prod.yml up -d --no-deps frontend`.
+- For changes made outside portal-sync, [bump the data version](#caches-and-the-data-version).
+
 ## Files
 
 - `scripts/portal-sync/`: the service (`index.ts` entry point, `sync.ts` the algorithm,

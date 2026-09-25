@@ -2,6 +2,14 @@
 
 This guide covers the `theirstory:import-stories` script, which helps prepare TheirStory content for `ts-portal`.
 
+> **Portals connected to Portal Publisher:** publish recordings from https://publisher.theirstory.io
+> instead. See [PORTAL_SYNC.md](./PORTAL_SYNC.md).
+>
+> - This importer needs `THEIRSTORY_AUTH_TOKEN`, a TheirStory user token that **does not expire**.
+>   Run it from a local machine and don't leave the token in a server's `.env.production`.
+> - It writes title-based file names (`ts-portal-<title>-<format>.json`). Once portal-sync manages a
+>   story, `yarn portal-sync:legacy` finds these copies (see [Existing data](./PORTAL_SYNC.md#existing-data)).
+
 ## What it does
 
 - Pulls stories from TheirStory by `storyIds`, `projectId`, or `folderId`
