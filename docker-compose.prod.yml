@@ -62,6 +62,32 @@ services:
     command: sh -c "yarn weaviate:generate-schemas && yarn weaviate:import && exit 0"
     restart: "no"
 
+  portal-sync:
+    # Pulls published recordings from Portal Publisher (docs/PORTAL_SYNC.md).
+    # Idles harmlessly until PORTAL_PUBLISHER_URL and PORTAL_SYNC_TOKEN are set in .env.production.
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: portal-sync-prod
+    env_file:
+      - ./.env.production
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      nlp-processor:
+        condition: service_healthy
+    volumes:
+      - ./json:/app/json
+      - ./config.json:/app/config.json:ro
+    command: sh -c "yarn portal-sync"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:'+(process.env.PORTAL_SYNC_PORT||7171)+'/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
   frontend:
     build:
       context: .
